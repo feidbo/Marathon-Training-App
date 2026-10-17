@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.feidbo.marathon.core.AdjustmentKind
 import com.feidbo.marathon.core.DayStatus
 import com.feidbo.marathon.core.Paces
 import com.feidbo.marathon.core.Plan
@@ -122,8 +123,13 @@ fun TodayScreen(
             }
         }
 
+        // Only mention a restructure while it's still ahead of you.
+        val restructuredSoon = state.schedule.days.any {
+            it.date >= today && it.date < today.plusDays(14) &&
+                it.adjustments.any { a -> a.kind != AdjustmentKind.LONG_RUN_CAP }
+        }
         state.schedule.notices.takeLast(1).forEach { notice ->
-            if (date >= today) SectionCard(container = MaterialTheme.colorScheme.secondaryContainer) {
+            if (date >= today && restructuredSoon) SectionCard(container = MaterialTheme.colorScheme.secondaryContainer) {
                 Text("Plan adjusted", style = MaterialTheme.typography.titleSmall)
                 Text(notice, style = MaterialTheme.typography.bodyMedium)
             }
