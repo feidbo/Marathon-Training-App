@@ -315,3 +315,13 @@ fun XpToast(text: String?, key: Any?, onShown: () -> Unit, modifier: Modifier = 
         }
     }
 }
+
+/** "140 lb × 12, 12" when every set used the same weight, otherwise "120×12, 140×10 lb". */
+fun setsText(log: com.feidbo.marathon.core.ExerciseLog): String {
+    val sets = log.sets.filter { it.reps > 0 }
+    return if (sets.map { it.weight }.distinct().size <= 1) {
+        "${com.feidbo.marathon.core.formatMiles(sets.firstOrNull()?.weight ?: 0.0)} lb × ${sets.joinToString(", ") { it.reps.toString() }}"
+    } else {
+        sets.joinToString(", ") { "${com.feidbo.marathon.core.formatMiles(it.weight)}×${it.reps}" } + " lb"
+    }
+}

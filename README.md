@@ -11,9 +11,10 @@ The plan document is in [`docs/`](docs/First_Marathon_Plan_Eugene_2027.md).
   so you can log one you missed.
 - **Strength how-to**: each machine exercise has an animated illustration, step-by-step instructions, form cues
   and your history. Strength days show your **last weight as a benchmark** and today's recommended load.
-- **Rest timer & workout guide**: walks you through the plan's blocks round by round, then counts down the
-  rest (90 s in Phase 1, 2 min in Phases 2–3; adjustable), vibrates and beeps when it's time to go, and
-  keeps the screen on while you rest.
+- **Set-by-set strength logging**: every set has its own weight and reps (change the weight mid-exercise and
+  later sets follow), and a ✓ to mark it done. Ticking a set starts the **rest timer between every set**
+  (90 s in Phase 1, 2 min in Phases 2–3; adjustable), shown in a bar at the bottom with what's next. It
+  vibrates and beeps when rest is over and keeps the screen on while you rest. Only ticked sets are saved.
 - **Load progression** (`core/.../Progression.kt`), based on:
   - reps in reserve ("reps left in the tank", the plan's effort target) logged for each exercise
     (Zourdos 2016; Helms 2016);
@@ -45,6 +46,10 @@ The plan document is in [`docs/`](docs/First_Marathon_Plan_Eugene_2027.md).
 - **Progress screen**: totals, what you've done, what's coming up (adjusted days flagged), badges and
   strength benchmarks. Settings has the Mar 7 half-marathon → marathon-pace calculator (Riegel).
 
+- **Home-screen widget**: today's workout, pace and strength, what's still to do (run / lift / stretch), streak
+  and level. Long-press the home screen → Widgets → Eugene 26.2. Tapping it opens the app; it refreshes when
+  you log and just after midnight.
+
 All data stays on the phone in one JSON file; nothing needs the internet.
 
 ## Install
@@ -68,3 +73,8 @@ and keep your logs.
 - `app/`: Jetpack Compose UI.
 - `tools/gen_plan.py` regenerates `PlanData.kt` from the plan document;
   `tools/gen_illustrations.py` regenerates the exercise figures (`--preview` renders PNGs).
+
+## Credits
+
+App icon duck: [Twemoji](https://github.com/jdecked/twemoji) 🦆 (U+1F986) by Twitter, Inc. and other
+contributors, licensed under [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/).

@@ -182,7 +182,7 @@ fun ExerciseScreen(state: UiState, exerciseId: String, dayIndex: Int, onBack: ()
                     history.asReversed().take(12).forEach { h ->
                         Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
                             Text(shortDate(Plan.days[h.dayIndex].date), modifier = Modifier.width(72.dp))
-                            Text("${formatMiles(h.log.topWeight)} lb × ${h.log.sets.joinToString(", ") { it.reps.toString() }}",
+                            Text(setsText(h.log),
                                 modifier = Modifier.weight(1f))
                             (h.log.rir?.let { "$it left" } ?: h.log.feel?.label)?.let {
                                 Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)

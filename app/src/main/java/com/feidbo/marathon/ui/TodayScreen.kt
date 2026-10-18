@@ -312,7 +312,7 @@ private fun DayContent(
                         Text(
                             when {
                                 last == null -> "No benchmark yet — find a weight that's hard by the last rep"
-                                else -> "Last: ${formatMiles(last.log.topWeight)} lb × ${last.log.sets.joinToString(", ") { it.reps.toString() }}"
+                                else -> "Last: ${setsText(last.log)}"
                             },
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

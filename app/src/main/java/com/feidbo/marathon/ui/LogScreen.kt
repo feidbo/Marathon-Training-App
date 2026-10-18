@@ -1,5 +1,13 @@
 package com.feidbo.marathon.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.Circle
+import com.feidbo.marathon.core.fmt
+import com.feidbo.marathon.ui.theme.StatusColors
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -55,18 +63,32 @@ import com.feidbo.marathon.core.strengthSession
 import com.feidbo.marathon.core.loadAdviceFor
 import com.feidbo.marathon.core.workoutTitle
 
-/** Editable state for one exercise. */
-private class ExerciseEntry(val rx: Prescription, weight: String, reps: List<String>, rir: Int?, private val legacyFeel: Feel?) {
+/** Editable state for one set. Only sets ticked as done are saved. */
+private class SetEntry(weight: String, reps: String, done: Boolean) {
     var weight by mutableStateOf(weight)
-    val reps = mutableStateListOf<String>().apply { addAll(reps) }
+    var reps by mutableStateOf(reps)
+    var done by mutableStateOf(done)
+}
+
+/** Editable state for one exercise. */
+private class ExerciseEntry(val rx: Prescription, sets: List<SetEntry>, rir: Int?, private val legacyFeel: Feel?) {
+    val sets = mutableStateListOf<SetEntry>().apply { addAll(sets) }
     var rir by mutableStateOf(rir)
     var skipped by mutableStateOf(false)
 
+    /** Changing one set's weight carries forward to later sets that still had the old weight and aren't done. */
+    fun setWeight(i: Int, value: String) {
+        val old = sets[i].weight
+        sets[i].weight = value
+        for (j in i + 1 until sets.size) if (!sets[j].done && sets[j].weight == old) sets[j].weight = value
+    }
+
     fun toLog(): ExerciseLog? {
         if (skipped) return null
-        val w = weight.toDoubleOrNull() ?: 0.0
-        val sets = reps.mapNotNull { r -> r.toIntOrNull()?.takeIf { it > 0 }?.let { SetLog(w, it) } }
-        return if (sets.isEmpty()) null else ExerciseLog(rx.exercise.id, sets, if (rir == null) legacyFeel else null, rir)
+        val done = sets.filter { it.done }.mapNotNull { st ->
+            st.reps.toIntOrNull()?.takeIf { it > 0 }?.let { SetLog(st.weight.toDoubleOrNull() ?: 0.0, it) }
+        }
+        return if (done.isEmpty()) null else ExerciseLog(rx.exercise.id, done, if (rir == null) legacyFeel else null, rir)
     }
 }
 
@@ -89,18 +111,20 @@ fun LogScreen(state: UiState, dayIndex: Int, onBack: () -> Unit, onSave: (RunLog
     var effort by remember { mutableStateOf((existingRun?.effort ?: defaultEffort(day.run)).toFloat()) }
     var pain by remember { mutableStateOf(existingRun?.pain ?: false) }
     var didRun by remember { mutableStateOf(existing == null || existingRun != null) }
-    var didLift by remember { mutableStateOf(existing == null || existing.strength.isNotEmpty()) }
 
     val session = strengthSession(day.strength)
     val entries = remember {
         session?.items?.map { rx ->
             val prior = existing?.strength?.firstOrNull { it.exerciseId == rx.exercise.id }
             val advice = loadAdviceFor(rx, day, state.logs)
+            val start = advice?.weight?.let(::formatMiles) ?: ""
             ExerciseEntry(
                 rx,
-                weight = prior?.topWeight?.let(::formatMiles) ?: advice?.weight?.let(::formatMiles) ?: "",
-                reps = prior?.sets?.map { it.reps.toString() }?.let { r -> List(rx.sets) { r.getOrElse(it) { "" } } }
-                    ?: List(rx.sets) { rx.reps.toString() },
+                sets = List(maxOf(rx.sets, prior?.sets?.size ?: 0)) { i ->
+                    val p = prior?.sets?.getOrNull(i)
+                    if (p != null) SetEntry(formatMiles(p.weight), p.reps.toString(), done = true)
+                    else SetEntry(start, rx.reps.toString(), done = false)
+                },
                 rir = prior?.rir,
                 legacyFeel = prior?.feel,
             )
@@ -120,11 +144,28 @@ fun LogScreen(state: UiState, dayIndex: Int, onBack: () -> Unit, onSave: (RunLog
         )
     }
 
+    val timer = rememberRestTimer(session?.restSec ?: 90)
+    // Circuit order from the plan: one set of each exercise in a block, then the next round.
+    val order = remember(entries) {
+        listOf(entries.take(3), entries.drop(3)).flatMap { block ->
+            val rounds = block.maxOfOrNull { it.rx.sets } ?: 0
+            (0 until rounds).flatMap { r -> block.filter { it.sets.size > r }.map { it to r } }
+        }
+    }
+    val nextUp = order.firstOrNull { (e, i) -> !e.skipped && !e.sets[i].done }
+        ?.let { (e, i) -> "${e.rx.exercise.name}, set ${i + 1} of ${e.sets.size}" }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Log: ${workoutTitle(day)}") },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+            )
+        },
+        bottomBar = {
+            RestBar(
+                timer, nextUp,
+                if ((session?.restSec ?: 0) >= 120) "2+ min rests build more strength on heavy sets (Grgic 2018)" else null,
             )
         },
     ) { padding ->
@@ -183,32 +224,45 @@ fun LogScreen(state: UiState, dayIndex: Int, onBack: () -> Unit, onSave: (RunLog
 
             if (session != null) {
                 SectionCard {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("🏋️  Strength", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                        if (day.run.isRun) {
-                            Text("Lifted", style = MaterialTheme.typography.labelLarge)
-                            Spacer(Modifier.width(6.dp))
-                            Switch(checked = didLift, onCheckedChange = { didLift = it })
-                        }
-                    }
+                    Text("🏋️  Strength", style = MaterialTheme.typography.titleLarge)
                     Text(session.effort, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (didLift) {
-                        Spacer(Modifier.height(8.dp))
-                        RestTimer(session)
-                        entries.forEach { e -> ExerciseEditor(state, dayIndex, e) }
+                    Spacer(Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Tap ✓ after each set to start your rest. Rest: ${fmt("%d:%02d", timer.durationSec / 60, timer.durationSec % 60)}",
+                            style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = { timer.durationSec = (timer.durationSec - 15).coerceAtLeast(30) }) { Text("−15s") }
+                        TextButton(onClick = { timer.durationSec = (timer.durationSec + 15).coerceAtMost(300) }) { Text("+15s") }
+                    }
+                    Text(
+                        "Order: one set of each exercise in a block, then repeat (${session.items.take(3).joinToString(" → ") { it.exercise.name }}, " +
+                            "then ${session.items.drop(3).joinToString(" → ") { it.exercise.name }}). Warm up first with a light set on the leg press and hip thrust.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    entries.forEach { e ->
+                        ExerciseEditor(state, dayIndex, e) {
+                            // Rest after every set, except after the very last one.
+                            if (order.any { (x, i) -> !x.skipped && !x.sets[i].done }) timer.start() else timer.stop()
+                        }
                     }
                 }
             }
 
             val run = currentRun()
-            val lifts = if (didLift) entries.mapNotNull { it.toLog() } else emptyList()
+            val lifts = entries.mapNotNull { it.toLog() }
+            val setsDone = lifts.sumOf { it.sets.size }
             val canSave = run != null || lifts.isNotEmpty() || (!day.run.isRun && session == null)
             Button(
                 onClick = { onSave(run, lifts) },
                 enabled = canSave,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-            ) { Text("Save & celebrate 🎉", fontSize = 18.sp) }
+            ) { Text(if (setsDone > 0) "Save & celebrate 🎉 · $setsDone sets" else "Save & celebrate 🎉", fontSize = 18.sp) }
+            if (session != null && setsDone == 0 && entries.any { e -> e.sets.any { it.reps.isNotEmpty() } }) {
+                Text("No sets ticked yet — only sets marked ✓ are saved.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            }
             if (!canSave) {
                 Text("Enter a distance or at least one lift to save. Couldn't train? Go back and tap \"I couldn't do it today\".",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -218,20 +272,26 @@ fun LogScreen(state: UiState, dayIndex: Int, onBack: () -> Unit, onSave: (RunLog
 }
 
 @Composable
-private fun ExerciseEditor(state: UiState, dayIndex: Int, e: ExerciseEntry) {
+private fun ExerciseEditor(state: UiState, dayIndex: Int, e: ExerciseEntry, onSetDone: () -> Unit) {
     val rx = e.rx
     val day = state.schedule[dayIndex]!!.day
     val last = lastWorkingSet(rx.exercise.id, dayIndex, state.logs)
     val advice = loadAdviceFor(rx, day, state.logs)
     val targetRir = strengthSession(day.strength)?.targetRir ?: 2
-    Column(Modifier.padding(top = 14.dp)) {
+    val allDone = e.sets.all { it.done }
+    Column(Modifier.padding(top = 16.dp)) {
+        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+        Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             ExerciseIllustration(rx.exercise.id, Modifier.size(48.dp), animate = false)
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
-                Text("${rx.exercise.name} · ${rx.sets} × ${rx.reps}", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    last?.let { "Benchmark: ${formatMiles(it.log.topWeight)} lb × ${it.log.sets.joinToString(", ") { s -> s.reps.toString() }}" }
+                    "${if (allDone) "✅ " else ""}${rx.exercise.name} · ${rx.sets} × ${rx.reps}",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    last?.let { "Last: ${setsText(it.log)}" }
                         ?: "First time — pick a weight that's hard by the last rep",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -247,12 +307,36 @@ private fun ExerciseEditor(state: UiState, dayIndex: Int, e: ExerciseEntry) {
             )
         }
         if (!e.skipped) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                NumberField(e.weight, { e.weight = it }, rx.exercise.weightLabel.substringBefore(" ("), Modifier.weight(1.3f), suffix = "lb")
-                e.reps.indices.forEach { i ->
-                    NumberField(e.reps[i], { e.reps[i] = it }, "Set ${i + 1}", Modifier.weight(1f), decimal = false)
+            e.sets.forEachIndexed { i, set ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (set.done) StatusColors.done.copy(alpha = 0.10f) else Color.Transparent)
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text("Set ${i + 1}", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(44.dp))
+                    NumberField(set.weight, { e.setWeight(i, it) }, if (rx.exercise.inverted) "Assist" else "Weight",
+                        Modifier.weight(1.2f), suffix = "lb")
+                    Text("×", style = MaterialTheme.typography.titleMedium)
+                    NumberField(set.reps, { set.reps = it }, "Reps", Modifier.weight(0.9f), decimal = false)
+                    IconButton(onClick = {
+                        set.done = !set.done
+                        if (set.done) onSetDone()
+                    }) {
+                        Icon(
+                            if (set.done) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+                            contentDescription = if (set.done) "Set done" else "Mark set done",
+                            tint = if (set.done) StatusColors.done else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(34.dp),
+                        )
+                    }
                 }
             }
+            Spacer(Modifier.height(6.dp))
             Text(
                 "Reps left in the tank on your last set (target about $targetRir):",
                 style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,

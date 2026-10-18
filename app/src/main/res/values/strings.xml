@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Eugene 26.2</string>
+    <string name="widget_description">Today's workout, what's left to do, and your streak</string>
 </resources>

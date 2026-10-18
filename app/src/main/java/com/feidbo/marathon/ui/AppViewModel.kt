@@ -28,6 +28,7 @@ import com.feidbo.marathon.core.runFeedback
 import com.feidbo.marathon.core.shortDate
 import com.feidbo.marathon.data.AppData
 import com.feidbo.marathon.data.Store
+import com.feidbo.marathon.widget.TodayWidget
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -85,7 +86,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Re-reads the date, e.g. when the app comes back to the foreground on a new day. */
     fun refreshDate() {
         val now = LocalDate.now()
-        if (now != _state.value.today) _state.value = build(_state.value.data, now)
+        if (now != _state.value.today) {
+            _state.value = build(_state.value.data, now)
+            TodayWidget.updateAll(getApplication())
+        }
     }
 
     private fun update(change: (AppData) -> AppData): Pair<UiState, UiState> {
@@ -94,6 +98,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         store.save(data)
         val after = build(data, before.today)
         _state.value = after
+        TodayWidget.updateAll(getApplication())
         return before to after
     }
 

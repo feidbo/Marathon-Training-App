@@ -4,10 +4,15 @@ import android.content.Context
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,25 +20,29 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
@@ -41,51 +50,62 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.feidbo.marathon.core.StrengthSession
 import com.feidbo.marathon.core.fmt
-import com.feidbo.marathon.ui.theme.Green
+import com.feidbo.marathon.ui.theme.Gold
 import kotlinx.coroutines.delay
 
 /**
- * Walks through the plan's block structure — one set of each exercise in a block, then rest —
- * with a countdown between rounds. Rest defaults come from the plan (60–90 s in Phase 1,
- * 90 s – 2 min after); each muscle also rests while you do the other two exercises in the round.
+ * Rest countdown between sets. Times use [SystemClock.elapsedRealtime] so the countdown stays
+ * correct if the app is briefly in the background, and survive rotation.
  */
-@Composable
-fun RestTimer(session: StrengthSession, modifier: Modifier = Modifier) {
-    val blocks = listOf(session.items.take(3), session.items.drop(3)).filter { it.isNotEmpty() }
-    var block by rememberSaveable { mutableIntStateOf(0) }
-    var round by rememberSaveable { mutableIntStateOf(1) }
-    var restSec by rememberSaveable { mutableIntStateOf(session.restSec) }
-    var endAt by rememberSaveable { mutableLongStateOf(0L) }     // elapsedRealtime when rest ends; 0 = not resting
-    var remainingMs by rememberSaveable { mutableLongStateOf(0L) }
-    var finished by rememberSaveable { mutableStateOf(false) }
-    var restOver by rememberSaveable { mutableStateOf(false) }
+@Stable
+class RestTimerState(durationSec: Int, endAt: Long = 0L) {
+    var durationSec by mutableIntStateOf(durationSec)
+    var endAt by mutableLongStateOf(endAt)      // 0 = not resting
+        private set
+    var remainingMs by mutableLongStateOf(0L)
+        internal set
+    val resting: Boolean get() = endAt > 0L
 
+    fun start() {
+        endAt = SystemClock.elapsedRealtime() + durationSec * 1000L
+        remainingMs = durationSec * 1000L
+    }
+    fun add(seconds: Int) {
+        if (resting) endAt = (endAt + seconds * 1000L).coerceAtLeast(SystemClock.elapsedRealtime() + 1000)
+    }
+    fun stop() {
+        endAt = 0L
+    }
+
+    companion object {
+        val Saver = listSaver<RestTimerState, Long>(
+            save = { listOf(it.durationSec.toLong(), it.endAt) },
+            restore = { RestTimerState(it[0].toInt(), it[1]) },
+        )
+    }
+}
+
+@Composable
+fun rememberRestTimer(defaultSec: Int): RestTimerState =
+    rememberSaveable(saver = RestTimerState.Saver) { RestTimerState(defaultSec) }
+
+/** The countdown bar pinned to the bottom of the log screen while resting. */
+@Composable
+fun RestBar(timer: RestTimerState, nextUp: String?, scienceNote: String?) {
     val context = LocalContext.current
     val view = LocalView.current
-    val resting = endAt > 0L
-    val roundsInBlock = blocks.getOrNull(block)?.maxOf { it.sets } ?: 1
 
     // Keep the screen on while resting so the countdown and alert aren't lost.
-    DisposableEffect(resting) {
-        view.keepScreenOn = resting
+    DisposableEffect(timer.resting) {
+        view.keepScreenOn = timer.resting
         onDispose { view.keepScreenOn = false }
     }
-
-    fun nextRound() {
-        if (round < roundsInBlock) round++
-        else if (block < blocks.lastIndex) { block++; round = 1 }
-        else finished = true
-    }
-
-    LaunchedEffect(endAt) {
-        while (endAt > 0L) {
-            remainingMs = (endAt - SystemClock.elapsedRealtime()).coerceAtLeast(0)
-            if (remainingMs == 0L) {
-                endAt = 0L
-                restOver = true
-                nextRound()
+    LaunchedEffect(timer.endAt) {
+        while (timer.resting) {
+            timer.remainingMs = (timer.endAt - SystemClock.elapsedRealtime()).coerceAtLeast(0)
+            if (timer.remainingMs == 0L) {
+                timer.stop()
                 alert(context)
                 break
             }
@@ -93,78 +113,38 @@ fun RestTimer(session: StrengthSession, modifier: Modifier = Modifier) {
         }
     }
 
-    SectionCard(modifier, container = MaterialTheme.colorScheme.primaryContainer) {
-        Text("⏱  Workout guide & rest timer", style = MaterialTheme.typography.titleMedium)
-        if (finished) {
-            Text("All rounds done! 🎉 Enter your weights and reps below.", style = MaterialTheme.typography.bodyMedium)
-            TextButton(onClick = { finished = false; restOver = false; block = 0; round = 1 }) { Text("Start over") }
-            return@SectionCard
-        }
-        val items = blocks[block]
-        val doing = items.filter { it.sets >= round }
-        Text(
-            "Block ${block + 1} · Round $round of $roundsInBlock",
-            style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer,
-        )
-        Text(
-            doing.joinToString("  →  ") { "${it.exercise.name} ×${it.reps}" },
-            style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold,
-        )
-        if (block == 0 && round == 1 && !resting) {
-            Text("First: one light warm-up set on the leg press and the hip thrust.", style = MaterialTheme.typography.bodySmall)
-        }
-        Spacer(Modifier.height(8.dp))
-        if (resting) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(84.dp), contentAlignment = Alignment.Center) {
-                    val progress = remainingMs / (restSec * 1000f)
-                    val track = MaterialTheme.colorScheme.surface
-                    Canvas(Modifier.size(84.dp)) {
-                        drawArc(track, 0f, 360f, false, style = Stroke(9.dp.toPx()))
-                        drawArc(Green, -90f, 360f * progress.coerceIn(0f, 1f), false, style = Stroke(9.dp.toPx(), cap = StrokeCap.Round))
+    AnimatedVisibility(timer.resting, enter = slideInVertically { it }, exit = slideOutVertically { it }) {
+        Surface(
+            color = MaterialTheme.colorScheme.inverseSurface,
+            contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            shadowElevation = 12.dp,
+        ) {
+            Row(
+                Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.size(72.dp), contentAlignment = Alignment.Center) {
+                    val progress = timer.remainingMs / (timer.durationSec * 1000f)
+                    Canvas(Modifier.size(72.dp)) {
+                        drawArc(Color.White.copy(alpha = 0.18f), 0f, 360f, false, style = Stroke(8.dp.toPx()))
+                        drawArc(Gold, -90f, 360f * progress.coerceIn(0f, 1f), false, style = Stroke(8.dp.toPx(), cap = StrokeCap.Round))
                     }
-                    val s = ((remainingMs + 999) / 1000).toInt()
-                    Text(fmt("%d:%02d", s / 60, s % 60), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    val s = ((timer.remainingMs + 999) / 1000).toInt()
+                    Text(fmt("%d:%02d", s / 60, s % 60), fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.width(12.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Rest. Breathe. Sip water.", style = MaterialTheme.typography.bodyMedium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        OutlinedButton(onClick = { endAt = (endAt - 15_000).coerceAtLeast(SystemClock.elapsedRealtime() + 1000) }) { Text("−15 s") }
-                        OutlinedButton(onClick = { endAt += 15_000 }) { Text("+15 s") }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("Rest", style = MaterialTheme.typography.titleMedium)
+                    nextUp?.let { Text("Next: $it", style = MaterialTheme.typography.bodySmall) }
+                    scienceNote?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f)) }
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        FilledTonalButton(onClick = { timer.add(-15) }) { Text("−15s") }
+                        FilledTonalButton(onClick = { timer.add(15) }) { Text("+15s") }
+                        TextButton(onClick = { timer.stop() }) { Text("Skip", color = Gold) }
                     }
-                    TextButton(onClick = { endAt = 0L; restOver = true; nextRound() }) { Text("Skip rest") }
                 }
             }
-        } else {
-            if (restOver) {
-                Text("Rest's over — go! 💪", style = MaterialTheme.typography.titleSmall, color = Green)
-                Spacer(Modifier.height(4.dp))
-            }
-            val lastRound = round >= roundsInBlock && block >= blocks.lastIndex
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Button(onClick = {
-                    restOver = false
-                    if (lastRound) finished = true
-                    else endAt = SystemClock.elapsedRealtime() + restSec * 1000L
-                }, modifier = Modifier.weight(1f)) {
-                    Text(if (lastRound) "Last round done" else "Round done · rest ${fmt("%d:%02d", restSec / 60, restSec % 60)}")
-                }
-                Spacer(Modifier.width(6.dp))
-                TextButton(onClick = { restSec = (restSec - 15).coerceAtLeast(30) }) { Text("−") }
-                TextButton(onClick = { restSec = (restSec + 15).coerceAtMost(300) }) { Text("+") }
-            }
-        }
-        Text(
-            "Plan: ${session.rest}. Each muscle also rests while you do the other exercises in the round.",
-            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        if (session.restSec >= 120) {
-            Text(
-                "Why 2 min: for heavy, low-rep sets, rests of 2 minutes or more give bigger strength gains than short rests " +
-                    "(Grgic 2018; Schoenfeld 2016).",
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
@@ -183,7 +163,7 @@ private fun alert(context: Context) {
     try {
         val tone = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 90)
         tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 600)
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ tone.release() }, 800)
+        Handler(Looper.getMainLooper()).postDelayed({ tone.release() }, 800)
     } catch (_: Exception) {
     }
 }

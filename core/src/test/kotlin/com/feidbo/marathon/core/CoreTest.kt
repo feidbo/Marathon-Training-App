@@ -327,6 +327,19 @@ class ProgressionTest {
         assertEquals(150.0, a.weight, 0.0)
     }
 
+    @Test fun perSetWeightsUseWorkingSets() {
+        // Ramp up 120 → 140 and hit 12 easily at 140: progress from 140.
+        val ramp = ExerciseHistoryEntry(mon.index, mon.strength,
+            ExerciseLog("leg_press", listOf(SetLog(120.0, 12), SetLog(140.0, 12)), rir = 4))
+        assertEquals(150.0, loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(ramp))!!.weight, 0.0)
+        // Back off 140 → 120 after the first set: hold, don't progress.
+        val backOff = ExerciseHistoryEntry(mon.index, mon.strength,
+            ExerciseLog("leg_press", listOf(SetLog(140.0, 12), SetLog(120.0, 12)), rir = 4))
+        val a = loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(backOff))!!
+        assertEquals(LoadChange.SAME, a.change)
+        assertEquals(140.0, a.weight, 0.0)
+    }
+
     @Test fun noHistoryNoAdvice() {
         assertNull(loadAdvice(legPress, StrengthKind.PHASE1, thu.date, emptyList()))
     }

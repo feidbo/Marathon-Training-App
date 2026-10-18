@@ -49,6 +49,12 @@ fun effectiveRir(log: ExerciseLog, targetRir: Int): Int? = log.rir ?: when (log.
     null -> null
 }
 
+/** The load that counts for progression: the heaviest set, or for assisted lifts the least assisted one. */
+fun workingWeight(log: ExerciseLog, inverted: Boolean): Double {
+    val sets = log.sets.filter { it.reps > 0 }
+    return (if (inverted) sets.minOfOrNull { it.weight } else sets.maxOfOrNull { it.weight }) ?: 0.0
+}
+
 /** Epley estimated 1RM, counting reps left in the tank as reps you could have done. */
 fun estimatedOneRepMax(weight: Double, reps: Int, rir: Int): Double = weight * (1 + (reps + rir) / 30.0)
 
@@ -70,9 +76,9 @@ fun loadAdvice(rx: Prescription, kind: StrengthKind, date: LocalDate, history: L
     val working = history.lastOrNull { it.strength != StrengthKind.LIGHT && it.strength != StrengthKind.LEARN }
     val last = working ?: history.last()
     val lastDate = Plan.days[last.dayIndex].date
-    val lastW = last.log.topWeight
-    if (lastW <= 0.0 && !ex.inverted) return null
     val inv = ex.inverted
+    val lastW = workingWeight(last.log, inv)
+    if (lastW <= 0.0 && !inv) return null
 
     fun advice(w: Double, change: LoadChange, reason: String) =
         LoadAdvice(maxOf(0.0, w), lastW, lastDate, change, reason)
@@ -97,7 +103,8 @@ fun loadAdvice(rx: Prescription, kind: StrengthKind, date: LocalDate, history: L
     val lastTargetReps = lastRx?.reps ?: rx.reps
     val lastTargetRir = lastSession?.targetRir ?: session.targetRir
     val sets = last.log.sets.filter { it.reps > 0 }
-    val minReps = sets.minOfOrNull { it.reps } ?: 0
+    // Judge the working sets (those at the working weight); lighter warm-up sets before them don't count.
+    val minReps = sets.filter { abs(it.weight - lastW) < 0.01 }.minOfOrNull { it.reps } ?: 0
     val rir = effectiveRir(last.log, lastTargetRir)
     val repsText = sets.joinToString(", ") { it.reps.toString() }
 
@@ -117,7 +124,9 @@ fun loadAdvice(rx: Prescription, kind: StrengthKind, date: LocalDate, history: L
     }
 
     val target = lastTargetReps
-    val allHit = sets.isNotEmpty() && minReps >= target
+    // Dropping the weight after a set (a back-off) means the load wasn't sustainable yet.
+    val backedOff = sets.zipWithNext().any { (a, b) -> if (inv) b.weight > a.weight + 0.01 else b.weight < a.weight - 0.01 }
+    val allHit = sets.isNotEmpty() && minReps >= target && !backedOff
     val missedBig = minReps <= target - 2
 
     // Step sizes: ACSM's 2–10%, with bigger jumps for the big lower-body lifts.
