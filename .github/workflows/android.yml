@@ -35,7 +35,7 @@ jobs:
         run: ./gradlew :app:assembleRelease --console=plain
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: EugeneMarathon-apk
           path: app/build/outputs/apk/release/app-release.apk

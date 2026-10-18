@@ -160,6 +160,9 @@ fun strengthFeedback(
     }
     val weight = log.topWeight
     val prevWeight = previous?.topWeight
+    if (!ex.inverted && weight <= 0.0) {
+        return listOf(Tip(TipLevel.WARN, "Enter the weight you used so the app can track your progress and suggest the next load."))
+    }
 
     val minReps = sets.minOf { it.reps }
     val maxReps = sets.maxOf { it.reps }

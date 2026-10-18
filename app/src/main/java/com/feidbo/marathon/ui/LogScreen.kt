@@ -89,6 +89,7 @@ fun LogScreen(state: UiState, dayIndex: Int, onBack: () -> Unit, onSave: (RunLog
     var effort by remember { mutableStateOf((existingRun?.effort ?: defaultEffort(day.run)).toFloat()) }
     var pain by remember { mutableStateOf(existingRun?.pain ?: false) }
     var didRun by remember { mutableStateOf(existing == null || existingRun != null) }
+    var didLift by remember { mutableStateOf(existing == null || existing.strength.isNotEmpty()) }
 
     val session = strengthSession(day.strength)
     val entries = remember {
@@ -182,16 +183,25 @@ fun LogScreen(state: UiState, dayIndex: Int, onBack: () -> Unit, onSave: (RunLog
 
             if (session != null) {
                 SectionCard {
-                    Text("🏋️  Strength", style = MaterialTheme.typography.titleLarge)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🏋️  Strength", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                        if (day.run.isRun) {
+                            Text("Lifted", style = MaterialTheme.typography.labelLarge)
+                            Spacer(Modifier.width(6.dp))
+                            Switch(checked = didLift, onCheckedChange = { didLift = it })
+                        }
+                    }
                     Text(session.effort, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(8.dp))
-                    RestTimer(session)
-                    entries.forEach { e -> ExerciseEditor(state, dayIndex, e) }
+                    if (didLift) {
+                        Spacer(Modifier.height(8.dp))
+                        RestTimer(session)
+                        entries.forEach { e -> ExerciseEditor(state, dayIndex, e) }
+                    }
                 }
             }
 
             val run = currentRun()
-            val lifts = entries.mapNotNull { it.toLog() }
+            val lifts = if (didLift) entries.mapNotNull { it.toLog() } else emptyList()
             val canSave = run != null || lifts.isNotEmpty() || (!day.run.isRun && session == null)
             Button(
                 onClick = { onSave(run, lifts) },

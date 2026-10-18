@@ -93,45 +93,54 @@ class Store(context: Context) {
         val logs = mutableMapOf<Int, DayLog>()
         val arr = o.optJSONArray("logs") ?: JSONArray()
         for (i in 0 until arr.length()) {
-            val l = arr.getJSONObject(i)
-            val run = l.optJSONObject("run")?.let { r ->
-                RunLog(
-                    distance = r.getDouble("distance"),
-                    paceSec = r.optIntOrNull("pace"),
-                    segmentPaceSec = r.optIntOrNull("segmentPace"),
-                    effort = r.optIntOrNull("effort"),
-                    pain = r.optBoolean("pain"),
-                    raceTimeSec = r.optIntOrNull("raceTime"),
-                )
-            }
-            val strength = l.optJSONArray("strength")?.let { a ->
-                (0 until a.length()).map { j ->
-                    val e = a.getJSONObject(j)
-                    val sets = e.getJSONArray("sets")
-                    ExerciseLog(
-                        exerciseId = e.getString("id"),
-                        sets = (0 until sets.length()).map { k ->
-                            val st = sets.getJSONObject(k)
-                            SetLog(st.getDouble("w"), st.getInt("r"))
-                        },
-                        feel = e.optString("feel").takeIf { it.isNotEmpty() }?.let { Feel.valueOf(it) },
-                        rir = e.optIntOrNull("rir"),
+            // One unreadable entry is skipped rather than losing the whole history.
+            val l = arr.optJSONObject(i) ?: continue
+            val status = enumOrNull<DayStatus>(l.optString("status")) ?: continue
+            try {
+                val run = l.optJSONObject("run")?.let { r ->
+                    RunLog(
+                        distance = r.getDouble("distance"),
+                        paceSec = r.optIntOrNull("pace"),
+                        segmentPaceSec = r.optIntOrNull("segmentPace"),
+                        effort = r.optIntOrNull("effort"),
+                        pain = r.optBoolean("pain"),
+                        raceTimeSec = r.optIntOrNull("raceTime"),
                     )
                 }
-            } ?: emptyList()
-            val day = l.getInt("day")
-            logs[day] = DayLog(
-                dayIndex = day,
-                status = DayStatus.valueOf(l.getString("status")),
-                run = run,
-                strength = strength,
-                missReason = l.optString("missReason").takeIf { it.isNotEmpty() }?.let { MissReason.valueOf(it) },
-                xp = l.optInt("xp"),
-                plannedMiles = if (l.has("plannedMiles")) l.getDouble("plannedMiles") else null,
-            )
+                val strength = l.optJSONArray("strength")?.let { a ->
+                    (0 until a.length()).map { j ->
+                        val e = a.getJSONObject(j)
+                        val sets = e.getJSONArray("sets")
+                        ExerciseLog(
+                            exerciseId = e.getString("id"),
+                            sets = (0 until sets.length()).map { k ->
+                                val st = sets.getJSONObject(k)
+                                SetLog(st.getDouble("w"), st.getInt("r"))
+                            },
+                            feel = enumOrNull<Feel>(e.optString("feel")),
+                            rir = e.optIntOrNull("rir"),
+                        )
+                    }
+                } ?: emptyList()
+                val day = l.getInt("day")
+                logs[day] = DayLog(
+                    dayIndex = day,
+                    status = status,
+                    run = run,
+                    strength = strength,
+                    missReason = enumOrNull<MissReason>(l.optString("missReason")),
+                    xp = l.optInt("xp"),
+                    plannedMiles = if (l.has("plannedMiles")) l.getDouble("plannedMiles") else null,
+                )
+            } catch (_: Exception) {
+                continue
+            }
         }
         return AppData(logs, stretch, settings, o.optBoolean("onboarded"))
     }
 
     private fun JSONObject.optIntOrNull(key: String): Int? = if (has(key) && !isNull(key)) getInt(key) else null
+
+    private inline fun <reified T : Enum<T>> enumOrNull(name: String?): T? =
+        enumValues<T>().firstOrNull { it.name == name }
 }
