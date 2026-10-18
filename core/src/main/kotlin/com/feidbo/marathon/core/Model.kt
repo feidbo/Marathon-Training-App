@@ -110,6 +110,7 @@ data class DayLog(
     val strength: List<ExerciseLog> = emptyList(),
     val missReason: MissReason? = null,
     val xp: Int = 0,
+    val plannedMiles: Double? = null,   // the distance the schedule asked for when this was logged
 )
 
 data class Settings(

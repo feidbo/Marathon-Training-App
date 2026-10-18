@@ -5,6 +5,7 @@ The plan document is in [`docs/`](docs/First_Marathon_Plan_Eugene_2027.md).
 
 ## What it does
 
+- **Tabs**: Today, Progress and Settings along the bottom.
 - **Today screen**: just today's workout. Distance, pace zone, effort, how it should feel, the strength
   routine with sets × reps, and the daily quad stretch with a 3-minute timer. Arrows step to other days
   so you can log one you missed.
@@ -37,7 +38,10 @@ The plan document is in [`docs/`](docs/First_Marathon_Plan_Eugene_2027.md).
   - always → no run more than 10% longer than your longest in the last 30 days (Frandsen 2025).
 
   The half-marathon week and the taper are never restructured, and the race is never shortened.
-- **Gamification**: XP, 11 levels, streaks (sick and pain days don't break them), 20 badges, confetti.
+- **Gamification**: XP with a level ring, 11 levels, streaks (sick and pain days don't break them), a daily
+  "quests" checklist with XP per item, a **Perfect Day** bonus (+10 XP for the workout plus the stretch), a
+  **Full Week** bonus (+50 XP), 23 badges with progress bars (including PR Breaker and Comeback Kid),
+  personal-record call-outs, confetti and an XP count-up.
 - **Progress screen**: totals, what you've done, what's coming up (adjusted days flagged), badges and
   strength benchmarks. Settings has the Mar 7 half-marathon → marathon-pace calculator (Riegel).
 

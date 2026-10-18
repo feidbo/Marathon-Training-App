@@ -23,6 +23,7 @@ import com.feidbo.marathon.core.completionStatus
 import com.feidbo.marathon.core.computeProgress
 import com.feidbo.marathon.core.formatMiles
 import com.feidbo.marathon.core.missAdvice
+import com.feidbo.marathon.core.personalRecords
 import com.feidbo.marathon.core.runFeedback
 import com.feidbo.marathon.core.shortDate
 import com.feidbo.marathon.data.AppData
@@ -52,6 +53,8 @@ data class Celebration(
     val tips: List<Tip> = emptyList(),
     val advice: List<String> = emptyList(),
     val planChanges: List<String> = emptyList(),
+    val prs: List<String> = emptyList(),
+    val streak: Int = 0,
 ) {
     enum class Kind { DONE, PARTIAL, REST, MISSED }
 }
@@ -63,6 +66,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _celebration = MutableStateFlow<Celebration?>(null)
     val celebration: StateFlow<Celebration?> = _celebration.asStateFlow()
+
+    /** A short "+5 XP" style message for small wins that don't deserve the full celebration. */
+    private val _toast = MutableStateFlow<Toast?>(null)
+    val toast: StateFlow<Toast?> = _toast.asStateFlow()
+
+    data class Toast(val text: String, val id: Long = System.nanoTime())
+
+    fun clearToast(t: Toast) {
+        if (_toast.value?.id == t.id) _toast.value = null
+    }
 
     private fun build(data: AppData, today: LocalDate): UiState {
         val schedule = Schedule(data.logs, data.settings, today)
@@ -91,8 +104,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun saveWorkout(dayIndex: Int, run: RunLog?, strength: List<ExerciseLog>) {
         val sd = _state.value.schedule[dayIndex] ?: return
         val status = completionStatus(sd.day, run, strength)
-        val draft = DayLog(dayIndex, status, run, strength)
+        val draft = DayLog(dayIndex, status, run, strength, plannedMiles = sd.day.miles.takeIf { sd.day.run.isRun })
         val log = draft.copy(xp = Game.xpFor(sd.day, draft))
+        val prs = personalRecords(dayIndex, strength, _state.value.logs).map { it.name }
         val (before, after) = update { d ->
             var settings = d.settings
             // The Mar 7 half sets marathon pace for the rest of the plan.
@@ -112,6 +126,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             newBadges = newBadges(before, after),
             tips = tips,
             planChanges = planChanges(before, after),
+            prs = prs,
+            streak = after.progress.streak,
         )
     }
 
@@ -163,18 +179,22 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             d.copy(stretchDays = if (wasDone) d.stretchDays - dayIndex else d.stretchDays + dayIndex)
         }
         if (!wasDone) {
-            val rest = !sd.day.isTrainingDay
+            val gained = after.progress.xp - before.progress.xp
+            val perfect = after.progress.perfectDays > before.progress.perfectDays
             val badges = newBadges(before, after)
             val levelUp = levelUp(before, after)
-            // Small wins get a small celebration; rest days and milestones get the full one.
-            if (rest || badges.isNotEmpty() || levelUp != null) {
+            // Small wins get a toast; rest days and milestones get the full celebration.
+            if (!sd.day.isTrainingDay || badges.isNotEmpty() || levelUp != null) {
                 _celebration.value = Celebration(
                     kind = Celebration.Kind.REST,
-                    title = Cheers.forRest(dayIndex),
-                    xp = after.progress.xp - before.progress.xp,
+                    title = if (perfect) "Perfect day! ✨" else Cheers.forRest(dayIndex),
+                    xp = gained,
                     levelUp = levelUp,
                     newBadges = badges,
+                    streak = after.progress.streak,
                 )
+            } else {
+                _toast.value = Toast(if (perfect) "✨ Perfect day! +$gained XP" else "🧘 Stretch done · +$gained XP")
             }
         }
     }

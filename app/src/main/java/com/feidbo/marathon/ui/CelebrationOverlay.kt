@@ -2,7 +2,12 @@ package com.feidbo.marathon.ui
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.height
+import com.feidbo.marathon.ui.theme.GoldDeep
+import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -42,10 +47,13 @@ import com.feidbo.marathon.ui.theme.StatusColors
 fun CelebrationOverlay(c: Celebration, onDismiss: () -> Unit) {
     val haptics = LocalHapticFeedback.current
     val pop = remember { Animatable(0.6f) }
+    val xpShown = remember { Animatable(0f) }
     LaunchedEffect(c) {
         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         pop.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow))
     }
+    LaunchedEffect(c) { xpShown.animateTo(c.xp.toFloat(), tween(1100, delayMillis = 250)) }
+    BackHandler(onBack = onDismiss)
     Box(
         Modifier
             .fillMaxSize()
@@ -80,7 +88,16 @@ fun CelebrationOverlay(c: Celebration, onDismiss: () -> Unit) {
                 )
                 Text(c.title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
                 if (c.xp > 0) {
-                    Pill("+${c.xp} XP", Gold, Color.Black)
+                    Text(
+                        "+${xpShown.value.roundToInt()} XP",
+                        fontSize = 40.sp, fontWeight = FontWeight.Black, color = GoldDeep,
+                    )
+                }
+                if (c.streak >= 2 && c.kind != Celebration.Kind.MISSED) {
+                    Pill("🔥 ${c.streak}-workout streak", MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
+                }
+                c.prs.forEach { name ->
+                    Pill("📈 New PR: $name!", StatusColors.done, Color.White)
                 }
                 c.levelUp?.let {
                     Text(
@@ -116,7 +133,7 @@ fun CelebrationOverlay(c: Celebration, onDismiss: () -> Unit) {
                         c.planChanges.forEach { Text("• $it", style = MaterialTheme.typography.bodyMedium) }
                     }
                 }
-                Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth().height(52.dp)) {
                     Text(if (c.kind == Celebration.Kind.MISSED) "Got it" else "Let's go!")
                 }
             }

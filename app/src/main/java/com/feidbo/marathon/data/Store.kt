@@ -54,6 +54,7 @@ class Store(context: Context) {
                     put("status", log.status.name)
                     put("xp", log.xp)
                     log.missReason?.let { put("missReason", it.name) }
+                    log.plannedMiles?.let { put("plannedMiles", it) }
                     log.run?.let { r ->
                         put("run", JSONObject().apply {
                             put("distance", r.distance)
@@ -126,6 +127,7 @@ class Store(context: Context) {
                 strength = strength,
                 missReason = l.optString("missReason").takeIf { it.isNotEmpty() }?.let { MissReason.valueOf(it) },
                 xp = l.optInt("xp"),
+                plannedMiles = if (l.has("plannedMiles")) l.getDouble("plannedMiles") else null,
             )
         }
         return AppData(logs, stretch, settings, o.optBoolean("onboarded"))

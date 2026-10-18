@@ -28,7 +28,7 @@ fun runFeedback(day: PlannedDay, log: RunLog, settings: Settings, longestPrior30
     }
 
     // Distance against the plan.
-    if (day.run.isRun && day.miles > 0 && day.run != RunKind.RACE) {
+    if (day.run.isRun && day.miles > 0 && day.run != RunKind.RACE && day.run != RunKind.HALF_RACE) {
         val ratio = log.distance / day.miles
         when {
             longestPrior30 > 0 && log.distance > longestPrior30 * 1.10 && log.distance > day.miles * 1.05 ->

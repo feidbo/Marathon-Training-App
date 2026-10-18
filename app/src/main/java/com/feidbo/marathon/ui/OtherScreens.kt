@@ -197,7 +197,7 @@ fun ExerciseScreen(state: UiState, exerciseId: String, dayIndex: Int, onBack: ()
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(state: UiState, onBack: () -> Unit, onSave: (Settings) -> Unit, onReset: () -> Unit) {
+fun SettingsScreen(state: UiState, onSaved: () -> Unit, onSave: (Settings) -> Unit, onReset: () -> Unit) {
     val s = state.settings
     var mpMin by remember { mutableStateOf((s.marathonPaceSec / 60).toString()) }
     var mpSec by remember { mutableStateOf((s.marathonPaceSec % 60).toString().padStart(2, '0')) }
@@ -211,7 +211,6 @@ fun SettingsScreen(state: UiState, onBack: () -> Unit, onSave: (Settings) -> Uni
         topBar = {
             TopAppBar(
                 title = { Text("Settings") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
             )
         },
     ) { padding ->
@@ -266,7 +265,7 @@ fun SettingsScreen(state: UiState, onBack: () -> Unit, onSave: (Settings) -> Uni
                             preplanLongestMiles = longest.toDoubleOrNull()?.takeIf { it in 0.5..30.0 } ?: s.preplanLongestMiles,
                         ),
                     )
-                    onBack()
+                    onSaved()
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Save") }

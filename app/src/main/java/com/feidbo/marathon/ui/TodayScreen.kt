@@ -23,11 +23,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.outlined.Circle
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +44,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -50,7 +53,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.feidbo.marathon.core.AdjustmentKind
+import com.feidbo.marathon.core.DayLog
 import com.feidbo.marathon.core.DayStatus
+import com.feidbo.marathon.core.ExerciseLog
+import com.feidbo.marathon.core.Exercises
+import com.feidbo.marathon.core.Game
+import com.feidbo.marathon.core.RunLog
+import com.feidbo.marathon.core.SetLog
 import com.feidbo.marathon.core.Paces
 import com.feidbo.marathon.core.Plan
 import com.feidbo.marathon.core.STRENGTH_NOTE
@@ -69,6 +78,7 @@ import com.feidbo.marathon.core.loadAdviceFor
 import com.feidbo.marathon.core.workoutTitle
 import com.feidbo.marathon.ui.theme.BigNumber
 import com.feidbo.marathon.ui.theme.Gold
+import com.feidbo.marathon.ui.theme.GoldDeep
 import com.feidbo.marathon.ui.theme.Green
 import com.feidbo.marathon.ui.theme.GreenDark
 import com.feidbo.marathon.ui.theme.StatusColors
@@ -158,44 +168,45 @@ private fun Header(state: UiState, onOpenProgress: () -> Unit) {
     val today = state.today
     val dayNumber = Plan.indexOf(today) + 1
     val toRace = ChronoUnit.DAYS.between(today, Plan.raceDay)
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    val xp by animateIntAsState(p.xp, tween(900), label = "xp")
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .clickable(onClick = onOpenProgress)
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LevelRing(p.level.level, p.level.progress)
+        Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
+            Text(p.level.name, style = MaterialTheme.typography.titleMedium)
             Text(
-                when {
-                    dayNumber < 1 -> "Starts in ${1 - dayNumber} days"
-                    dayNumber > Plan.days.size -> "Plan complete"
-                    else -> "Day $dayNumber of ${Plan.days.size}"
-                },
-                style = MaterialTheme.typography.titleLarge,
+                p.level.nextXp?.let { "$xp XP · ${it - p.xp} to level ${p.level.level + 1}" } ?: "$xp XP · max level",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Text(
-                if (toRace > 0) "$toRace days to Eugene 🦆" else if (toRace == 0L) "RACE DAY! 🏁" else "Marathoner 🏅",
-                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Pill(
+                    when {
+                        dayNumber < 1 -> "Starts in ${1 - dayNumber}d"
+                        dayNumber > Plan.days.size -> "Plan complete"
+                        else -> "Day $dayNumber/${Plan.days.size}"
+                    },
+                    MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                Pill(
+                    if (toRace > 0) "🦆 ${toRace}d to Eugene" else if (toRace == 0L) "🏁 RACE DAY" else "🏅 Done",
+                    MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
-        Pill("🔥 ${p.streak}", MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
-        Spacer(Modifier.width(6.dp))
-        FilledTonalButton(onClick = onOpenProgress, contentPadding = ButtonDefaults.ButtonWithIconContentPadding) {
-            Icon(Icons.Filled.Insights, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-            Text("Progress")
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(if (p.streak > 0) "🔥" else "🌱", fontSize = 28.sp)
+            Text("${p.streak}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+            Text("streak", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-    }
-    Column(Modifier.clickable(onClick = onOpenProgress)) {
-        Row {
-            Text("Lv ${p.level.level} · ${p.level.name}", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-            Text(
-                p.level.nextXp?.let { "${p.xp} / $it XP" } ?: "${p.xp} XP",
-                style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Spacer(Modifier.height(4.dp))
-        LinearProgressIndicator(
-            progress = { p.level.progress },
-            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(50)),
-            color = Gold,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-        )
     }
 }
 
@@ -243,6 +254,34 @@ private fun DayContent(
     if (log != null) LoggedCard(state, sd, onLog, onUndo)
 
     WorkoutHero(state, sd)
+
+    if (day.isTrainingDay || day.date <= state.today) QuestsCard(state, sd)
+
+    if (log == null && day.isTrainingDay) {
+        if (isFuture) {
+            Text("Coming up — you can log this on the day.", style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp))
+        } else {
+            val preview = Game.xpFor(day, DayLog(day.index, DayStatus.DONE, if (day.run.isRun) RunLog(day.miles) else null,
+                if (day.strength.isPlanned) Exercises.routine.map { ExerciseLog(it.id, listOf(SetLog(1.0, 1))) } else emptyList()))
+            Button(
+                onClick = { onLog(day.index) },
+                modifier = Modifier.fillMaxWidth().height(60.dp),
+                shape = RoundedCornerShape(18.dp),
+            ) {
+                Icon(Icons.Filled.CheckCircle, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Log what I did", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(10.dp))
+                Pill("+$preview XP", Gold, Color.Black)
+            }
+            OutlinedButton(
+                onClick = { onMissed(day.index) },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) { Text("I couldn't do it today") }
+        }
+    }
 
     strengthSession(day.strength)?.let { session ->
         SectionCard {
@@ -294,26 +333,52 @@ private fun DayContent(
     }
 
     StretchCard(state, sd, onToggleStretch, onOpenExercise)
+}
 
-    if (log == null && day.isTrainingDay) {
-        if (isFuture) {
-            Text("Coming up — you can log this on the day.", style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp))
-        } else {
-            Button(
-                onClick = { onLog(day.index) },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                Icon(Icons.Filled.CheckCircle, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Log what I did", fontSize = 18.sp)
+/** Today's checklist: each part of the day with its XP, plus the perfect-day bonus. */
+@Composable
+private fun QuestsCard(state: UiState, sd: ScheduledDay) {
+    val day = sd.day
+    val log = state.logs[day.index]
+    val stretched = day.index in state.data.stretchDays
+    data class Quest(val emoji: String, val label: String, val xp: Int, val done: Boolean)
+    val quests = buildList {
+        if (day.run.isRun) {
+            val runXp = Game.xpFor(day, DayLog(day.index, DayStatus.DONE, RunLog(day.miles)))
+            add(Quest("🏃", "${workoutTitle(day)} · ${formatMiles(day.miles)} mi", runXp,
+                log?.status != DayStatus.MISSED && (log?.run?.distance ?: 0.0) > 0))
+        }
+        if (day.strength.isPlanned) add(Quest("🏋️", "Strength routine", 25, log?.strength?.any { e -> e.sets.any { it.reps > 0 } } == true))
+        add(Quest("🧘", "Quad stretch · 3 min", Game.stretchXp(day), stretched))
+        if (day.isTrainingDay) add(Quest("✨", "Perfect day bonus", Game.PERFECT_DAY_XP, log?.status == DayStatus.DONE && stretched))
+    }
+    val done = quests.count { it.done }
+    SectionCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Today's quests", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text("$done / ${quests.size}", style = MaterialTheme.typography.titleMedium,
+                color = if (done == quests.size) StatusColors.done else MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(Modifier.height(6.dp))
+        val progress by animateFloatAsState(done / quests.size.toFloat(), tween(600), label = "quests")
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(50)),
+            color = StatusColors.done, trackColor = MaterialTheme.colorScheme.surfaceVariant,
+        )
+        Spacer(Modifier.height(4.dp))
+        quests.forEach { q ->
+            Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    if (q.done) Icons.Filled.CheckCircle else Icons.Outlined.Circle, contentDescription = null,
+                    tint = if (q.done) StatusColors.done else MaterialTheme.colorScheme.outline, modifier = Modifier.size(22.dp),
+                )
+                Spacer(Modifier.width(10.dp))
+                Text("${q.emoji}  ${q.label}", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f),
+                    color = if (q.done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
+                Text("+${q.xp}", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
+                    color = if (q.done) StatusColors.done else GoldDeep)
             }
-            OutlinedButton(
-                onClick = { onMissed(day.index) },
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) { Text("I couldn't do it today") }
         }
     }
 }
@@ -334,6 +399,10 @@ private fun WorkoutHero(state: UiState, sd: ScheduledDay) {
             )
             .padding(20.dp),
     ) {
+        Text(
+            heroEmoji(day.run, day.strength.isPlanned), fontSize = 110.sp,
+            modifier = Modifier.align(Alignment.TopEnd).offset(x = 18.dp, y = (-12).dp).alpha(0.16f),
+        )
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -451,6 +520,16 @@ private fun LoggedCard(state: UiState, sd: ScheduledDay, onEdit: (Int) -> Unit, 
     val tips: List<Tip> = log.run?.let {
         runFeedback(sd.day, it, state.settings, state.schedule.longestInPrior30(sd.date))
     }.orEmpty().filter { it.level != TipLevel.GREAT }
+    var confirmUndo by remember { mutableStateOf(false) }
+    if (confirmUndo) {
+        AlertDialog(
+            onDismissRequest = { confirmUndo = false },
+            title = { Text("Undo this log?") },
+            text = { Text("This removes what you logged for this day, along with its XP.") },
+            confirmButton = { TextButton(onClick = { confirmUndo = false; onUndo(sd.index) }) { Text("Undo") } },
+            dismissButton = { TextButton(onClick = { confirmUndo = false }) { Text("Keep it") } },
+        )
+    }
     SectionCard(container = color.copy(alpha = 0.12f)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(emoji, fontSize = 28.sp)
@@ -475,7 +554,7 @@ private fun LoggedCard(state: UiState, sd: ScheduledDay, onEdit: (Int) -> Unit, 
         }
         Row {
             if (log.status != DayStatus.MISSED) TextButton(onClick = { onEdit(sd.index) }) { Text("Edit") }
-            TextButton(onClick = { onUndo(sd.index) }) { Text("Undo") }
+            TextButton(onClick = { confirmUndo = true }) { Text("Undo") }
         }
     }
 }
@@ -523,4 +602,16 @@ private fun WeekStrip(state: UiState, date: LocalDate, onDateChange: (LocalDate)
             }
         }
     }
+}
+
+private fun heroEmoji(run: RunKind, strength: Boolean): String = when (run) {
+    RunKind.REST -> "😴"
+    RunKind.NONE -> if (strength) "🏋️" else "😴"
+    RunKind.HILLS -> "⛰️"
+    RunKind.TEMPO, RunKind.FARTLEK -> "⚡"
+    RunKind.MARATHON_PACE -> "🎯"
+    RunKind.LONG -> "🛣️"
+    RunKind.HALF_RACE -> "🥈"
+    RunKind.RACE -> "🏅"
+    else -> "🏃"
 }

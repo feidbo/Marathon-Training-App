@@ -16,11 +16,11 @@ object Game {
         600 to "Hill Hunter",
         1000 to "Tempo Tamer",
         1500 to "Long Hauler",
-        2100 to "Iron Legs",
-        2800 to "Pace Master",
-        3600 to "Twenty Miler",
-        4500 to "Taper Titan",
-        5400 to "Track Town Legend",
+        2200 to "Iron Legs",
+        3000 to "Pace Master",
+        4000 to "Twenty Miler",
+        5200 to "Taper Titan",
+        6500 to "Track Town Legend",
     )
 
     fun level(xp: Int): LevelInfo {
@@ -68,8 +68,14 @@ object Game {
         Badge("half", "🥈", "Half Hero", "Run the Mar 7 half marathon"),
         Badge("twenty", "🏔️", "Twenty Club", "Run 20 miles"),
         Badge("taper", "🧘‍♂️", "Trust the Taper", "Finish the taper"),
+        Badge("perfect_10", "✨", "Perfect 10", "10 perfect days: workout + stretch"),
+        Badge("comeback", "🦅", "Comeback Kid", "Train again after 3+ missed workouts"),
+        Badge("pr", "📈", "PR Breaker", "Beat your best estimated max on a lift"),
         Badge("marathoner", "🏅", "Marathoner", "Finish the Eugene Marathon"),
     )
+
+    const val PERFECT_DAY_XP = 10
+    const val FULL_WEEK_XP = 50
     fun badge(id: String) = badges.first { it.id == id }
 }
 
@@ -84,6 +90,10 @@ data class Progress(
     val workoutsPlannedSoFar: Int,
     val strengthSessions: Int,
     val badges: Set<String>,
+    val perfectDays: Int = 0,
+    val fullWeeks: Int = 0,
+    /** Progress toward countable badges: id → (current, target). */
+    val badgeProgress: Map<String, Pair<Double, Double>> = emptyMap(),
 )
 
 fun computeProgress(schedule: Schedule, logs: Map<Int, DayLog>, stretchDays: Set<Int>, today: LocalDate): Progress {
@@ -100,7 +110,10 @@ fun computeProgress(schedule: Schedule, logs: Map<Int, DayLog>, stretchDays: Set
     var tempos = 0
     var streak = 0
     var best = 0
+    var perfect = 0
+    var missedRun = 0
     val earned = mutableSetOf<String>()
+    val bestMax = mutableMapOf<String, Double>()
 
     for (sd in days) {
         val d = sd.day
@@ -114,12 +127,19 @@ fun computeProgress(schedule: Schedule, logs: Map<Int, DayLog>, stretchDays: Set
         }
         xp += log.xp
         if (log.status == DayStatus.MISSED) {
+            if (d.isTrainingDay) missedRun++
             // Sickness and pain shield the streak: resting when you should is the right call.
             if (log.missReason != MissReason.SICK_SYSTEMIC && log.missReason != MissReason.PAIN &&
                 log.missReason != MissReason.SICK_MILD) streak = 0
             continue
         }
         if (!d.isTrainingDay) continue
+        if (missedRun >= 3) earned += "comeback"
+        missedRun = 0
+        if (log.status == DayStatus.DONE && d.index in stretchDays) {
+            perfect++
+            xp += Game.PERFECT_DAY_XP
+        }
         done++
         streak++
         best = maxOf(best, streak)
@@ -139,13 +159,27 @@ fun computeProgress(schedule: Schedule, logs: Map<Int, DayLog>, stretchDays: Set
         if (d.strength.isPlanned && log.strength.any { e -> e.sets.any { it.reps > 0 } }) {
             lifts++
             earned += "first_lift"
+            for (e in log.strength) {
+                val ex = Exercises.byId(e.exerciseId) ?: continue
+                val sets = e.sets.filter { it.reps > 0 }
+                if (ex.inverted || sets.isEmpty() || e.topWeight <= 0) continue
+                val max = estimatedOneRepMax(e.topWeight, sets.minOf { it.reps }, e.rir ?: 0)
+                val prev = bestMax[ex.id]
+                if (prev != null && max > prev + 0.5) earned += "pr"
+                if (prev == null || max > prev) bestMax[ex.id] = max
+            }
         }
     }
 
-    // Weeks fully completed.
+    // Weeks fully completed earn a bonus.
+    var fullWeeks = 0
     days.groupBy { it.original.week }.forEach { (_, wDays) ->
         val training = wDays.filter { it.day.isTrainingDay }
-        if (training.size >= 3 && training.all { logs[it.index]?.status == DayStatus.DONE }) earned += "week_complete"
+        if (training.size >= 3 && training.all { logs[it.index]?.status == DayStatus.DONE }) {
+            fullWeeks++
+            xp += Game.FULL_WEEK_XP
+            earned += "week_complete"
+        }
     }
     fun phaseReached(lastDate: LocalDate) = days.filter { it.date <= lastDate && it.day.isTrainingDay }
         .let { t -> t.isNotEmpty() && t.last().let { logs[it.index]?.status } in setOf(DayStatus.DONE, DayStatus.PARTIAL) }
@@ -153,6 +187,7 @@ fun computeProgress(schedule: Schedule, logs: Map<Int, DayLog>, stretchDays: Set
     if (phaseReached(LocalDate.of(2027, 2, 7))) earned += "phase_2"
     if (phaseReached(LocalDate.of(2027, 4, 24))) earned += "taper"
 
+    if (perfect >= 10) earned += "perfect_10"
     if (best >= 7) earned += "streak_7"
     if (best >= 21) earned += "streak_21"
     if (stretches >= 30) earned += "stretch_30"
@@ -164,7 +199,22 @@ fun computeProgress(schedule: Schedule, logs: Map<Int, DayLog>, stretchDays: Set
     if (miles >= 250) earned += "miles_250"
     if (miles >= 500) earned += "miles_500"
 
-    return Progress(xp, Game.level(xp), streak, best, miles, longest, done, plannedSoFar, lifts, earned)
+    val badgeProgress = mapOf(
+        "streak_7" to (best.toDouble() to 7.0),
+        "streak_21" to (best.toDouble() to 21.0),
+        "stretch_30" to (stretches.toDouble() to 30.0),
+        "easy_10" to (easyInZone.toDouble() to 10.0),
+        "hills_3" to (hills.toDouble() to 3.0),
+        "tempo_5" to (tempos.toDouble() to 5.0),
+        "lift_20" to (lifts.toDouble() to 20.0),
+        "double_digits" to (longest to 10.0),
+        "twenty" to (longest to 20.0),
+        "miles_100" to (miles to 100.0),
+        "miles_250" to (miles to 250.0),
+        "miles_500" to (miles to 500.0),
+        "perfect_10" to (perfect.toDouble() to 10.0),
+    )
+    return Progress(xp, Game.level(xp), streak, best, miles, longest, done, plannedSoFar, lifts, earned, perfect, fullWeeks, badgeProgress)
 }
 
 object Cheers {

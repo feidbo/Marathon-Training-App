@@ -263,3 +263,55 @@ fun EmptyNote(text: String) {
 
 @Composable
 fun SpacerH(h: Dp) = Spacer(Modifier.height(h))
+
+/** Circular level badge: the level number inside a ring that fills toward the next level. */
+@Composable
+fun LevelRing(level: Int, progress: Float, modifier: Modifier = Modifier, diameter: Dp = 64.dp) {
+    val animated by androidx.compose.animation.core.animateFloatAsState(progress, tween(900), label = "level")
+    val track = MaterialTheme.colorScheme.surfaceVariant
+    Box(modifier.size(diameter), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) {
+            val stroke = androidx.compose.ui.graphics.drawscope.Stroke(diameter.toPx() * 0.11f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            drawArc(track, 0f, 360f, false, style = stroke)
+            drawArc(
+                androidx.compose.ui.graphics.Brush.sweepGradient(listOf(Gold, com.feidbo.marathon.ui.theme.GoldDeep, Gold)),
+                -90f, 360f * animated.coerceIn(0f, 1f), false, style = stroke,
+            )
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("LV", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("$level", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+        }
+    }
+}
+
+/** A pill that slides in at the top of the screen for small wins. */
+@Composable
+fun XpToast(text: String?, key: Any?, onShown: () -> Unit, modifier: Modifier = Modifier) {
+    var shown by remember { mutableStateOf<String?>(null) }
+    var last by remember { mutableStateOf("") }
+    LaunchedEffect(key) {
+        if (text != null) {
+            shown = text
+            last = text
+            delay(1800)
+            shown = null
+            onShown()
+        }
+    }
+    androidx.compose.animation.AnimatedVisibility(
+        visible = shown != null,
+        enter = androidx.compose.animation.slideInVertically { -it } + androidx.compose.animation.fadeIn(),
+        exit = androidx.compose.animation.slideOutVertically { -it } + androidx.compose.animation.fadeOut(),
+        modifier = modifier,
+    ) {
+        Box(
+            Modifier
+                .clip(RoundedCornerShape(50))
+                .background(Gold)
+                .padding(horizontal = 18.dp, vertical = 10.dp),
+        ) {
+            Text(last, color = Color.Black, fontWeight = FontWeight.Bold)
+        }
+    }
+}

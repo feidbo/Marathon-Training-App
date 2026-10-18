@@ -166,6 +166,28 @@ class ScheduleTest {
         assertTrue(week7.sumOf { it.day.miles } < 20.0 * 0.9)
     }
 
+    @Test fun adjustedDistanceSticksAfterLogging() {
+        // Dec 13's long run was capped at 5.5; once logged (and in the past) it should still read 5.5.
+        val logs = Plan.days.filter { it.date < LocalDate.of(2026, 12, 7) && it.isTrainingDay }.associate {
+            it.index to if (it.date == LocalDate.of(2026, 12, 6)) missed(it) else done(it)
+        }.toMutableMap()
+        val dec13 = Plan.dayOn(LocalDate.of(2026, 12, 13))!!
+        logs[dec13.index] = DayLog(dec13.index, DayStatus.DONE, RunLog(5.5), plannedMiles = 5.5)
+        val later = Schedule(logs, settings, LocalDate.of(2026, 12, 20))
+        assertEquals(5.5, later.on(dec13.date)!!.day.miles, 0.0)
+    }
+
+    @Test fun repeatedWeekStaysAfterLogging() {
+        val today = LocalDate.of(2026, 12, 10)
+        val logs = Plan.days.filter { it.date < LocalDate.of(2026, 12, 7) && it.isTrainingDay }.associate {
+            it.index to if (it.date >= LocalDate.of(2026, 11, 23)) missed(it, MissReason.SICK_SYSTEMIC) else done(it)
+        }.toMutableMap()
+        val wed = Plan.dayOn(LocalDate.of(2026, 12, 9))!!
+        logs[wed.index] = DayLog(wed.index, DayStatus.DONE, RunLog(3.5))
+        val s = Schedule(logs, settings, today)
+        assertEquals(Plan.dayOn(LocalDate.of(2026, 11, 18))!!.text, s.on(wed.date)!!.day.text)
+    }
+
     @Test fun preplanLongestRunCapsWeekZero() {
         val s = Schedule(emptyMap(), Settings(preplanLongestMiles = 2.5), LocalDate.of(2026, 10, 17))
         val sunday = s.on(LocalDate.of(2026, 10, 18))!!
@@ -201,6 +223,15 @@ class FeedbackTest {
         val mpDay = Plan.dayOn(LocalDate.of(2027, 1, 27))!!
         val tips = runFeedback(mpDay, RunLog(7.0, paceSec = 11 * 60, segmentPaceSec = 9 * 60 + 40), settings, 10.0)
         assertTrue(tips.any { it.level == TipLevel.WARN && it.text.contains("faster than goal") })
+    }
+
+    @Test fun personalRecordDetected() {
+        val mon = Plan.dayOn(LocalDate.of(2026, 10, 19))!!
+        val thu = Plan.dayOn(LocalDate.of(2026, 10, 22))!!
+        val logs = mapOf(mon.index to DayLog(mon.index, DayStatus.DONE, strength = listOf(ExerciseLog("leg_press", listOf(SetLog(100.0, 12)), rir = 3))))
+        val prs = personalRecords(thu.index, listOf(ExerciseLog("leg_press", listOf(SetLog(110.0, 12)), rir = 3)), logs)
+        assertEquals("leg_press", prs.single().id)
+        assertTrue(personalRecords(mon.index, logs[mon.index]!!.strength, logs).isEmpty())
     }
 
     @Test fun strengthTooHeavyAndTooLight() {
@@ -310,6 +341,34 @@ class GameTest {
         assertEquals(1, Game.level(0).level)
         assertEquals(2, Game.level(150).level)
         assertFalse(Game.level(150).progress > 1f)
+    }
+
+    @Test fun halfMarathonAt13Point1IsDone() {
+        val half = Plan.dayOn(LocalDate.of(2027, 3, 7))!!
+        assertEquals(DayStatus.DONE, completionStatus(half, RunLog(13.1, raceTimeSec = 7800), emptyList()))
+        assertTrue(runFeedback(half, RunLog(13.1, raceTimeSec = 7800), Settings(), 14.5).none { it.text.contains("short") })
+    }
+
+    @Test fun perfectDaysFullWeeksComebacksAndPrs() {
+        val today = LocalDate.of(2026, 11, 2)
+        val week1 = Plan.weekDays(1).filter { it.isTrainingDay }
+        val week2 = Plan.weekDays(2).filter { it.isTrainingDay }
+        val logs = mutableMapOf<Int, DayLog>()
+        // Week 1 all done, with lifts that get stronger.
+        week1.forEachIndexed { i, d ->
+            logs[d.index] = DayLog(d.index, DayStatus.DONE, RunLog(d.miles),
+                if (d.strength.isPlanned) Exercises.routine.map { ExerciseLog(it.id, listOf(SetLog(100.0 + i * 10, 12)), rir = 3) } else emptyList())
+        }
+        // Week 2: three misses, then a comeback on Sunday.
+        week2.dropLast(1).forEach { logs[it.index] = DayLog(it.index, DayStatus.MISSED, missReason = MissReason.BUSY) }
+        week2.last().let { logs[it.index] = DayLog(it.index, DayStatus.DONE, RunLog(it.miles)) }
+        val stretch = week1.map { it.index }.toSet()
+        val p = computeProgress(Schedule(logs, Settings(), today), logs, stretch, today)
+        assertEquals(week1.size, p.perfectDays)
+        assertEquals(1, p.fullWeeks)
+        assertTrue("comeback" in p.badges)
+        assertTrue("pr" in p.badges)
+        assertTrue("week_complete" in p.badges)
     }
 
     @Test fun streakShieldedBySickness() {

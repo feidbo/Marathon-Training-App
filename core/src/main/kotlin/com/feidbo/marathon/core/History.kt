@@ -3,7 +3,12 @@ package com.feidbo.marathon.core
 /** Whether a logged day counts as fully done or partly done. */
 fun completionStatus(day: PlannedDay, run: RunLog?, strength: List<ExerciseLog>): DayStatus {
     if (!day.isTrainingDay) return DayStatus.DONE
-    val ranEnough = !day.run.isRun || (run != null && run.distance >= day.miles * 0.9)
+    val required = when (day.run) {
+        RunKind.HALF_RACE -> 13.1                // the plan's 15.5 includes warm-up and cool-down
+        RunKind.RACE -> 26.0                     // GPS often reads a little short or long
+        else -> day.miles * 0.9
+    }
+    val ranEnough = !day.run.isRun || (run != null && run.distance >= required - 0.01)
     val lifted = !day.strength.isPlanned || strength.count { e -> e.sets.any { it.reps > 0 } } >= 4
     return if (ranEnough && lifted) DayStatus.DONE else DayStatus.PARTIAL
 }

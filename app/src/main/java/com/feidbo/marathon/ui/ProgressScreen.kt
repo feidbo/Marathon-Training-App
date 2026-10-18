@@ -17,12 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -63,9 +58,7 @@ import java.time.LocalDate
 @Composable
 fun ProgressScreen(
     state: UiState,
-    onBack: () -> Unit,
     onOpenDay: (LocalDate) -> Unit,
-    onOpenSettings: () -> Unit,
     onOpenExercise: (String) -> Unit,
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
@@ -74,8 +67,6 @@ fun ProgressScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Your progress") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-                actions = { IconButton(onClick = onOpenSettings) { Icon(Icons.Filled.Settings, "Settings") } },
             )
         },
     ) { padding ->
@@ -153,6 +144,11 @@ private fun Summary(state: UiState) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Stat("🔥", "${p.streak}", "streak (best ${p.bestStreak})", Modifier.weight(1f))
         Stat("📏", formatMiles(p.longestRun), "longest run", Modifier.weight(1f))
+    }
+    Spacer(Modifier.height(10.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Stat("✨", "${p.perfectDays}", "perfect days", Modifier.weight(1f))
+        Stat("📅", "${p.fullWeeks}", "full weeks", Modifier.weight(1f))
     }
     Spacer(Modifier.height(10.dp))
     val planMiles = state.schedule.days.sumOf { it.day.miles }
@@ -247,6 +243,20 @@ private fun BadgeGrid(state: UiState) {
                             modifier = Modifier.fillMaxWidth())
                         Text(b.description, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth())
+                        val prog = state.progress.badgeProgress[b.id]
+                        if (!has && prog != null && prog.first > 0) {
+                            Spacer(Modifier.height(6.dp))
+                            LinearProgressIndicator(
+                                progress = { (prog.first / prog.second).toFloat().coerceIn(0f, 1f) },
+                                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)),
+                                color = Gold, trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            )
+                            Text(
+                                "${formatMiles(Math.round(prog.first * 10) / 10.0)} / ${formatMiles(prog.second)}",
+                                style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     }
                 }
                 repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }

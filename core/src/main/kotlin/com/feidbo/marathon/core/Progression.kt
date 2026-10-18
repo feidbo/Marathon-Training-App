@@ -159,6 +159,21 @@ private fun twoForTwo(history: List<ExerciseHistoryEntry>, last: ExerciseHistory
     return abs(prev.log.topWeight - last.log.topWeight) < 0.01 && prevMin >= target
 }
 
+/**
+ * Lifts in [newLogs] (for day [dayIndex]) that beat the best estimated max logged on any earlier day.
+ * Assisted pull-ups are skipped: their "weight" is help, not load.
+ */
+fun personalRecords(dayIndex: Int, newLogs: List<ExerciseLog>, logs: Map<Int, DayLog>): List<Exercise> =
+    newLogs.mapNotNull { e ->
+        val ex = Exercises.byId(e.exerciseId)?.takeIf { !it.inverted } ?: return@mapNotNull null
+        fun max(l: ExerciseLog): Double? = l.sets.filter { it.reps > 0 }.takeIf { it.isNotEmpty() && l.topWeight > 0 }
+            ?.let { estimatedOneRepMax(l.topWeight, it.minOf { s -> s.reps }, l.rir ?: 0) }
+        val now = max(e) ?: return@mapNotNull null
+        val before = exerciseHistory(ex.id, logs).filter { it.dayIndex != dayIndex }.mapNotNull { max(it.log) }.maxOrNull()
+            ?: return@mapNotNull null
+        ex.takeIf { now > before + 0.5 }
+    }
+
 /** Load advice for a strength day, using everything logged before it. */
 fun loadAdviceFor(rx: Prescription, day: PlannedDay, logs: Map<Int, DayLog>): LoadAdvice? =
     loadAdvice(rx, day.strength, day.date, exerciseHistory(rx.exercise.id, logs).filter { it.dayIndex < day.index })

@@ -53,7 +53,9 @@ class Schedule(
     private val today: LocalDate,
     plan: List<PlannedDay> = Plan.days,
 ) {
-    val notices = mutableListOf<String>()
+    private val _notices = mutableListOf<String>()
+    /** Plain-language explanations of any restructuring, oldest first. */
+    val notices: List<String> get() = _notices
     val days: List<ScheduledDay>
 
     init {
@@ -128,7 +130,7 @@ class Schedule(
                         "Dropped back two weeks after missed time: this week follows Week $source.")
                     changed += targetWeek
                 }
-                notices += if (changed.isEmpty()) "$missedText Ease back in and let the long-run rule guide your distances."
+                _notices += if (changed.isEmpty()) "$missedText Ease back in and let the long-run rule guide your distances."
                 else "$missedText Per the plan, you drop back two weeks: Week ${changed.joinToString(" and Week ")} " +
                     "now follow Weeks ${changed.indices.joinToString(" and ") { (base + it).toString() }}. Recheck your goal at the Mar 7 half."
             } else {
@@ -136,12 +138,12 @@ class Schedule(
                 val source = (gapWeek - 1 downTo 1).firstOrNull { it != 20 && weekCompleted(it, plan) }
                     ?: (gapWeek - 1 downTo 1).firstOrNull { it != 20 } ?: 1
                 if (target in Plan.protectedWeeks || target > 27 || source >= target) {
-                    notices += "$missedText Carry on with the plan; the long-run rule keeps your distances safe."
+                    _notices += "$missedText Carry on with the plan; the long-run rule keeps your distances safe."
                     continue
                 }
                 replaceWeek(working, plan, target, source, AdjustmentKind.REPEAT_WEEK,
                     "Repeating Week $source, your last full week, after missed time.")
-                notices += "$missedText Per the plan, Week $target repeats Week $source (your last full week), then you continue." +
+                _notices += "$missedText Per the plan, Week $target repeats Week $source (your last full week), then you continue." +
                     if (gap.spanDays > 14) " With this much time off in the last block, recheck your goal pace." else ""
             }
         }
@@ -155,7 +157,6 @@ class Schedule(
         for (i in working.indices) {
             val sd = working[i]
             if (sd.original.week != targetWeek) continue
-            if (logs.containsKey(sd.index)) continue // already done; history stays as it was
             val src = source[sd.date.dayOfWeek] ?: continue
             // Running comes from the source week; strength stays as planned for this date.
             val strengthNote = STRENGTH_NOTE.find(sd.original.text)?.value.orEmpty()
@@ -182,10 +183,10 @@ class Schedule(
         for (week in flagged.sorted()) {
             if (week in Plan.lighterWeeks || week in Plan.protectedWeeks || week > 24) continue
             if (working.any { it.original.week == week && it.adjustments.any { a -> a.kind != AdjustmentKind.LONG_RUN_CAP } }) continue
-            notices += "Signs of doing too much last week, so Week $week is about 15% lighter. Take an extra rest day if you need it."
+            _notices += "Signs of doing too much last week, so Week $week is about 15% lighter. Take an extra rest day if you need it."
             for (i in working.indices) {
                 val sd = working[i]
-                if (sd.original.week != week || !sd.day.run.isRun || logs.containsKey(sd.index)) continue
+                if (sd.original.week != week || !sd.day.run.isRun) continue
                 val miles = quarter(sd.day.miles * 0.85).coerceAtLeast(1.0)
                 working[i] = sd.copy(
                     day = sd.day.copy(miles = miles, text = rewriteMiles(sd.day.text, miles)),
@@ -205,8 +206,20 @@ class Schedule(
         for (i in working.indices) {
             val sd = working[i]
             val d = sd.day
-            if (!d.run.isRun || d.date < today || logs.containsKey(d.index)) continue
-            if (d.run == RunKind.RACE || d.run == RunKind.HALF_RACE) continue
+            if (!d.run.isRun || d.run == RunKind.RACE || d.run == RunKind.HALF_RACE) continue
+            val log = logs[d.index]
+            if (log != null || d.date < today) {
+                // Logged or past: keep whatever distance the schedule asked for at the time.
+                val planned = log?.plannedMiles
+                if (planned != null && planned < d.miles - 0.01) {
+                    working[i] = sd.copy(
+                        day = d.copy(miles = planned, text = rewriteMiles(d.text, planned)),
+                        adjustments = sd.adjustments + Adjustment(AdjustmentKind.LONG_RUN_CAP,
+                            "Shortened from ${formatMiles(d.miles)} to ${formatMiles(planned)} mi by the long-run rule."),
+                    )
+                }
+                continue
+            }
             val longest = longest30(d.date, working)
             val cap = longest * 1.10
             if (d.miles <= cap + 0.01) continue
@@ -226,13 +239,11 @@ class Schedule(
     }
 
     private fun longest30(date: LocalDate, working: List<ScheduledDay>): Double {
-        val from = date.minusDays(30)
-        var longest = if (from < Plan.start) settings.preplanLongestMiles else 0.0
-        for (sd in working) {
-            if (sd.date < from) continue
-            if (sd.date >= date) break
-            longest = maxOf(longest, milesRun(sd))
-        }
+        // Days are contiguous, so the 30-day window is a slice of indices.
+        val idx = Plan.indexOf(date)
+        val from = idx - 30
+        var longest = if (from < 0) settings.preplanLongestMiles else 0.0
+        for (i in maxOf(0, from) until minOf(idx, working.size)) longest = maxOf(longest, milesRun(working[i]))
         return longest
     }
 
