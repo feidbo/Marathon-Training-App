@@ -73,6 +73,12 @@ fun RestTimer(session: StrengthSession, modifier: Modifier = Modifier) {
         onDispose { view.keepScreenOn = false }
     }
 
+    fun nextRound() {
+        if (round < roundsInBlock) round++
+        else if (block < blocks.lastIndex) { block++; round = 1 }
+        else finished = true
+    }
+
     LaunchedEffect(endAt) {
         while (endAt > 0L) {
             remainingMs = (endAt - SystemClock.elapsedRealtime()).coerceAtLeast(0)
@@ -85,12 +91,6 @@ fun RestTimer(session: StrengthSession, modifier: Modifier = Modifier) {
             }
             delay(200)
         }
-    }
-
-    fun nextRound() {
-        if (round < roundsInBlock) round++
-        else if (block < blocks.lastIndex) { block++; round = 1 }
-        else finished = true
     }
 
     SectionCard(modifier, container = MaterialTheme.colorScheme.primaryContainer) {
