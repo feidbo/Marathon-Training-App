@@ -69,6 +69,7 @@ class Store(context: Context) {
                             put(JSONObject().apply {
                                 put("id", e.exerciseId)
                                 e.feel?.let { put("feel", it.name) }
+                                e.rir?.let { put("rir", it) }
                                 put("sets", JSONArray().apply {
                                     e.sets.forEach { s -> put(JSONObject().put("w", s.weight).put("r", s.reps)) }
                                 })
@@ -113,6 +114,7 @@ class Store(context: Context) {
                             SetLog(st.getDouble("w"), st.getInt("r"))
                         },
                         feel = e.optString("feel").takeIf { it.isNotEmpty() }?.let { Feel.valueOf(it) },
+                        rir = e.optIntOrNull("rir"),
                     )
                 }
             } ?: emptyList()

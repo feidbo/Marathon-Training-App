@@ -64,7 +64,8 @@ import com.feidbo.marathon.core.lastWorkingSet
 import com.feidbo.marathon.core.primaryTarget
 import com.feidbo.marathon.core.runFeedback
 import com.feidbo.marathon.core.strengthSession
-import com.feidbo.marathon.core.suggestedWeight
+import com.feidbo.marathon.core.LoadChange
+import com.feidbo.marathon.core.loadAdviceFor
 import com.feidbo.marathon.core.workoutTitle
 import com.feidbo.marathon.ui.theme.BigNumber
 import com.feidbo.marathon.ui.theme.Gold
@@ -256,8 +257,7 @@ private fun DayContent(
             session.items.forEachIndexed { i, rx ->
                 if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
                 val last = lastWorkingSet(rx.exercise.id, day.index, state.logs)
-                val prevRx = last?.let { strengthSession(it.strength)?.items?.firstOrNull { p -> p.exercise.id == rx.exercise.id } }
-                val suggested = suggestedWeight(rx, last?.log, day.strength, prevRx?.reps)
+                val advice = loadAdviceFor(rx, day, state.logs)
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -277,9 +277,14 @@ private fun DayContent(
                             },
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        if (suggested != null && suggested != last?.log?.topWeight) {
-                            Text("Try ${formatMiles(suggested)} lb today", style = MaterialTheme.typography.bodySmall, color = StatusColors.done,
-                                fontWeight = FontWeight.SemiBold)
+                        if (advice != null && state.logs[day.index] == null) {
+                            val up = advice.change == LoadChange.UP || advice.change == LoadChange.BIG_UP
+                            Text(
+                                "${if (up) "📈 " else ""}Today: ${formatMiles(advice.weight)} lb (${advice.deltaText})",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (up) StatusColors.done else MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold,
+                            )
                         }
                     }
                     Text("${rx.sets} × ${rx.reps}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)

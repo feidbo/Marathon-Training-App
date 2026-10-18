@@ -48,7 +48,10 @@ import com.feidbo.marathon.core.MissReason
 import com.feidbo.marathon.core.Paces
 import com.feidbo.marathon.core.Plan
 import com.feidbo.marathon.core.Settings
+import com.feidbo.marathon.core.estimatedOneRepMax
 import com.feidbo.marathon.core.exerciseHistory
+import com.feidbo.marathon.core.loadAdviceFor
+import kotlin.math.roundToInt
 import com.feidbo.marathon.core.formatDuration
 import com.feidbo.marathon.core.formatMiles
 import com.feidbo.marathon.core.formatPace
@@ -96,6 +99,11 @@ fun ExerciseScreen(state: UiState, exerciseId: String, dayIndex: Int, onBack: ()
     val day = state.schedule[dayIndex]?.day
     val rx = day?.let { strengthSession(it.strength) }?.items?.firstOrNull { it.exercise.id == exerciseId }
     val history = exerciseHistory(exerciseId, state.logs)
+    // The strength day this recommendation is for: the one opened, or the next one coming up.
+    val adviceDay = (day?.takeIf { it.strength.isPlanned && state.logs[it.index] == null }
+        ?: state.schedule.days.firstOrNull { it.date >= state.today && it.day.strength.isPlanned && it.index !in state.logs }?.day)
+    val adviceRx = adviceDay?.let { d -> strengthSession(d.strength)?.items?.firstOrNull { it.exercise.id == exerciseId } }
+    val advice = if (adviceDay != null && adviceRx != null) loadAdviceFor(adviceRx, adviceDay, state.logs) else null
     Scaffold(
         topBar = {
             TopAppBar(
@@ -127,6 +135,18 @@ fun ExerciseScreen(state: UiState, exerciseId: String, dayIndex: Int, onBack: ()
                     }
                 }
             }
+            if (advice != null && adviceDay != null) {
+                SectionCard(container = MaterialTheme.colorScheme.secondaryContainer) {
+                    Text(
+                        "${if (adviceDay.date == state.today) "Today" else "Next session (${shortDate(adviceDay.date)})"}: " +
+                            "${formatMiles(advice.weight)} lb",
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    Text("${advice.deltaText} · last ${formatMiles(advice.lastWeight)} lb on ${shortDate(advice.lastDate)}",
+                        style = MaterialTheme.typography.labelLarge)
+                    Text(advice.reason, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+                }
+            }
             SectionCard {
                 Text("How to do it", style = MaterialTheme.typography.titleMedium)
                 ex.steps.forEachIndexed { i, s ->
@@ -150,12 +170,23 @@ fun ExerciseScreen(state: UiState, exerciseId: String, dayIndex: Int, onBack: ()
                     if (history.isEmpty()) Text("Nothing logged yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     val best = if (ex.inverted) history.minOfOrNull { it.log.topWeight } else history.maxOfOrNull { it.log.topWeight }
                     best?.let { Text("Best: ${formatMiles(it)} lb ${if (ex.inverted) "(least assistance)" else ""}", fontWeight = FontWeight.SemiBold) }
+                    if (!ex.inverted && history.size >= 2) {
+                        val first = history.first().let { estimatedOneRepMax(it.log.topWeight, it.log.sets.minOf { s -> s.reps }, it.log.rir ?: 3) }
+                        val now = history.last().let { estimatedOneRepMax(it.log.topWeight, it.log.sets.minOf { s -> s.reps }, it.log.rir ?: 2) }
+                        if (first > 0) Text(
+                            "Estimated max: ${formatMiles(now.roundToInt().toDouble())} lb " +
+                                "(${if (now >= first) "+" else ""}${((now / first - 1) * 100).roundToInt()}% since your first session)",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                     history.asReversed().take(12).forEach { h ->
                         Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
                             Text(shortDate(Plan.days[h.dayIndex].date), modifier = Modifier.width(72.dp))
                             Text("${formatMiles(h.log.topWeight)} lb × ${h.log.sets.joinToString(", ") { it.reps.toString() }}",
                                 modifier = Modifier.weight(1f))
-                            h.log.feel?.let { Text(it.label, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                            (h.log.rir?.let { "$it left" } ?: h.log.feel?.label)?.let {
+                                Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
                     }
                 }

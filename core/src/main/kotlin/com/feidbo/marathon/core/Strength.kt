@@ -1,5 +1,8 @@
 package com.feidbo.marathon.core
 
+/** How loads move for an exercise: big lower-body lifts take bigger jumps (ACSM 2009). */
+enum class LoadType { LOWER_COMPOUND, LOWER_SMALL, ASSISTED }
+
 data class Exercise(
     val id: String,
     val name: String,
@@ -11,6 +14,7 @@ data class Exercise(
     /** Assisted pull-up: more counterweight = more help, so "progress" means *less* weight. */
     val inverted: Boolean = false,
     val weightLabel: String = "Weight (lb)",
+    val load: LoadType = LoadType.LOWER_SMALL,
 )
 
 data class Prescription(val exercise: Exercise, val sets: Int, val reps: Int)
@@ -22,12 +26,14 @@ data class StrengthSession(
     val rest: String,
     val minutes: String,
     val notes: List<String>,
+    val restSec: Int,           // rest after each round of a block
+    val targetRir: Int,         // reps to leave in the tank
 )
 
 object Exercises {
     val legPress = Exercise(
         id = "leg_press", name = "Leg press", block = "1a", machine = "Leg press",
-        muscles = "Quads, glutes",
+        muscles = "Quads, glutes", load = LoadType.LOWER_COMPOUND,
         steps = listOf(
             "Sit with your back and hips flat against the pad.",
             "Feet about shoulder-width on the platform, toes slightly out.",
@@ -70,10 +76,11 @@ object Exercises {
         ),
         inverted = true,
         weightLabel = "Counterweight (lb)",
+        load = LoadType.ASSISTED,
     )
     val hipThrust = Exercise(
         id = "hip_thrust", name = "Hip thrust", block = "2a", machine = "Hip thrust machine, or Smith machine",
-        muscles = "Glutes, hamstrings",
+        muscles = "Glutes, hamstrings", load = LoadType.LOWER_COMPOUND,
         steps = listOf(
             "Sit with your upper back against the pad (the bottom of your shoulder blades on the edge).",
             "Belt or bar across your hips, feet flat about hip-width, shins vertical at the top.",
@@ -146,7 +153,7 @@ fun strengthSession(kind: StrengthKind): StrengthSession? {
                 Triple(e.hipThrust, 1, 12), Triple(e.abduction, 1, 15), Triple(e.legCurl, 1, 12),
             ),
             effort = "Light — just learn the machines and settings",
-            rest = "As needed", minutes = "15–20 min",
+            rest = "As needed", minutes = "15–20 min", restSec = 60, targetRir = 4,
             notes = listOf("Write down seat settings and a comfortable starting weight for each machine."),
         )
         StrengthKind.PHASE1 -> StrengthSession(
@@ -155,7 +162,7 @@ fun strengthSession(kind: StrengthKind): StrengthSession? {
                 Triple(e.hipThrust, 2, 12), Triple(e.abduction, 2, 15), Triple(e.legCurl, 2, 12),
             ),
             effort = "Hard, about 3 reps left in the tank",
-            rest = "60–90 s between rounds", minutes = "15–20 min",
+            rest = "60–90 s between rounds", minutes = "15–20 min", restSec = 90, targetRir = 3,
             notes = standardNotes,
         )
         StrengthKind.PHASE2 -> StrengthSession(
@@ -164,7 +171,7 @@ fun strengthSession(kind: StrengthKind): StrengthSession? {
                 Triple(e.hipThrust, 3, 6), Triple(e.abduction, 2, 12), Triple(e.legCurl, 2, 8),
             ),
             effort = "Hard, about 2 reps left in the tank",
-            rest = "90 s – 2 min between rounds", minutes = "20–25 min",
+            rest = "90 s – 2 min between rounds", minutes = "20–25 min", restSec = 120, targetRir = 2,
             notes = standardNotes,
         )
         StrengthKind.PHASE3 -> StrengthSession(
@@ -173,7 +180,7 @@ fun strengthSession(kind: StrengthKind): StrengthSession? {
                 Triple(e.hipThrust, 2, 5), Triple(e.abduction, 1, 12), Triple(e.legCurl, 1, 8),
             ),
             effort = "Hard, about 2 reps left in the tank — keep the loads heavy",
-            rest = "90 s – 2 min between rounds", minutes = "About 15 min",
+            rest = "90 s – 2 min between rounds", minutes = "About 15 min", restSec = 120, targetRir = 2,
             notes = standardNotes + "One heavy session a week holds your strength (Spiering 2021).",
         )
         StrengthKind.LIGHT -> StrengthSession(
@@ -182,7 +189,7 @@ fun strengthSession(kind: StrengthKind): StrengthSession? {
                 Triple(e.hipThrust, 1, 5), Triple(e.abduction, 1, 12), Triple(e.legCurl, 1, 8),
             ),
             effort = "Light — about 60% of your working weight",
-            rest = "As needed", minutes = "About 10 min",
+            rest = "As needed", minutes = "About 10 min", restSec = 60, targetRir = 5,
             notes = listOf("A light session: 1 set each. Leave the gym feeling fresh."),
         )
     }

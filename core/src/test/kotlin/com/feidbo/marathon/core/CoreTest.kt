@@ -214,17 +214,90 @@ class FeedbackTest {
         assertTrue(jump.any { it.text.contains("Big jump") })
     }
 
-    @Test fun suggestedWeightProgresses() {
-        val rx = strengthSession(StrengthKind.PHASE1)!!.items.first()
-        val easy = ExerciseLog(rx.exercise.id, listOf(SetLog(100.0, 12), SetLog(100.0, 12)), Feel.EASY)
-        assertEquals(105.0, suggestedWeight(rx, easy, StrengthKind.PHASE1, 12)!!, 0.0)
-        val hard = ExerciseLog(rx.exercise.id, listOf(SetLog(100.0, 9), SetLog(100.0, 8)), Feel.HARD)
-        assertEquals(90.0, suggestedWeight(rx, hard, StrengthKind.PHASE1, 12)!!, 0.0)
-        assertNull(suggestedWeight(rx, null, StrengthKind.PHASE1, null))
-        // Assisted pull-up: progress means less counterweight.
-        val pull = strengthSession(StrengthKind.PHASE1)!!.items.first { it.exercise.inverted }
-        val pullEasy = ExerciseLog(pull.exercise.id, listOf(SetLog(60.0, 8), SetLog(60.0, 8)), Feel.EASY)
-        assertTrue(suggestedWeight(pull, pullEasy, StrengthKind.PHASE1, 8)!! < 60.0)
+}
+
+class ProgressionTest {
+    private val p1 = strengthSession(StrengthKind.PHASE1)!!
+    private val legPress = p1.items.first { it.exercise.id == "leg_press" }
+    private val calf = p1.items.first { it.exercise.id == "calf_raise" }
+    private val pull = p1.items.first { it.exercise.inverted }
+    private fun day(y: Int, m: Int, d: Int) = Plan.dayOn(LocalDate.of(y, m, d))!!
+    private fun entry(day: PlannedDay, id: String, w: Double, reps: List<Int>, rir: Int? = null, feel: Feel? = null) =
+        ExerciseHistoryEntry(day.index, day.strength, ExerciseLog(id, reps.map { SetLog(w, it) }, feel, rir))
+
+    private val mon = day(2026, 10, 19)
+    private val thu = day(2026, 10, 22)
+    private val nextMon = day(2026, 10, 26)
+
+    @Test fun easierThanTargetAddsAboutFivePercent() {
+        val a = loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "leg_press", 140.0, listOf(12, 12), rir = 4)))!!
+        assertEquals(LoadChange.UP, a.change)
+        assertEquals(150.0, a.weight, 0.0) // +10 lb minimum step on a big lift
+    }
+
+    @Test fun muchEasierThanTargetTakesBiggerJump() {
+        val a = loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "leg_press", 140.0, listOf(12, 12), rir = 6)))!!
+        assertEquals(LoadChange.BIG_UP, a.change)
+        assertEquals(160.0, a.weight, 0.0)
+        val small = loadAdvice(calf, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "calf_raise", 60.0, listOf(15, 15), rir = 6)))!!
+        assertEquals(70.0, small.weight, 0.0)
+    }
+
+    @Test fun onTargetHoldsAndMissedRepsBacksOff() {
+        val same = loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "leg_press", 140.0, listOf(12, 12), rir = 3)))!!
+        assertEquals(LoadChange.SAME, same.change)
+        assertEquals(140.0, same.weight, 0.0)
+        val down = loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "leg_press", 140.0, listOf(10, 8), rir = 0)))!!
+        assertEquals(LoadChange.DOWN, down.change)
+        assertEquals(125.0, down.weight, 0.0)
+    }
+
+    @Test fun twoForTwoWithoutRir() {
+        val once = loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "leg_press", 140.0, listOf(12, 12))))!!
+        assertEquals(LoadChange.SAME, once.change)
+        val twice = loadAdvice(legPress, StrengthKind.PHASE1, nextMon.date,
+            listOf(entry(mon, "leg_press", 140.0, listOf(12, 12)), entry(thu, "leg_press", 140.0, listOf(12, 12))))!!
+        assertEquals(LoadChange.UP, twice.change)
+    }
+
+    @Test fun olderFeelLogsStillWork() {
+        val a = loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "leg_press", 100.0, listOf(12, 12), feel = Feel.EASY)))!!
+        assertEquals(LoadChange.BIG_UP, a.change)
+    }
+
+    @Test fun assistedPullUpProgressesByRemovingCounterweight() {
+        val a = loadAdvice(pull, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "assisted_pull_up", 60.0, listOf(8, 8), rir = 4)))!!
+        assertEquals(55.0, a.weight, 0.0)
+        val hard = loadAdvice(pull, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "assisted_pull_up", 60.0, listOf(6, 5), rir = 0)))!!
+        assertTrue(hard.weight > 60.0)
+    }
+
+    @Test fun phaseChangeUsesEstimatedMaxAndStartsLight() {
+        val lastP1 = day(2026, 12, 10)
+        val firstP2 = day(2026, 12, 14)
+        val rx = strengthSession(StrengthKind.PHASE2)!!.items.first { it.exercise.id == "leg_press" }
+        val a = loadAdvice(rx, StrengthKind.PHASE2, firstP2.date, listOf(entry(lastP1, "leg_press", 200.0, listOf(12, 12), rir = 3)))!!
+        assertEquals(LoadChange.NEW_TARGET, a.change)
+        // e1RM = 200 × (1 + 15/30) = 300; 6 reps with 2 left = 300 / (1 + 8/30) ≈ 237; ×0.9 first heavy week ≈ 213 → 210.
+        assertEquals(210.0, a.weight, 0.0)
+    }
+
+    @Test fun longBreakEasesBackIn() {
+        val a = loadAdvice(legPress, StrengthKind.PHASE1, LocalDate.of(2026, 11, 23),
+            listOf(entry(mon, "leg_press", 140.0, listOf(12, 12), rir = 3)))!!
+        assertEquals(LoadChange.RETURNING, a.change)
+        assertEquals(125.0, a.weight, 0.0)
+    }
+
+    @Test fun lightDayIsSixtyPercent() {
+        val rx = strengthSession(StrengthKind.LIGHT)!!.items.first { it.exercise.id == "leg_press" }
+        val p3 = day(2027, 2, 22)
+        val a = loadAdvice(rx, StrengthKind.LIGHT, LocalDate.of(2027, 3, 1), listOf(entry(p3, "leg_press", 250.0, listOf(5, 5), rir = 2)))!!
+        assertEquals(150.0, a.weight, 0.0)
+    }
+
+    @Test fun noHistoryNoAdvice() {
+        assertNull(loadAdvice(legPress, StrengthKind.PHASE1, thu.date, emptyList()))
     }
 }
 

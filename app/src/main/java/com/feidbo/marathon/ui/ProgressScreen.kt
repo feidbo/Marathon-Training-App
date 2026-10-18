@@ -49,6 +49,8 @@ import com.feidbo.marathon.core.Exercises
 import com.feidbo.marathon.core.Game
 import com.feidbo.marathon.core.ScheduledDay
 import com.feidbo.marathon.core.exerciseHistory
+import com.feidbo.marathon.core.loadAdviceFor
+import com.feidbo.marathon.core.strengthSession
 import com.feidbo.marathon.core.formatMiles
 import com.feidbo.marathon.core.formatPace
 import com.feidbo.marathon.core.shortDate
@@ -257,6 +259,7 @@ private fun BadgeGrid(state: UiState) {
 private fun StrengthSummary(state: UiState, onOpenExercise: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Lifts: ${state.progress.strengthSessions} sessions", style = MaterialTheme.typography.titleMedium)
+        val nextDay = state.schedule.days.firstOrNull { it.date >= state.today && it.day.strength.isPlanned && it.index !in state.logs }?.day
         Exercises.routine.forEach { ex ->
             val h = exerciseHistory(ex.id, state.logs)
             val last = h.lastOrNull()
@@ -272,6 +275,13 @@ private fun StrengthSummary(state: UiState, onOpenExercise: (String) -> Unit) {
                             else "Last: ${formatMiles(last.log.topWeight)} lb (${shortDate(state.schedule.days[last.dayIndex].date)})",
                             style = MaterialTheme.typography.bodySmall,
                         )
+                        val nextRx = nextDay?.let { d -> strengthSession(d.strength)?.items?.firstOrNull { it.exercise.id == ex.id } }
+                        val advice = if (nextDay != null && nextRx != null) loadAdviceFor(nextRx, nextDay, state.logs) else null
+                        advice?.let {
+                            Text("Next (${shortDate(nextDay!!.date)}): ${formatMiles(it.weight)} lb · ${it.deltaText}",
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold)
+                        }
                         if (h.size >= 2) {
                             val first = h.first().log.topWeight
                             val change = last!!.log.topWeight - first

@@ -9,8 +9,21 @@ The plan document is in [`docs/`](docs/First_Marathon_Plan_Eugene_2027.md).
   routine with sets × reps, and the daily quad stretch with a 3-minute timer. Arrows step to other days
   so you can log one you missed.
 - **Strength how-to**: each machine exercise has an animated illustration, step-by-step instructions, form cues
-  and your history. Strength days show your **last weight as a benchmark** and suggest today's load
-  (+5% after an easy session that hit the reps, −10% after one that was too hard).
+  and your history. Strength days show your **last weight as a benchmark** and today's recommended load.
+- **Rest timer & workout guide**: walks you through the plan's blocks round by round, then counts down the
+  rest (90 s in Phase 1, 2 min in Phases 2–3; adjustable), vibrates and beeps when it's time to go, and
+  keeps the screen on while you rest.
+- **Load progression** (`core/.../Progression.kt`), based on:
+  - reps in reserve ("reps left in the tank", the plan's effort target) logged for each exercise
+    (Zourdos 2016; Helms 2016);
+  - hit every rep with 1+ more reps left than the target → add ~5% (min 10 lb on leg press/hip thrust, 5 lb on
+    smaller lifts); 2+ more → ~10% (ACSM 2009: increase 2–10% once you beat the target);
+  - on target or harder → same weight; missed 2+ reps → ~10% lighter;
+  - no reps-left logged → the "2-for-2" rule (all reps at the same weight two sessions running → add weight);
+  - new rep target at a phase change → load from an estimated 1RM (Epley, counting reps left), started a
+    little light in the first heavy week as the plan says;
+  - more than 3 weeks off → ~10% lighter (strength largely holds for ~3 weeks; Bosquet 2013);
+  - light days → ~60% of working weight; assisted pull-up progresses by *removing* counterweight.
 - **Logging**: distance, average pace, tempo / marathon-pace segment pace, effort (1–10), pain, race time,
   and weight + reps per set for each lift. You get **live coaching** as you type: easy runs that are too fast,
   runs that break the 10% long-run rule, tempo or marathon pace off target, weights that are too heavy or

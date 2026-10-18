@@ -189,39 +189,24 @@ fun strengthFeedback(
         }
     }
 
+    val targetRir = repsLeft(kind)
+    val rir = effectiveRir(log, targetRir)
     when {
-        minReps < rx.reps - 1 || log.feel == Feel.HARD -> tips += Tip(TipLevel.WARN,
-            "Too heavy today: you're aiming for ${rx.sets} × ${rx.reps} with about ${repsLeft(kind)} reps left. " +
+        minReps < rx.reps - 1 || rir == 0 && minReps < rx.reps -> tips += Tip(TipLevel.WARN,
+            "Too heavy today: you're aiming for ${rx.sets} × ${rx.reps} with about $targetRir reps left. " +
                 "Use $lighter next time (about 10%).")
         maxReps > rx.reps + 3 -> tips += Tip(TipLevel.INFO,
             "${maxReps} reps is well over the ${rx.reps} target — the weight is too light. Use $heavier so ${rx.reps} reps is hard.")
-        log.feel == Feel.EASY && minReps >= rx.reps -> tips += Tip(TipLevel.GREAT,
-            "Every set felt easy — time to progress. Use $heavier next time (about 5%).")
+        rir != null && rir >= targetRir + 1 && minReps >= rx.reps -> tips += Tip(TipLevel.GREAT,
+            "$rir reps left is easier than the target ($targetRir) — you'll get a heavier suggestion next session.")
+        rir != null && rir < targetRir -> tips += Tip(TipLevel.INFO,
+            "Only $rir left — a bit harder than the $targetRir-left target. Fine today; repeat this weight next time.")
         else -> tips += Tip(TipLevel.GREAT, "Right on target. Strong legs run cheaper (Støren 2008).")
     }
     return tips
 }
 
-private fun repsLeft(kind: StrengthKind) = if (kind == StrengthKind.PHASE1) 3 else 2
-
-/**
- * Suggests today's load from the previous session: progress ~5% after an easy session that hit
- * the reps, back off ~10% after a session that was too hard, otherwise repeat.
- */
-fun suggestedWeight(rx: Prescription, previous: ExerciseLog?, kind: StrengthKind, previousReps: Int?): Double? {
-    val prev = previous?.topWeight?.takeIf { it > 0 } ?: return null
-    if (kind == StrengthKind.LIGHT) return if (rx.exercise.inverted) roundWeight(prev * 1.3) else roundWeight(prev * 0.6)
-    // A phase change to fewer reps (12 → 6) means heavier loads, but the plan says start light that first week.
-    val minReps = previous.sets.filter { it.reps > 0 }.minOfOrNull { it.reps } ?: 0
-    val target = previousReps ?: rx.reps
-    val up = if (rx.exercise.inverted) 0.95 else 1.05
-    val down = if (rx.exercise.inverted) 1.10 else 0.90
-    return when {
-        previous.feel == Feel.HARD || minReps < target - 1 -> roundWeight(prev * down)
-        previous.feel == Feel.EASY && minReps >= target -> roundWeight(prev * up, up > 1)
-        else -> prev
-    }
-}
+private fun repsLeft(kind: StrengthKind) = strengthSession(kind)?.targetRir ?: 2
 
 /** Rounds to the nearest 5 lb (2.5 lb under 50 lb), always moving at least one step when [forceUp] is set. */
 fun roundWeight(w: Double, forceUp: Boolean = false): Double {
