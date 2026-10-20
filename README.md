@@ -11,10 +11,14 @@ The plan document is in [`docs/`](docs/First_Marathon_Plan_Eugene_2027.md).
   so you can log one you missed.
 - **Strength how-to**: each machine exercise has an animated illustration, step-by-step instructions, form cues
   and your history. Strength days show your **last weight as a benchmark** and today's recommended load.
-- **Set-by-set strength logging**: every set has its own weight and reps (change the weight mid-exercise and
+- **Set-by-set strength logging** (single-leg calf raises: 12 per leg): every set has its own weight and reps (change the weight mid-exercise and
   later sets follow), and a ✓ to mark it done. Ticking a set starts the **rest timer between every set**
   (90 s in Phase 1, 2 min in Phases 2–3; adjustable), shown in a bar at the bottom with what's next. It
   vibrates and beeps when rest is over and keeps the screen on while you rest. Only ticked sets are saved.
+  Everything you enter is saved as you go, so rotating the phone or leaving the app loses nothing.
+- **Timers keep running in the background**: the rest and stretch timers show a live countdown notification,
+  and an alarm vibrates (and notifies) when time's up even if the app is closed. The stretch timer buzzes at
+  the switch and at the end, then ticks the stretch off.
 - **Load progression** (`core/.../Progression.kt`), based on:
   - reps in reserve ("reps left in the tank", the plan's effort target) logged for each exercise
     (Zourdos 2016; Helms 2016);
@@ -54,12 +58,12 @@ All data stays on the phone in one JSON file; nothing needs the internet.
 
 ## Install
 
-Every push builds an APK in GitHub Actions (**Actions → Build APK → EugeneMarathon-apk**). Download it on your
-phone, unzip, and open `app-release.apk` (allow "install unknown apps" when asked). Pushing a tag like `v1.0`
-also attaches the APK to a GitHub Release.
+On your phone, open **https://github.com/feidbo/Marathon-Training-App/releases/tag/latest** and tap the `.apk`
+(allow "install unknown apps" when asked). Every push rebuilds it. The same APK is also attached to each
+GitHub Actions run (zipped).
 
-Every build is signed with the same key (`app/sideload.keystore`), so new versions install over old ones
-and keep your logs.
+Every build is signed with the same key (`app/sideload.keystore`) and has a higher version number, so new
+versions install over old ones and keep your logs.
 
 ## Develop
 

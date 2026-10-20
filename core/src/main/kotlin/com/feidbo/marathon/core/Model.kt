@@ -99,6 +99,7 @@ data class ExerciseLog(
     val sets: List<SetLog>,
     val feel: Feel? = null,      // older logs; newer ones record reps in reserve instead
     val rir: Int? = null,        // reps left in the tank on the last set
+    val perSide: Boolean = false, // logged as a one-leg-at-a-time exercise (reps and weight are per leg)
 ) {
     val topWeight: Double get() = sets.maxOfOrNull { it.weight } ?: 0.0
 }

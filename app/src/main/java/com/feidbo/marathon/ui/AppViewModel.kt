@@ -28,6 +28,8 @@ import com.feidbo.marathon.core.runFeedback
 import com.feidbo.marathon.core.shortDate
 import com.feidbo.marathon.data.AppData
 import com.feidbo.marathon.data.Store
+import com.feidbo.marathon.data.StrengthDraft
+import com.feidbo.marathon.timer.Timers
 import com.feidbo.marathon.widget.TodayWidget
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -80,11 +82,34 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun build(data: AppData, today: LocalDate): UiState {
         val schedule = Schedule(data.logs, data.settings, today)
-        return UiState(data, today, schedule, computeProgress(schedule, data.logs, data.stretchDays, today))
+        return UiState(data, today, schedule, computeProgress(schedule, data.logs, data.stretchDays, today, data.settings.marathonPaceSec))
     }
 
-    /** Re-reads the date, e.g. when the app comes back to the foreground on a new day. */
+    init {
+        Timers.init(app)
+    }
+
+    // ---- In-progress strength sessions -------------------------------------------------------
+
+    fun loadDraft(dayIndex: Int): StrengthDraft? = store.loadDraft()?.takeIf { it.dayIndex == dayIndex }
+    fun saveDraft(draft: StrengthDraft) = store.saveDraft(draft)
+    fun clearDraft() = store.clearDraft()
+
+    // ---- Stretch timer ------------------------------------------------------------------------
+
+    /** Ticks off the stretch for a day if it isn't already (used when the stretch timer runs out). */
+    fun markStretchDone(dayIndex: Int) {
+        if (dayIndex !in _state.value.data.stretchDays) toggleStretch(dayIndex)
+    }
+
+    /** Collects a stretch timer that finished, on screen or while the app was closed. */
+    fun collectFinishedStretch() {
+        Timers.consumeFinishedStretch(getApplication())?.let(::markStretchDone)
+    }
+
+    /** Re-reads the date (e.g. back in the foreground on a new day) and collects a finished stretch timer. */
     fun refreshDate() {
+        collectFinishedStretch()
         val now = LocalDate.now()
         if (now != _state.value.today) {
             _state.value = build(_state.value.data, now)
@@ -109,6 +134,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun saveWorkout(dayIndex: Int, run: RunLog?, strength: List<ExerciseLog>) {
         val sd = _state.value.schedule[dayIndex] ?: return
         val status = completionStatus(sd.day, run, strength)
+        store.clearDraft()
         val draft = DayLog(dayIndex, status, run, strength, plannedMiles = sd.day.miles.takeIf { sd.day.run.isRun })
         val log = draft.copy(xp = Game.xpFor(sd.day, draft))
         val prs = personalRecords(dayIndex, strength, _state.value.logs).map { it.name }
@@ -138,6 +164,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun markMissed(dayIndex: Int, reason: MissReason) {
         val sd = _state.value.schedule[dayIndex] ?: return
+        if (store.loadDraft()?.dayIndex == dayIndex) store.clearDraft()
         val draft = DayLog(dayIndex, DayStatus.MISSED, missReason = reason)
         val log = draft.copy(xp = Game.xpFor(sd.day, draft))
         val (before, after) = update { it.copy(logs = it.logs + (dayIndex to log)) }
@@ -180,6 +207,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun toggleStretch(dayIndex: Int) {
         val sd = _state.value.schedule[dayIndex] ?: return
         val wasDone = dayIndex in _state.value.data.stretchDays
+        // Ticking it off by hand ends a stretch timer that's still running for that day.
+        if (!wasDone && Timers.stretch.value?.dayIndex == dayIndex) Timers.stopStretch(getApplication())
         val (before, after) = update { d ->
             d.copy(stretchDays = if (wasDone) d.stretchDays - dayIndex else d.stretchDays + dayIndex)
         }

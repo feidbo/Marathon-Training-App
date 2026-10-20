@@ -128,7 +128,7 @@ fun ExerciseScreen(state: UiState, exerciseId: String, dayIndex: Int, onBack: ()
             }
             if (rx != null) {
                 SectionCard(container = MaterialTheme.colorScheme.primaryContainer) {
-                    Text("Today: ${rx.sets} sets × ${rx.reps} reps", style = MaterialTheme.typography.titleLarge)
+                    Text("Today: ${rx.sets} sets × ${rx.exercise.repsText(rx.reps)} reps", style = MaterialTheme.typography.titleLarge)
                     strengthSession(day!!.strength)?.let {
                         Text(it.effort, style = MaterialTheme.typography.bodyMedium)
                         Text("Rest: ${it.rest}", style = MaterialTheme.typography.bodyMedium)

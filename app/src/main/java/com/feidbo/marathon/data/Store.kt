@@ -21,8 +21,57 @@ data class AppData(
     val onboarded: Boolean = false,
 )
 
+/** A strength session in progress: everything typed and ticked so far, saved as you go. */
+data class StrengthDraft(val dayIndex: Int, val exercises: List<DraftExercise>)
+data class DraftExercise(val id: String, val sets: List<DraftSet>, val rir: Int?, val skipped: Boolean)
+data class DraftSet(val weight: String, val reps: String, val done: Boolean)
+
 class Store(context: Context) {
     private val file = File(context.filesDir, "training.json")
+    private val draftFile = File(context.filesDir, "strength_draft.json")
+
+    fun loadDraft(): StrengthDraft? = try {
+        if (!draftFile.exists()) null else JSONObject(draftFile.readText()).let { o ->
+            val ex = o.getJSONArray("exercises")
+            StrengthDraft(o.getInt("day"), (0 until ex.length()).map { i ->
+                val e = ex.getJSONObject(i)
+                val sets = e.getJSONArray("sets")
+                DraftExercise(
+                    e.getString("id"),
+                    (0 until sets.length()).map { j ->
+                        val s = sets.getJSONObject(j)
+                        DraftSet(s.optString("w"), s.optString("r"), s.optBoolean("done"))
+                    },
+                    if (e.has("rir")) e.getInt("rir") else null,
+                    e.optBoolean("skipped"),
+                )
+            })
+        }
+    } catch (e: Exception) {
+        null
+    }
+
+    fun saveDraft(d: StrengthDraft) {
+        val o = JSONObject().put("day", d.dayIndex).put("exercises", JSONArray().apply {
+            d.exercises.forEach { e ->
+                put(JSONObject().apply {
+                    put("id", e.id)
+                    e.rir?.let { put("rir", it) }
+                    put("skipped", e.skipped)
+                    put("sets", JSONArray().apply {
+                        e.sets.forEach { s -> put(JSONObject().put("w", s.weight).put("r", s.reps).put("done", s.done)) }
+                    })
+                })
+            }
+        })
+        val tmp = File(draftFile.parentFile, "strength_draft.json.tmp")
+        tmp.writeText(o.toString())
+        tmp.renameTo(draftFile)
+    }
+
+    fun clearDraft() {
+        draftFile.delete()
+    }
 
     fun load(): AppData = try {
         if (file.exists()) decode(JSONObject(file.readText())) else AppData()
@@ -71,6 +120,7 @@ class Store(context: Context) {
                                 put("id", e.exerciseId)
                                 e.feel?.let { put("feel", it.name) }
                                 e.rir?.let { put("rir", it) }
+                                if (e.perSide) put("perSide", true)
                                 put("sets", JSONArray().apply {
                                     e.sets.forEach { s -> put(JSONObject().put("w", s.weight).put("r", s.reps)) }
                                 })
@@ -119,6 +169,7 @@ class Store(context: Context) {
                             },
                             feel = enumOrNull<Feel>(e.optString("feel")),
                             rir = e.optIntOrNull("rir"),
+                            perSide = e.optBoolean("perSide"),
                         )
                     }
                 } ?: emptyList()

@@ -15,7 +15,11 @@ data class Exercise(
     val inverted: Boolean = false,
     val weightLabel: String = "Weight (lb)",
     val load: LoadType = LoadType.LOWER_SMALL,
-)
+    /** Done one side at a time: reps are per leg, so every set is the reps on each leg. */
+    val perSide: Boolean = false,
+) {
+    fun repsText(reps: Int): String = if (perSide) "$reps/leg" else "$reps"
+}
 
 data class Prescription(val exercise: Exercise, val sets: Int, val reps: Int)
 
@@ -47,18 +51,22 @@ object Exercises {
         ),
     )
     val calfRaise = Exercise(
-        id = "calf_raise", name = "Calf raise", block = "1b", machine = "Same leg press, balls of feet on the platform edge",
-        muscles = "Calves (gastrocnemius, soleus)",
+        id = "calf_raise", name = "Single-leg calf raise", block = "1b",
+        machine = "Same leg press, ball of one foot on the platform edge",
+        muscles = "Calves (gastrocnemius, soleus), one leg at a time",
         steps = listOf(
-            "On the leg press, press the platform up so your legs are straight (knees soft, not locked).",
-            "Slide your feet down so only the balls of your feet are on the bottom edge.",
-            "Let your heels drop slowly for a full stretch.",
-            "Push through the balls of your feet to point your toes as far as you can, then lower slowly.",
+            "On the leg press, press the platform up so your legs are straight (knee soft, not locked).",
+            "Place the ball of ONE foot on the bottom edge of the platform; rest the other foot off to the side.",
+            "Let your heel drop slowly for a full stretch.",
+            "Push through the ball of your foot to point your toes as far as you can, then lower slowly.",
+            "Do all the reps on one leg, then the same on the other leg — that's one set.",
         ),
         cues = listOf(
             "Keep the safety stops engaged.",
             "Lower slowly through a full range.",
+            "One leg at a time evens out side-to-side differences; expect to use about half your two-leg weight.",
         ),
+        perSide = true,
     )
     val pullUp = Exercise(
         id = "assisted_pull_up", name = "Assisted pull-up", block = "1c", machine = "Assisted pull-up machine (counterweight)",
@@ -149,7 +157,7 @@ fun strengthSession(kind: StrengthKind): StrengthSession? {
         StrengthKind.NONE -> null
         StrengthKind.LEARN -> StrengthSession(
             kind, rx(
-                Triple(e.legPress, 1, 12), Triple(e.calfRaise, 1, 15), Triple(e.pullUp, 1, 8),
+                Triple(e.legPress, 1, 12), Triple(e.calfRaise, 1, 12), Triple(e.pullUp, 1, 8),
                 Triple(e.hipThrust, 1, 12), Triple(e.abduction, 1, 15), Triple(e.legCurl, 1, 12),
             ),
             effort = "Light — just learn the machines and settings",
@@ -158,7 +166,7 @@ fun strengthSession(kind: StrengthKind): StrengthSession? {
         )
         StrengthKind.PHASE1 -> StrengthSession(
             kind, rx(
-                Triple(e.legPress, 2, 12), Triple(e.calfRaise, 2, 15), Triple(e.pullUp, 2, 8),
+                Triple(e.legPress, 2, 12), Triple(e.calfRaise, 2, 12), Triple(e.pullUp, 2, 8),
                 Triple(e.hipThrust, 2, 12), Triple(e.abduction, 2, 15), Triple(e.legCurl, 2, 12),
             ),
             effort = "Hard, about 3 reps left in the tank",
@@ -167,7 +175,7 @@ fun strengthSession(kind: StrengthKind): StrengthSession? {
         )
         StrengthKind.PHASE2 -> StrengthSession(
             kind, rx(
-                Triple(e.legPress, 3, 6), Triple(e.calfRaise, 2, 10), Triple(e.pullUp, 2, 8),
+                Triple(e.legPress, 3, 6), Triple(e.calfRaise, 2, 12), Triple(e.pullUp, 2, 8),
                 Triple(e.hipThrust, 3, 6), Triple(e.abduction, 2, 12), Triple(e.legCurl, 2, 8),
             ),
             effort = "Hard, about 2 reps left in the tank",
@@ -176,7 +184,7 @@ fun strengthSession(kind: StrengthKind): StrengthSession? {
         )
         StrengthKind.PHASE3 -> StrengthSession(
             kind, rx(
-                Triple(e.legPress, 2, 5), Triple(e.calfRaise, 1, 10), Triple(e.pullUp, 1, 8),
+                Triple(e.legPress, 2, 5), Triple(e.calfRaise, 1, 12), Triple(e.pullUp, 1, 8),
                 Triple(e.hipThrust, 2, 5), Triple(e.abduction, 1, 12), Triple(e.legCurl, 1, 8),
             ),
             effort = "Hard, about 2 reps left in the tank — keep the loads heavy",
@@ -185,7 +193,7 @@ fun strengthSession(kind: StrengthKind): StrengthSession? {
         )
         StrengthKind.LIGHT -> StrengthSession(
             kind, rx(
-                Triple(e.legPress, 1, 5), Triple(e.calfRaise, 1, 10), Triple(e.pullUp, 1, 8),
+                Triple(e.legPress, 1, 5), Triple(e.calfRaise, 1, 12), Triple(e.pullUp, 1, 8),
                 Triple(e.hipThrust, 1, 5), Triple(e.abduction, 1, 12), Triple(e.legCurl, 1, 8),
             ),
             effort = "Light — about 60% of your working weight",

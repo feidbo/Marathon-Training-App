@@ -1,5 +1,6 @@
 package com.feidbo.marathon.core
 
+import java.time.DayOfWeek
 import java.time.LocalDate
 
 data class Badge(val id: String, val emoji: String, val name: String, val description: String)
@@ -71,6 +72,24 @@ object Game {
         Badge("perfect_10", "✨", "Perfect 10", "10 perfect days: workout + stretch"),
         Badge("comeback", "🦅", "Comeback Kid", "Train again after 3+ missed workouts"),
         Badge("pr", "📈", "PR Breaker", "Beat your best estimated max on a lift"),
+        Badge("miles_26", "🦆", "Marathon in Pieces", "26.2 total miles"),
+        Badge("long_15", "🦵", "Fifteen Strong", "Run 15 miles in one go"),
+        Badge("mp_5", "🎯", "Locked In", "5 marathon-pace runs within 15 s/mi of goal"),
+        Badge("easy_50", "🧘‍♂️", "Zen Pacer", "50 easy runs in the easy zone"),
+        Badge("sunday_10", "☀️", "Sunday Funday", "10 Sunday long runs"),
+        Badge("streak_50", "🌋", "Volcano", "50 workouts in a row"),
+        Badge("weeks_4", "🗓️", "Month of Grit", "4 full weeks completed"),
+        Badge("stretch_100", "🪢", "Rubber Band", "Stretch on 100 days"),
+        Badge("rest_25", "😴", "Rest Is Training", "Stretch on 25 rest days"),
+        Badge("lift_35", "🦍", "Gorilla Legs", "35 strength sessions"),
+        Badge("pr_5", "🚀", "PR Machine", "Set 5 lifting PRs"),
+        Badge("level_5", "⭐", "Rising Star", "Reach level 5"),
+        Badge("level_10", "🌟", "Superstar", "Reach level 10"),
+        Badge("turkey", "🦃", "Turkey Trotter", "Run on Thanksgiving"),
+        Badge("jingle", "🎄", "Jingle Miles", "Train on Christmas Eve"),
+        Badge("new_year", "🎆", "New Year, New Miles", "Your first workout of 2027"),
+        Badge("halfway", "🧭", "Halfway There", "Train past the plan's halfway point (Jan 20)"),
+        Badge("bib_ready", "🎽", "Bib Ready", "Every race-week workout done"),
         Badge("marathoner", "🏅", "Marathoner", "Finish the Eugene Marathon"),
     )
 
@@ -96,7 +115,13 @@ data class Progress(
     val badgeProgress: Map<String, Pair<Double, Double>> = emptyMap(),
 )
 
-fun computeProgress(schedule: Schedule, logs: Map<Int, DayLog>, stretchDays: Set<Int>, today: LocalDate): Progress {
+fun computeProgress(
+    schedule: Schedule,
+    logs: Map<Int, DayLog>,
+    stretchDays: Set<Int>,
+    today: LocalDate,
+    marathonPaceSec: Int = Paces.DEFAULT_MP,
+): Progress {
     val days = schedule.days
     var xp = 0
     var miles = 0.0
@@ -112,6 +137,10 @@ fun computeProgress(schedule: Schedule, logs: Map<Int, DayLog>, stretchDays: Set
     var best = 0
     var perfect = 0
     var missedRun = 0
+    var prCount = 0
+    var mpLocked = 0
+    var sundayLongs = 0
+    var restStretches = 0
     val earned = mutableSetOf<String>()
     val bestMax = mutableMapOf<String, Double>()
 
@@ -119,7 +148,10 @@ fun computeProgress(schedule: Schedule, logs: Map<Int, DayLog>, stretchDays: Set
         val d = sd.day
         val log = logs[d.index]
         if (d.isTrainingDay && d.date <= today) plannedSoFar++
-        if (d.index in stretchDays) xp += Game.stretchXp(d)
+        if (d.index in stretchDays) {
+            xp += Game.stretchXp(d)
+            if (!d.isTrainingDay) restStretches++
+        }
         if (log == null) {
             // A past training day left unlogged breaks the streak; today and rest days don't.
             if (d.isTrainingDay && d.date < today) streak = 0
@@ -144,6 +176,9 @@ fun computeProgress(schedule: Schedule, logs: Map<Int, DayLog>, stretchDays: Set
         streak++
         best = maxOf(best, streak)
         earned += "first_step"
+        if (d.date.year == 2027 && d.date.dayOfYear <= 7) earned += "new_year"
+        if (d.date >= LocalDate.of(2027, 1, 20)) earned += "halfway"
+        if (d.date == LocalDate.of(2026, 12, 24)) earned += "jingle"
         val run = log.run
         if (run != null && run.distance > 0) {
             miles += run.distance
@@ -155,6 +190,13 @@ fun computeProgress(schedule: Schedule, logs: Map<Int, DayLog>, stretchDays: Set
             if (d.run == RunKind.RACE) earned += "marathoner"
             if (run.distance >= 10) earned += "double_digits"
             if (run.distance >= 19.5) earned += "twenty"
+            if (run.distance >= 14.9) earned += "long_15"
+            if (d.date == LocalDate.of(2026, 11, 26)) earned += "turkey"
+            if (d.date.dayOfWeek == DayOfWeek.SUNDAY && (d.run == RunKind.LONG || d.miles >= 8)) sundayLongs++
+            if (d.run == RunKind.MARATHON_PACE) {
+                val p = run.segmentPaceSec
+                if (p != null && kotlin.math.abs(p - marathonPaceSec) <= 15) mpLocked++
+            }
         }
         if (d.strength.isPlanned && log.strength.any { e -> e.sets.any { it.reps > 0 } }) {
             lifts++
@@ -164,9 +206,10 @@ fun computeProgress(schedule: Schedule, logs: Map<Int, DayLog>, stretchDays: Set
                 val sets = e.sets.filter { it.reps > 0 }
                 if (ex.inverted || sets.isEmpty() || e.topWeight <= 0) continue
                 val max = estimatedOneRepMax(e.topWeight, sets.minOf { it.reps }, e.rir ?: 0)
-                val prev = bestMax[ex.id]
-                if (prev != null && max > prev + 0.5) earned += "pr"
-                if (prev == null || max > prev) bestMax[ex.id] = max
+                val key = ex.id + if (e.perSide) ":1" else ":2"   // one-leg and two-leg maxes aren't comparable
+                val prev = bestMax[key]
+                if (prev != null && max > prev + 0.5) { earned += "pr"; prCount++ }
+                if (prev == null || max > prev) bestMax[key] = max
             }
         }
     }
@@ -187,6 +230,23 @@ fun computeProgress(schedule: Schedule, logs: Map<Int, DayLog>, stretchDays: Set
     if (phaseReached(LocalDate.of(2027, 2, 7))) earned += "phase_2"
     if (phaseReached(LocalDate.of(2027, 4, 24))) earned += "taper"
 
+    // Race week: every training day Apr 19–24 done.
+    val raceWeek = days.filter { it.original.week == 27 && it.day.isTrainingDay && it.day.run != RunKind.RACE }
+    if (raceWeek.isNotEmpty() && raceWeek.all { logs[it.index]?.status == DayStatus.DONE }) earned += "bib_ready"
+
+    val level = Game.level(xp)
+    if (miles >= 26.2) earned += "miles_26"
+    if (mpLocked >= 5) earned += "mp_5"
+    if (easyInZone >= 50) earned += "easy_50"
+    if (sundayLongs >= 10) earned += "sunday_10"
+    if (best >= 50) earned += "streak_50"
+    if (fullWeeks >= 4) earned += "weeks_4"
+    if (stretches >= 100) earned += "stretch_100"
+    if (restStretches >= 25) earned += "rest_25"
+    if (lifts >= 35) earned += "lift_35"
+    if (prCount >= 5) earned += "pr_5"
+    if (level.level >= 5) earned += "level_5"
+    if (level.level >= 10) earned += "level_10"
     if (perfect >= 10) earned += "perfect_10"
     if (best >= 7) earned += "streak_7"
     if (best >= 21) earned += "streak_21"
@@ -213,8 +273,21 @@ fun computeProgress(schedule: Schedule, logs: Map<Int, DayLog>, stretchDays: Set
         "miles_250" to (miles to 250.0),
         "miles_500" to (miles to 500.0),
         "perfect_10" to (perfect.toDouble() to 10.0),
+        "miles_26" to (miles to 26.2),
+        "long_15" to (longest to 15.0),
+        "mp_5" to (mpLocked.toDouble() to 5.0),
+        "easy_50" to (easyInZone.toDouble() to 50.0),
+        "sunday_10" to (sundayLongs.toDouble() to 10.0),
+        "streak_50" to (best.toDouble() to 50.0),
+        "weeks_4" to (fullWeeks.toDouble() to 4.0),
+        "stretch_100" to (stretches.toDouble() to 100.0),
+        "rest_25" to (restStretches.toDouble() to 25.0),
+        "lift_35" to (lifts.toDouble() to 35.0),
+        "pr_5" to (prCount.toDouble() to 5.0),
+        "level_5" to (level.level.toDouble() to 5.0),
+        "level_10" to (level.level.toDouble() to 10.0),
     )
-    return Progress(xp, Game.level(xp), streak, best, miles, longest, done, plannedSoFar, lifts, earned, perfect, fullWeeks, badgeProgress)
+    return Progress(xp, level, streak, best, miles, longest, done, plannedSoFar, lifts, earned, perfect, fullWeeks, badgeProgress)
 }
 
 object Cheers {

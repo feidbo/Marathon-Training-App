@@ -34,14 +34,29 @@ jobs:
       - name: Build APK
         run: ./gradlew :app:assembleRelease --console=plain
 
-      - name: Upload APK
+      - name: Name the APK
+        run: cp app/build/outputs/apk/release/app-release.apk "Eugene26.2-build${{ github.run_number }}.apk"
+
+      - name: Upload APK (zipped workflow artifact)
         uses: actions/upload-artifact@v5
         with:
           name: EugeneMarathon-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          path: Eugene26.2-build${{ github.run_number }}.apk
 
-      - name: Publish release (tags only)
+      # Release assets download as a plain .apk, so the phone can install it directly.
+      - name: Publish to the "latest" release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest "Eugene26.2-build${{ github.run_number }}.apk" \
+            --title "Latest build (#${{ github.run_number }})" \
+            --notes "Open this page on your phone and tap the .apk to install. It updates the app in place and keeps your logs." \
+            --target "${{ github.sha }}" --prerelease
+
+      - name: Publish versioned release (tags only)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/release/app-release.apk
+          files: Eugene26.2-build${{ github.run_number }}.apk

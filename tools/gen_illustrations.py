@@ -119,8 +119,10 @@ def calf_raise():
     t, sled = 128, 34
     ankle_lo = polar(hip, 40.0, sled)
     ankle_hi = polar(hip, 40.5, sled)
-    s = figure(hip, t, (44, 76), -1, ankle_lo, 1, sled + 70, far_hand=(46, 75), far_ankle=ankle_lo)
-    e = figure(hip, t, (44, 76), -1, ankle_hi, 1, sled + 130, far_hand=(46, 75), far_ankle=ankle_hi)
+    # Single-leg: the working leg is straight on the platform edge; the other foot rests off to the side.
+    tucked = (55, 70)
+    s = figure(hip, t, (44, 76), -1, ankle_lo, 1, sled + 70, far_hand=(46, 75), far_ankle=tucked, far_foot_deg=-10)
+    e = figure(hip, t, (44, 76), -1, ankle_hi, 1, sled + 130, far_hand=(46, 75), far_ankle=tucked, far_foot_deg=-10)
     # Platform edge under the balls of the feet.
     def plat(foot_deg, ankle):
         ball = polar(ankle, FOOT * 0.8, foot_deg)

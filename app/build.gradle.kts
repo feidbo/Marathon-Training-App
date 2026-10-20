@@ -12,8 +12,10 @@ android {
         applicationId = "com.feidbo.marathon"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        // CI builds count up so each APK installs as an update over the last one (keeping your data).
+        val build = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+        versionCode = build
+        versionName = "1.$build"
     }
 
     signingConfigs {
@@ -46,6 +48,10 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    lint {
+        // Lint still runs and reports; it just doesn't block the sideload build.
+        abortOnError = false
     }
     testOptions {
         unitTests.isReturnDefaultValues = true

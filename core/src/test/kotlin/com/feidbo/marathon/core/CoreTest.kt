@@ -253,8 +253,8 @@ class ProgressionTest {
     private val calf = p1.items.first { it.exercise.id == "calf_raise" }
     private val pull = p1.items.first { it.exercise.inverted }
     private fun day(y: Int, m: Int, d: Int) = Plan.dayOn(LocalDate.of(y, m, d))!!
-    private fun entry(day: PlannedDay, id: String, w: Double, reps: List<Int>, rir: Int? = null, feel: Feel? = null) =
-        ExerciseHistoryEntry(day.index, day.strength, ExerciseLog(id, reps.map { SetLog(w, it) }, feel, rir))
+    private fun entry(day: PlannedDay, id: String, w: Double, reps: List<Int>, rir: Int? = null, feel: Feel? = null, perSide: Boolean = false) =
+        ExerciseHistoryEntry(day.index, day.strength, ExerciseLog(id, reps.map { SetLog(w, it) }, feel, rir, perSide))
 
     private val mon = day(2026, 10, 19)
     private val thu = day(2026, 10, 22)
@@ -270,7 +270,7 @@ class ProgressionTest {
         val a = loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "leg_press", 140.0, listOf(12, 12), rir = 6)))!!
         assertEquals(LoadChange.BIG_UP, a.change)
         assertEquals(160.0, a.weight, 0.0)
-        val small = loadAdvice(calf, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "calf_raise", 60.0, listOf(15, 15), rir = 6)))!!
+        val small = loadAdvice(calf, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "calf_raise", 60.0, listOf(12, 12), rir = 6, perSide = true)))!!
         assertEquals(70.0, small.weight, 0.0)
     }
 
@@ -340,6 +340,25 @@ class ProgressionTest {
         assertEquals(140.0, a.weight, 0.0)
     }
 
+    @Test fun calfRaiseSwitchesToSingleLeg() {
+        val rx = strengthSession(StrengthKind.PHASE1)!!.items.first { it.exercise.id == "calf_raise" }
+        assertEquals(12, rx.reps)
+        assertTrue(rx.exercise.perSide)
+        assertEquals("12/leg", rx.exercise.repsText(rx.reps))
+        // Two-leg history at 100 lb → about half per leg.
+        val twoLeg = entry(mon, "calf_raise", 100.0, listOf(15, 15), rir = 3)
+        val a = loadAdvice(rx, StrengthKind.PHASE1, thu.date, listOf(twoLeg))!!
+        assertEquals(LoadChange.NEW_TARGET, a.change)
+        assertEquals(55.0, a.weight, 0.0)
+        // Once logged single-leg, normal progression applies.
+        val oneLeg = ExerciseHistoryEntry(thu.index, thu.strength,
+            ExerciseLog("calf_raise", listOf(SetLog(55.0, 12), SetLog(55.0, 12)), rir = 4, perSide = true))
+        assertEquals(LoadChange.UP, loadAdvice(rx, StrengthKind.PHASE1, nextMon.date, listOf(twoLeg, oneLeg))!!.change)
+        // A one-leg set never counts as a PR against two-leg history.
+        val logs = mapOf(mon.index to DayLog(mon.index, DayStatus.DONE, strength = listOf(twoLeg.log)))
+        assertTrue(personalRecords(thu.index, listOf(oneLeg.log), logs).isEmpty())
+    }
+
     @Test fun noHistoryNoAdvice() {
         assertNull(loadAdvice(legPress, StrengthKind.PHASE1, thu.date, emptyList()))
     }
@@ -382,6 +401,25 @@ class GameTest {
         assertTrue("comeback" in p.badges)
         assertTrue("pr" in p.badges)
         assertTrue("week_complete" in p.badges)
+    }
+
+    @Test fun newBadges() {
+        val today = LocalDate.of(2027, 1, 25)
+        val logs = Plan.days.filter { it.date < today && it.isTrainingDay }.associate {
+            it.index to DayLog(it.index, DayStatus.DONE, run = if (it.run.isRun) RunLog(it.miles, segmentPaceSec = 618) else null, xp = 40)
+        }
+        val p = computeProgress(Schedule(logs, Settings(), today), logs, emptySet(), today)
+        for (b in listOf("miles_26", "turkey", "jingle", "new_year", "halfway", "weeks_4", "streak_50", "level_5", "sunday_10"))
+            assertTrue("$b missing: ${p.badges}", b in p.badges)
+        assertTrue("bib_ready" !in p.badges)
+        // By mid-March there have been 6 marathon-pace runs, all logged on goal pace.
+        val feb = LocalDate.of(2027, 3, 15)
+        val logs2 = Plan.days.filter { it.date < feb && it.isTrainingDay }.associate {
+            it.index to DayLog(it.index, DayStatus.DONE, run = if (it.run.isRun) RunLog(it.miles, segmentPaceSec = 625) else null)
+        }
+        assertTrue("mp_5" in computeProgress(Schedule(logs2, Settings(), feb), logs2, emptySet(), feb).badges)
+        assertEquals(Game.badges.size, Game.badges.map { it.id }.toSet().size) // ids are unique
+        assertTrue(p.badgeProgress.keys.all { id -> Game.badges.any { it.id == id } })
     }
 
     @Test fun streakShieldedBySickness() {

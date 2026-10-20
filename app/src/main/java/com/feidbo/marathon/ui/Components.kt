@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.dp
 import com.feidbo.marathon.core.Tip
 import com.feidbo.marathon.core.TipLevel
 import com.feidbo.marathon.core.fmt
+import com.feidbo.marathon.timer.Timers
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.feidbo.marathon.ui.theme.Coral
 import com.feidbo.marathon.ui.theme.Gold
 import com.feidbo.marathon.ui.theme.Green
@@ -127,14 +129,21 @@ fun NumberField(
     modifier: Modifier = Modifier,
     decimal: Boolean = true,
     suffix: String? = null,
+    imeAction: androidx.compose.ui.text.input.ImeAction = androidx.compose.ui.text.input.ImeAction.Done,
 ) {
+    val focus = androidx.compose.ui.platform.LocalFocusManager.current
     OutlinedTextField(
         value = value,
         onValueChange = { v -> if (v.length <= 7 && v.all { it.isDigit() || (decimal && it == '.') }) onValueChange(v) },
-        label = { Text(label) },
+        label = { Text(label, maxLines = 1) },
         singleLine = true,
         suffix = suffix?.let { { Text(it) } },
-        keyboardOptions = KeyboardOptions(keyboardType = if (decimal) KeyboardType.Decimal else KeyboardType.Number),
+        keyboardOptions = KeyboardOptions(keyboardType = if (decimal) KeyboardType.Decimal else KeyboardType.Number, imeAction = imeAction),
+        // "Next" hops to the following field; "Done" puts the keyboard away.
+        keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+            onNext = { focus.moveFocus(androidx.compose.ui.focus.FocusDirection.Next) },
+            onDone = { focus.clearFocus() },
+        ),
         modifier = modifier,
     )
 }
@@ -169,23 +178,31 @@ fun minSecToSeconds(min: String, sec: String, hours: String = ""): Int? {
     return h * 3600 + m * 60 + s
 }
 
-/** A 3-minute quad-stretch timer: 90 s per side. */
+/**
+ * The 3-minute quad-stretch timer (90 s per side) for [dayIndex]. It runs in [Timers], so it survives
+ * rotation and keeps going in the background, buzzing at the switch and at the end.
+ * [onFinished] is called when it runs out on screen.
+ */
 @Composable
-fun StretchTimer(onFinished: () -> Unit, modifier: Modifier = Modifier) {
-    var running by remember { mutableStateOf(false) }
-    var remaining by remember { mutableIntStateOf(180) }
-    LaunchedEffect(running) {
-        while (running && remaining > 0) {
-            delay(1000)
-            remaining--
-        }
-        if (running && remaining == 0) {
-            running = false
-            onFinished()
+fun StretchTimer(dayIndex: Int, onFinished: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val all by Timers.stretch.collectAsStateWithLifecycle()
+    val c = all?.takeIf { it.dayIndex == dayIndex }
+    var remainingMs by remember { mutableStateOf(c?.remainingMs() ?: Timers.STRETCH_TOTAL_MS) }
+    LaunchedEffect(c) {
+        remainingMs = c?.remainingMs() ?: Timers.STRETCH_TOTAL_MS
+        while (c != null && c.running) {
+            remainingMs = c.remainingMs()
+            if (remainingMs == 0L) {
+                Timers.finishStretchNow(context)?.let(onFinished)
+                break
+            }
+            delay(250)
         }
     }
-    val side = if (remaining > 90) "Left side" else "Right side"
-    val sideRemaining = if (remaining > 90) remaining - 90 else remaining
+    val remaining = ((remainingMs + 999) / 1000).toInt()
+    val firstSide = remaining > 90
+    val sideRemaining = if (firstSide) remaining - 90 else remaining
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(64.dp)) {
             val progress = sideRemaining / 90f
@@ -199,16 +216,15 @@ fun StretchTimer(onFinished: () -> Unit, modifier: Modifier = Modifier) {
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(if (remaining == 0) "All done!" else side, style = MaterialTheme.typography.titleMedium)
+            Text(if (firstSide) "First leg" else "Second leg", style = MaterialTheme.typography.titleMedium)
             Text(
-                if (remaining in 89..90 && running) "Switch sides!" else "Kneel, hold your ankle, tuck your pelvis.",
+                if (!firstSide && remaining > 85 && c?.running == true) "Switch sides!" else "Kneel, hold your ankle, tuck your pelvis.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         androidx.compose.material3.FilledTonalButton(onClick = {
-            if (remaining == 0) remaining = 180
-            running = !running
-        }) { Text(if (running) "Pause" else if (remaining in 1..179) "Resume" else "Start") }
+            if (c?.running == true) Timers.pauseStretch(context) else Timers.startStretch(context, dayIndex)
+        }) { Text(if (c?.running == true) "Pause" else if (c?.paused == true) "Resume" else "Start") }
     }
 }
 

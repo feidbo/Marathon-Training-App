@@ -1,44 +1,32 @@
 package com.feidbo.marathon.ui
 
-import android.content.Context
-import android.media.AudioManager
-import android.media.ToneGenerator
-import android.os.Build
-import android.os.Handler
-import android.os.Looper
-import android.os.SystemClock
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.saveable.listSaver
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,122 +36,77 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.feidbo.marathon.core.fmt
+import com.feidbo.marathon.timer.Timers
 import com.feidbo.marathon.ui.theme.Gold
 import kotlinx.coroutines.delay
 
 /**
- * Rest countdown between sets. Times use [SystemClock.elapsedRealtime] so the countdown stays
- * correct if the app is briefly in the background, and survive rotation.
+ * The rest countdown between sets: one compact row that floats just above the keyboard (or the bottom
+ * of the screen). The timer itself lives in [Timers], so it keeps going through rotation and when the
+ * app is in the background, and the alarm buzzes even if the app is closed.
  */
-@Stable
-class RestTimerState(durationSec: Int, endAt: Long = 0L) {
-    var durationSec by mutableIntStateOf(durationSec)
-    var endAt by mutableLongStateOf(endAt)      // 0 = not resting
-        private set
-    var remainingMs by mutableLongStateOf(0L)
-        internal set
-    val resting: Boolean get() = endAt > 0L
-
-    fun start() {
-        endAt = SystemClock.elapsedRealtime() + durationSec * 1000L
-        remainingMs = durationSec * 1000L
-    }
-    fun add(seconds: Int) {
-        if (resting) endAt = (endAt + seconds * 1000L).coerceAtLeast(SystemClock.elapsedRealtime() + 1000)
-    }
-    fun stop() {
-        endAt = 0L
-    }
-
-    companion object {
-        val Saver = listSaver<RestTimerState, Long>(
-            save = { listOf(it.durationSec.toLong(), it.endAt) },
-            restore = { RestTimerState(it[0].toInt(), it[1]) },
-        )
-    }
-}
-
 @Composable
-fun rememberRestTimer(defaultSec: Int): RestTimerState =
-    rememberSaveable(saver = RestTimerState.Saver) { RestTimerState(defaultSec) }
-
-/** The countdown bar pinned to the bottom of the log screen while resting. */
-@Composable
-fun RestBar(timer: RestTimerState, nextUp: String?, scienceNote: String?) {
+fun RestBar(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val view = LocalView.current
+    val rest by Timers.rest.collectAsStateWithLifecycle()
+    val c = rest
+    val running = c?.running == true
+    var remaining by remember { mutableLongStateOf(0L) }
 
-    // Keep the screen on while resting so the countdown and alert aren't lost.
-    DisposableEffect(timer.resting) {
-        view.keepScreenOn = timer.resting
+    // Keep the screen on while resting so the countdown stays in view.
+    DisposableEffect(running) {
+        view.keepScreenOn = running
         onDispose { view.keepScreenOn = false }
     }
-    LaunchedEffect(timer.endAt) {
-        while (timer.resting) {
-            timer.remainingMs = (timer.endAt - SystemClock.elapsedRealtime()).coerceAtLeast(0)
-            if (timer.remainingMs == 0L) {
-                timer.stop()
-                alert(context)
+    LaunchedEffect(c) {
+        while (c != null && c.running) {
+            remaining = c.remainingMs()
+            if (remaining == 0L) {
+                Timers.finishRestIfDue(context)
                 break
             }
             delay(200)
         }
     }
 
-    AnimatedVisibility(timer.resting, enter = slideInVertically { it }, exit = slideOutVertically { it }) {
+    AnimatedVisibility(running, modifier = modifier, enter = slideInVertically { it }, exit = slideOutVertically { it }) {
         Surface(
             color = MaterialTheme.colorScheme.inverseSurface,
             contentColor = MaterialTheme.colorScheme.inverseOnSurface,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            shadowElevation = 12.dp,
+            shape = RoundedCornerShape(20.dp),
+            shadowElevation = 10.dp,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
         ) {
-            Row(
-                Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(Modifier.size(72.dp), contentAlignment = Alignment.Center) {
-                    val progress = timer.remainingMs / (timer.durationSec * 1000f)
-                    Canvas(Modifier.size(72.dp)) {
-                        drawArc(Color.White.copy(alpha = 0.18f), 0f, 360f, false, style = Stroke(8.dp.toPx()))
-                        drawArc(Gold, -90f, 360f * progress.coerceIn(0f, 1f), false, style = Stroke(8.dp.toPx(), cap = StrokeCap.Round))
+            Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                val duration = (c?.durationMs ?: 1L).coerceAtLeast(1L)
+                Box(Modifier.size(52.dp), contentAlignment = Alignment.Center) {
+                    Canvas(Modifier.size(52.dp)) {
+                        drawArc(Color.White.copy(alpha = 0.18f), 0f, 360f, false, style = Stroke(6.dp.toPx()))
+                        drawArc(Gold, -90f, 360f * (remaining / duration.toFloat()).coerceIn(0f, 1f), false,
+                            style = Stroke(6.dp.toPx(), cap = StrokeCap.Round))
                     }
-                    val s = ((timer.remainingMs + 999) / 1000).toInt()
-                    Text(fmt("%d:%02d", s / 60, s % 60), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    val s = ((remaining + 999) / 1000).toInt()
+                    Text(fmt("%d:%02d", s / 60, s % 60), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 }
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("Rest", style = MaterialTheme.typography.titleMedium)
-                    nextUp?.let { Text("Next: $it", style = MaterialTheme.typography.bodySmall) }
-                    scienceNote?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f)) }
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        FilledTonalButton(onClick = { timer.add(-15) }) { Text("−15s") }
-                        FilledTonalButton(onClick = { timer.add(15) }) { Text("+15s") }
-                        TextButton(onClick = { timer.stop() }) { Text("Skip", color = Gold) }
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Rest", style = MaterialTheme.typography.titleSmall)
+                    if (!c?.label.isNullOrEmpty()) {
+                        Text("Next: ${c?.label}", style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
+                }
+                FilledTonalButton(onClick = { Timers.addRest(context, -15) }, modifier = Modifier.padding(end = 4.dp)) { Text("−15") }
+                FilledTonalButton(onClick = { Timers.addRest(context, 15) }) { Text("+15") }
+                IconButton(onClick = { Timers.stopRest(context) }) {
+                    Icon(Icons.Filled.Close, contentDescription = "Skip rest", tint = Gold)
                 }
             }
         }
-    }
-}
-
-private fun alert(context: Context) {
-    try {
-        val vibrator = if (Build.VERSION.SDK_INT >= 31) {
-            context.getSystemService(VibratorManager::class.java)?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-        }
-        vibrator?.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 300, 150, 300, 150, 500), -1))
-    } catch (_: Exception) {
-    }
-    try {
-        val tone = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 90)
-        tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 600)
-        Handler(Looper.getMainLooper()).postDelayed({ tone.release() }, 800)
-    } catch (_: Exception) {
     }
 }

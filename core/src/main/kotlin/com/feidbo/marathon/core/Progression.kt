@@ -83,6 +83,14 @@ fun loadAdvice(rx: Prescription, kind: StrengthKind, date: LocalDate, history: L
     fun advice(w: Double, change: LoadChange, reason: String) =
         LoadAdvice(maxOf(0.0, w), lastW, lastDate, change, reason)
 
+    // Switching from two legs to one: each leg moves roughly half the two-leg load.
+    if (ex.perSide && !last.log.perSide) {
+        val w = roundDown(lastW * 0.55 * if (kind == StrengthKind.LIGHT) 0.6 else 1.0)
+        return advice(w, LoadChange.NEW_TARGET,
+            "Now one leg at a time (${rx.reps} per leg). Start at about half your two-leg weight " +
+                "(${formatMiles(lastW)} lb) and adjust so the last reps on each leg are hard.")
+    }
+
     // Light sessions: about 60% of working weight (plan, Mar 1 and Apr 12).
     if (kind == StrengthKind.LIGHT) {
         return if (inv) advice(roundUp(lastW + maxOf(10.0, lastW * 0.25)), LoadChange.LIGHT,
@@ -178,7 +186,8 @@ fun personalRecords(dayIndex: Int, newLogs: List<ExerciseLog>, logs: Map<Int, Da
         fun max(l: ExerciseLog): Double? = l.sets.filter { it.reps > 0 }.takeIf { it.isNotEmpty() && l.topWeight > 0 }
             ?.let { estimatedOneRepMax(l.topWeight, it.minOf { s -> s.reps }, l.rir ?: 0) }
         val now = max(e) ?: return@mapNotNull null
-        val before = exerciseHistory(ex.id, logs).filter { it.dayIndex != dayIndex }.mapNotNull { max(it.log) }.maxOrNull()
+        val before = exerciseHistory(ex.id, logs).filter { it.dayIndex != dayIndex && it.log.perSide == e.perSide }
+            .mapNotNull { max(it.log) }.maxOrNull()
             ?: return@mapNotNull null
         ex.takeIf { now > before + 0.5 }
     }

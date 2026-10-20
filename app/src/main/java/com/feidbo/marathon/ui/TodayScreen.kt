@@ -76,6 +76,9 @@ import com.feidbo.marathon.core.strengthSession
 import com.feidbo.marathon.core.LoadChange
 import com.feidbo.marathon.core.loadAdviceFor
 import com.feidbo.marathon.core.workoutTitle
+import com.feidbo.marathon.timer.Timers
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.feidbo.marathon.ui.theme.BigNumber
 import com.feidbo.marathon.ui.theme.Gold
 import com.feidbo.marathon.ui.theme.GoldDeep
@@ -101,6 +104,7 @@ fun TodayScreen(
     onToggleStretch: (Int) -> Unit,
     onUndo: (Int) -> Unit,
     onCatchUp: () -> Unit,
+    onStretchDone: (Int) -> Unit,
 ) {
     val sd = state.schedule.on(date)
     val today = state.today
@@ -154,7 +158,7 @@ fun TodayScreen(
                 Text("🏅 Eugene is done!", style = MaterialTheme.typography.headlineSmall)
                 Text("Check Progress for everything you accomplished.")
             }
-            else -> DayContent(state, sd, onLog, onMissed, onOpenExercise, onToggleStretch, onUndo)
+            else -> DayContent(state, sd, onLog, onMissed, onOpenExercise, onToggleStretch, onUndo, onStretchDone)
         }
 
         WeekStrip(state, date, onDateChange)
@@ -246,6 +250,7 @@ private fun DayContent(
     onOpenExercise: (String, Int) -> Unit,
     onToggleStretch: (Int) -> Unit,
     onUndo: (Int) -> Unit,
+    onStretchDone: (Int) -> Unit,
 ) {
     val day = sd.day
     val log = state.logs[day.index]
@@ -326,13 +331,13 @@ private fun DayContent(
                             )
                         }
                     }
-                    Text("${rx.sets} × ${rx.reps}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                    Text("${rx.sets} × ${rx.exercise.repsText(rx.reps)}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
     }
 
-    StretchCard(state, sd, onToggleStretch, onOpenExercise)
+    StretchCard(state, sd, onToggleStretch, onOpenExercise, onStretchDone)
 }
 
 /** Today's checklist: each part of the day with its XP, plus the perfect-day bonus. */
@@ -478,7 +483,10 @@ private fun HeroStat(label: String, value: String, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun StretchCard(state: UiState, sd: ScheduledDay, onToggle: (Int) -> Unit, onOpenExercise: (String, Int) -> Unit) {
+private fun StretchCard(
+    state: UiState, sd: ScheduledDay, onToggle: (Int) -> Unit, onOpenExercise: (String, Int) -> Unit, onStretchDone: (Int) -> Unit,
+) {
+    val context = LocalContext.current
     val done = sd.index in state.data.stretchDays
     val canLog = sd.date <= state.today
     var showTimer by remember { mutableStateOf(false) }
@@ -502,9 +510,10 @@ private fun StretchCard(state: UiState, sd: ScheduledDay, onToggle: (Int) -> Uni
                 )
             }
         }
+        val active by Timers.stretch.collectAsStateWithLifecycle()
         if (canLog && !done) {
-            if (showTimer) StretchTimer(onFinished = { onToggle(sd.index) })
-            else TextButton(onClick = { showTimer = true }) { Text("⏱  Start 3-minute timer") }
+            if (showTimer || active?.dayIndex == sd.index) StretchTimer(sd.index, onFinished = onStretchDone)
+            else TextButton(onClick = { showTimer = true; Timers.startStretch(context, sd.index) }) { Text("⏱  Start 3-minute timer") }
         }
     }
 }

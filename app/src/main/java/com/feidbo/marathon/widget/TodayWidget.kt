@@ -61,7 +61,7 @@ class TodayWidget : AppWidgetProvider() {
             val today = LocalDate.now()
             if (data == null) return views
             val schedule = Schedule(data.logs, data.settings, today)
-            val progress = computeProgress(schedule, data.logs, data.stretchDays, today)
+            val progress = computeProgress(schedule, data.logs, data.stretchDays, today, data.settings.marathonPaceSec)
             val toRace = ChronoUnit.DAYS.between(today, Plan.raceDay)
             views.setTextViewText(R.id.w_streak, "🔥 ${progress.streak} · Lv ${progress.level.level}")
 

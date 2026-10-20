@@ -49,6 +49,10 @@ import com.feidbo.marathon.ui.SettingsScreen
 import com.feidbo.marathon.ui.TodayScreen
 import com.feidbo.marathon.ui.XpToast
 import com.feidbo.marathon.ui.theme.MarathonTheme
+import com.feidbo.marathon.timer.Timers
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.toMutableStateList
 import java.time.LocalDate
 
 /** Full-screen pages that open on top of the tabs. */
@@ -78,6 +82,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        Timers.appVisible = true
+    }
+
+    override fun onStop() {
+        Timers.appVisible = false
+        super.onStop()
+    }
+
     override fun onResume() {
         super.onResume()
         vm.refreshDate()
@@ -96,7 +110,8 @@ private fun App(vm: AppViewModel) {
     }
 
     var tab by rememberSaveable { mutableStateOf(Tab.TODAY) }
-    val stack = remember { mutableStateListOf<Screen>() }
+    // Saved so the open screen (e.g. a strength session) comes back even if Android closes the app.
+    val stack = rememberSaveable(saver = screenStackSaver) { mutableStateListOf<Screen>() }
     var date by remember { mutableStateOf(clampToPlan(state.today)) }
     var missedFor by remember { mutableStateOf<Int?>(null) }
     var catchUp by remember { mutableStateOf(false) }
@@ -137,7 +152,12 @@ private fun App(vm: AppViewModel) {
             when (top) {
                 // Keyed so each day or exercise gets fresh screen state.
                 is Screen.Log -> key(top) {
-                    LogScreen(state, top.dayIndex, onBack = ::pop) { run, lifts ->
+                    LogScreen(
+                        state, top.dayIndex,
+                        draft = remember { vm.loadDraft(top.dayIndex) },
+                        onDraft = vm::saveDraft,
+                        onBack = ::pop,
+                    ) { run, lifts ->
                         vm.saveWorkout(top.dayIndex, run, lifts)
                         pop()
                     }
@@ -155,6 +175,7 @@ private fun App(vm: AppViewModel) {
                         onToggleStretch = vm::toggleStretch,
                         onUndo = vm::clearLog,
                         onCatchUp = { catchUp = true },
+                        onStretchDone = vm::markStretchDone,
                     )
                     Tab.PROGRESS -> ProgressScreen(
                         state = state,
@@ -192,3 +213,24 @@ private fun App(vm: AppViewModel) {
 }
 
 private fun clampToPlan(d: LocalDate): LocalDate = d.coerceIn(Plan.start, Plan.raceDay)
+
+private val screenStackSaver = listSaver<SnapshotStateList<Screen>, String>(
+    save = { stack ->
+        stack.map {
+            when (it) {
+                is Screen.Log -> "log:${it.dayIndex}"
+                is Screen.Exercise -> "ex:${it.id}:${it.dayIndex}"
+            }
+        }
+    },
+    restore = { saved ->
+        saved.mapNotNull { s ->
+            val p = s.split(":")
+            when (p[0]) {
+                "log" -> p.getOrNull(1)?.toIntOrNull()?.let { Screen.Log(it) }
+                "ex" -> p.getOrNull(2)?.toIntOrNull()?.let { Screen.Exercise(p[1], it) }
+                else -> null
+            }
+        }.toMutableStateList()
+    },
+)
