@@ -52,17 +52,34 @@ fun runFeedback(day: PlannedDay, log: RunLog, settings: Settings, longestPrior30
     val avg = log.paceSec
     val seg = log.segmentPaceSec
     when (day.run) {
-        RunKind.EASY, RunKind.RECOVERY, RunKind.SHAKEOUT, RunKind.LONG, RunKind.EASY_STRIDES -> avg?.let {
+        RunKind.EASY, RunKind.RECOVERY, RunKind.SHAKEOUT, RunKind.LONG, RunKind.EASY_STRIDES -> {
+            // Easy is judged by effort first: talk test / effort 3–4, then heart rate if you've set a cap;
+            // the pace range is a guide only (docs/decisions.md §5).
+            val cap = settings.easyHrCap
+            val hr = log.avgHr
+            val effort = log.effort
             val slack = if (day.run == RunKind.EASY_STRIDES || day.run == RunKind.SHAKEOUT) 20 else 10
+            val fastByPace = avg != null && avg < Paces.EASY_FAST - slack
             when {
-                it < Paces.EASY_FAST - slack -> tips += Tip(TipLevel.WARN,
-                    "${formatPace(it)} /mi is faster than easy (${formatPace(Paces.EASY_FAST)}–${formatPace(Paces.EASY_SLOW)}). " +
-                        "Slow down — about 80% of your running should be easy, and runners who kept it easy improved more " +
-                        "(Esteve-Lanao 2007). You should be able to talk in full sentences.")
-                it > Paces.EASY_SLOW + 90 -> tips += Tip(TipLevel.INFO,
+                cap != null && hr != null && hr > cap -> tips += Tip(TipLevel.WARN,
+                    "Average heart rate $hr is above your easy cap ($cap) — this run was harder than easy. Slow down until " +
+                        "you can talk in full sentences; ~80% easy running improved runners more (Esteve-Lanao 2007).")
+                effort != null && effort in 5..6 -> tips += Tip(TipLevel.WARN,
+                    "Effort $effort/10 is above easy (3–4). Easy means you can talk in full sentences (talk test).")
+                fastByPace && (effort != null && effort <= 4 || cap != null && hr != null && hr <= cap) -> tips += Tip(TipLevel.INFO,
+                    "Faster than the plan's easy pace range, but your ${if (hr != null && cap != null) "heart rate" else "effort"} " +
+                        "says easy — trust that. The pace range is only a guide.")
+                fastByPace -> tips += Tip(TipLevel.INFO,
+                    "Faster than the plan's easy pace range. If you could talk in full sentences, it was easy; add your effort " +
+                        "or heart rate so the app can tell.")
+                avg != null && avg > Paces.EASY_SLOW + 90 -> tips += Tip(TipLevel.INFO,
                     "Slower than the easy range — that's fine. Easy is judged by effort; hills, heat and fatigue slow you down, " +
                         "and run-walk counts.")
-                else -> tips += Tip(TipLevel.GREAT, "Right in the easy zone. This is how aerobic fitness gets built.")
+                avg != null || effort != null || hr != null -> tips += Tip(TipLevel.GREAT, "Easy effort. This is how aerobic fitness gets built.")
+            }
+            if (cap == null && hr != null && effort != null && effort <= 4) {
+                tips += Tip(TipLevel.INFO,
+                    "Tip: if you could talk in full sentences on this run, set ~$hr as your easy heart-rate cap in Settings.")
             }
         }
         RunKind.MARATHON_PACE -> {
@@ -160,7 +177,8 @@ fun strengthFeedback(
     }
     val weight = log.topWeight
     val prevWeight = previous?.topWeight
-    if (!ex.inverted && weight <= 0.0) {
+    val bodyweight = log.bodyweight || !ex.usesWeight
+    if (!ex.inverted && !bodyweight && weight <= 0.0) {
         return listOf(Tip(TipLevel.WARN, "Enter the weight you used so the app can track your progress and suggest the next load."))
     }
 
@@ -173,13 +191,13 @@ fun strengthFeedback(
         if (kind == StrengthKind.LIGHT && prevWeight != null && prevWeight > 0 && !ex.inverted && weight > prevWeight * 0.75) {
             tips += Tip(TipLevel.INFO, "Light day: aim for about 60% of your working weight (~${roundWeight(prevWeight * 0.6)} lb).")
         } else {
-            tips += Tip(TipLevel.GREAT, if (kind == StrengthKind.LEARN) "Machine learned — note your seat setting." else "Nice and light. Fresh legs for the run.")
+            tips += Tip(TipLevel.GREAT, if (kind == StrengthKind.LEARN) "Movement learned — note your starting weight." else "Nice and light. Fresh legs for the run.")
         }
         return tips
     }
 
     // Jumps compared with last time.
-    if (prevWeight != null && prevWeight > 0 && weight > 0) {
+    if (!bodyweight && prevWeight != null && prevWeight > 0 && weight > 0) {
         val change = (weight - prevWeight) / prevWeight
         if (!ex.inverted && change > 0.15 && weight - prevWeight > 10) {
             tips += Tip(TipLevel.WARN,
@@ -211,9 +229,9 @@ fun strengthFeedback(
 
 private fun repsLeft(kind: StrengthKind) = strengthSession(kind)?.targetRir ?: 2
 
-/** Rounds to the nearest 5 lb (2.5 lb under 50 lb), always moving at least one step when [forceUp] is set. */
+/** Rounds to the nearest 5 lb (dumbbell steps), always moving at least one step when [forceUp] is set. */
 fun roundWeight(w: Double, forceUp: Boolean = false): Double {
-    val step = if (w < 50) 2.5 else 5.0
+    val step = 5.0
     val r = (w / step).roundToInt() * step
     return if (forceUp && r <= w / 1.05) r + step else r
 }

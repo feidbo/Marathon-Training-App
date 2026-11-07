@@ -1,13 +1,13 @@
 package com.feidbo.marathon.core
 
 /** How loads move for an exercise: big lower-body lifts take bigger jumps (ACSM 2009). */
-enum class LoadType { LOWER_COMPOUND, LOWER_SMALL, ASSISTED }
+enum class LoadType { LOWER_COMPOUND, LOWER_SMALL, ASSISTED, BODYWEIGHT }
 
 data class Exercise(
     val id: String,
     val name: String,
-    val block: String,          // "1a", "2c", ...
-    val machine: String,
+    val block: String,          // "1a", "2c", ... (the number is the circuit block)
+    val machine: String,        // equipment needed
     val muscles: String,
     val steps: List<String>,
     val cues: List<String>,
@@ -17,11 +17,26 @@ data class Exercise(
     val load: LoadType = LoadType.LOWER_SMALL,
     /** Done one side at a time: reps are per leg, so every set is the reps on each leg. */
     val perSide: Boolean = false,
+    /** A no-equipment version for days without dumbbells (null when the exercise is already bodyweight). */
+    val bodyweightName: String? = null,
+    val bodyweightSteps: List<String> = emptyList(),
+    /** Skip it freely (the assisted pull-up needs a machine). */
+    val optional: Boolean = false,
+    /** Part of the calf work that the calf guidance can take over. */
+    val calf: Boolean = false,
+    /** Old machine exercises: kept so past logs still show their names; never prescribed. */
+    val retired: Boolean = false,
+    /** Where the choice comes from (docs/evidence + docs/decisions.md). */
+    val why: String = "",
 ) {
     fun repsText(reps: Int): String = if (perSide) "$reps/leg" else "$reps"
+    val usesWeight: Boolean get() = load != LoadType.BODYWEIGHT
 }
 
-data class Prescription(val exercise: Exercise, val sets: Int, val reps: Int)
+/** [repsLabel] is shown instead of the number when the plan gives a range (e.g. "8–10"). */
+data class Prescription(val exercise: Exercise, val sets: Int, val reps: Int, val repsLabel: String? = null) {
+    val repsShown: String get() = (repsLabel ?: reps.toString()) + if (exercise.perSide) "/leg" else ""
+}
 
 data class StrengthSession(
     val kind: StrengthKind,
@@ -30,46 +45,70 @@ data class StrengthSession(
     val rest: String,
     val minutes: String,
     val notes: List<String>,
-    val restSec: Int,           // rest after each round of a block
+    val restSec: Int,           // rest between sets
     val targetRir: Int,         // reps to leave in the tank
 )
 
 object Exercises {
-    val legPress = Exercise(
-        id = "leg_press", name = "Leg press", block = "1a", machine = "Leg press",
-        muscles = "Quads, glutes", load = LoadType.LOWER_COMPOUND,
+    // ---- Current routine: dumbbells or bodyweight (docs/decisions.md §2) ------------------------
+
+    val splitSquat = Exercise(
+        id = "split_squat", name = "Bulgarian split squat", block = "1a",
+        machine = "Two dumbbells and a bench, bed or step behind you",
+        muscles = "Quads, glutes", load = LoadType.LOWER_COMPOUND, perSide = true,
+        weightLabel = "Each dumbbell (lb)",
         steps = listOf(
-            "Sit with your back and hips flat against the pad.",
-            "Feet about shoulder-width on the platform, toes slightly out.",
-            "Release the safety handles. Lower the platform under control until your knees reach about 90°.",
-            "Press back up through your whole foot, stopping just short of locking your knees.",
+            "Stand about two steps in front of a bench (or bed edge), a dumbbell in each hand.",
+            "Rest the top of your back foot on the bench behind you.",
+            "Lower straight down until your front thigh is about level with the floor; the back knee drops toward the floor.",
+            "Push through your whole front foot to stand back up. Do all reps, then switch legs — that's one set.",
         ),
         cues = listOf(
-            "Feet about shoulder-width.",
-            "Lower under control to about 90° at the knee.",
-            "Don't lock your knees at the top.",
+            "Most of your weight stays on the front foot.",
+            "Front knee tracks over your toes.",
+            "Control the way down; drive up.",
         ),
+        bodyweightName = "Bulgarian split squat (bodyweight)",
+        bodyweightSteps = listOf("Same movement with no dumbbells; slow the lowering (about 3 seconds) to make it harder."),
+        why = "Replaces the leg press. In a training study, rear-foot-elevated split squats built strength as well as " +
+            "back squats (Speirs 2016), with similar quad activity (Andersen 2014).",
     )
-    val calfRaise = Exercise(
-        id = "calf_raise", name = "Single-leg calf raise", block = "1b",
-        machine = "Same leg press, ball of one foot on the platform edge",
-        muscles = "Calves (gastrocnemius, soleus), one leg at a time",
+    val calfRaiseStraight = Exercise(
+        id = "calf_raise_straight", name = "Single-leg calf raise (knee straight)", block = "1b",
+        machine = "A step and one dumbbell",
+        muscles = "Calves — mostly gastrocnemius", perSide = true, calf = true,
+        weightLabel = "Dumbbell (lb)",
         steps = listOf(
-            "On the leg press, press the platform up so your legs are straight (knee soft, not locked).",
-            "Place the ball of ONE foot on the bottom edge of the platform; rest the other foot off to the side.",
-            "Let your heel drop slowly for a full stretch.",
-            "Push through the ball of your foot to point your toes as far as you can, then lower slowly.",
-            "Do all the reps on one leg, then the same on the other leg — that's one set.",
+            "Stand on one foot with the ball of the foot on a step edge, dumbbell in the same-side hand, other hand on a wall.",
+            "Keep the knee straight (not locked).",
+            "Lower your heel slowly below the step for a full stretch.",
+            "Rise as high as you can onto the ball of the foot, pause, then lower slowly. All reps, then the other leg.",
         ),
-        cues = listOf(
-            "Keep the safety stops engaged.",
-            "Lower slowly through a full range.",
-            "One leg at a time evens out side-to-side differences; expect to use about half your two-leg weight.",
+        cues = listOf("Full range: all the way down, all the way up.", "Slow on the way down."),
+        bodyweightName = "Single-leg calf raise, knee straight (bodyweight)",
+        bodyweightSteps = listOf("Same movement with no dumbbell."),
+        why = "Knee straight shifts the work toward the gastrocnemius (Hébert-Losier 2012; Kovács 2024). " +
+            "12 per leg, as you asked.",
+    )
+    val calfRaiseBent = Exercise(
+        id = "calf_raise_bent", name = "Single-leg calf raise (knee bent)", block = "1c",
+        machine = "A step and one dumbbell",
+        muscles = "Calves — more soleus", perSide = true, calf = true,
+        weightLabel = "Dumbbell (lb)",
+        steps = listOf(
+            "Same set-up as the straight-knee raise, but bend the knee to about 30–45° and keep it bent.",
+            "Lower the heel slowly below the step.",
+            "Rise onto the ball of the foot without straightening the knee, then lower slowly. All reps, then the other leg.",
         ),
-        perSide = true,
+        cues = listOf("Keep the knee bend the same the whole set.", "Slow on the way down."),
+        bodyweightName = "Single-leg calf raise, knee bent (bodyweight)",
+        bodyweightSteps = listOf("Same movement with no dumbbell."),
+        why = "Knee bent shifts load toward the soleus (Kovács 2024: soleus activity 15–28% higher); experts treat " +
+            "soleus capacity as central to calf-strain recovery (Green 2022).",
     )
     val pullUp = Exercise(
-        id = "assisted_pull_up", name = "Assisted pull-up", block = "1c", machine = "Assisted pull-up machine (counterweight)",
+        id = "assisted_pull_up", name = "Assisted pull-up (optional)", block = "1d",
+        machine = "Assisted pull-up machine — skip it when there isn't one",
         muscles = "Lats, upper back, biceps",
         steps = listOf(
             "Set the counterweight. More counterweight means more help.",
@@ -85,52 +124,80 @@ object Exercises {
         inverted = true,
         weightLabel = "Counterweight (lb)",
         load = LoadType.ASSISTED,
+        optional = true,
+        why = "Kept as an optional extra, as you asked.",
     )
     val hipThrust = Exercise(
-        id = "hip_thrust", name = "Hip thrust", block = "2a", machine = "Hip thrust machine, or Smith machine",
+        id = "hip_thrust_db", name = "Dumbbell hip thrust", block = "2a",
+        machine = "One dumbbell and a bench or bed edge",
         muscles = "Glutes, hamstrings", load = LoadType.LOWER_COMPOUND,
+        weightLabel = "Dumbbell (lb)",
         steps = listOf(
-            "Sit with your upper back against the pad (the bottom of your shoulder blades on the edge).",
-            "Belt or bar across your hips, feet flat about hip-width, shins vertical at the top.",
+            "Sit on the floor with your upper back against the bench edge, a dumbbell across your hips (hold it with both hands).",
+            "Feet flat about hip-width, close enough that your shins are vertical at the top.",
             "Tuck your chin and drive through your heels to lift your hips until your body is flat from knees to shoulders.",
             "Pause one second at the top, then lower under control.",
         ),
-        cues = listOf(
-            "Chin tucked.",
-            "Push through your heels.",
-            "Pause one second at the top.",
+        cues = listOf("Chin tucked.", "Push through your heels.", "Pause one second at the top."),
+        bodyweightName = "Single-leg hip thrust (bodyweight)",
+        bodyweightSteps = listOf(
+            "Same set-up with no dumbbell; lift one foot and drive up through the other. All reps, then switch legs.",
         ),
+        why = "Replaces the hip thrust machine; hip thrusts give very high glute activation (Neto 2020).",
     )
-    val abduction = Exercise(
-        id = "hip_abduction", name = "Hip abduction", block = "2b", machine = "Hip abductor machine",
-        muscles = "Glute medius (side of the hip)",
+    val sideAbduction = Exercise(
+        id = "side_abduction", name = "Side-lying hip abduction", block = "2b",
+        machine = "Floor space",
+        muscles = "Glute medius (side of the hip)", load = LoadType.BODYWEIGHT, perSide = true,
         steps = listOf(
-            "Sit tall with the pads on the outside of your knees.",
-            "Push your knees apart as far as is comfortable.",
-            "Hold briefly, then return slowly without letting the weights touch.",
+            "Lie on your side, bottom knee bent for balance, top leg straight in line with your body.",
+            "Turn the top toes slightly down and lift the leg up and slightly back to about 45°.",
+            "Hold one second, lower slowly. All reps, then the other side.",
+            "When 15 are easy: do it from a side plank (forearm and bottom knee down), lifting the top leg.",
         ),
-        cues = listOf(
-            "Sit tall; don't rock your torso.",
-            "Control the return.",
-        ),
+        cues = listOf("Don't roll backwards.", "Lead with the heel."),
+        why = "Replaces the hip abductor machine. Side-lying abduction was the best gluteus medius exercise of 12 " +
+            "(Distefano 2009); side plank with abduction was highest of 18 (Boren 2011).",
     )
-    val legCurl = Exercise(
-        id = "leg_curl", name = "Seated leg curl", block = "2c", machine = "Leg curl machine",
-        muscles = "Hamstrings",
+    val singleLegRdl = Exercise(
+        id = "single_leg_rdl", name = "Single-leg Romanian deadlift", block = "2c",
+        machine = "One dumbbell",
+        muscles = "Hamstrings, glutes", load = LoadType.LOWER_COMPOUND, perSide = true,
+        weightLabel = "Dumbbell (lb)",
         steps = listOf(
-            "Adjust the seat so your knees line up with the machine's pivot.",
-            "Lower pad just above your heels, thigh pad snug on your thighs.",
-            "Curl your heels down and back as far as you can.",
-            "Return slowly to straight legs.",
+            "Stand on one leg with a soft knee, dumbbell in the opposite hand.",
+            "Hinge at the hip: chest goes down as the free leg goes back, back stays flat.",
+            "Lower until you feel a strong hamstring stretch (dumbbell about mid-shin).",
+            "Drive the hip forward to stand tall. All reps, then the other leg.",
         ),
-        cues = listOf(
-            "Knees lined up with the pivot.",
-            "Slow on the way back.",
+        cues = listOf("Hips stay square to the floor.", "Back flat; move at the hip, not the waist."),
+        bodyweightName = "Sliding leg curl (bodyweight)",
+        bodyweightSteps = listOf(
+            "Lie on your back, heels on a towel on a smooth floor, hips lifted in a bridge.",
+            "Slide your heels out until your legs are nearly straight, keeping the hips up, then curl them back in.",
         ),
+        why = "Replaces the leg curl. Single-leg deadlifts were among the top glute exercises (Distefano 2009) and " +
+            "train the hamstrings; leg curls including sliding versions show high hamstring activity (Hegyi 2019).",
     )
+    val pogoHops = Exercise(
+        id = "pogo_hops", name = "Pogo hops", block = "3a",
+        machine = "Floor space",
+        muscles = "Calves and Achilles — springiness", load = LoadType.BODYWEIGHT,
+        steps = listOf(
+            "Stand tall on both feet, knees nearly straight.",
+            "Bounce quickly off the balls of your feet with short ground contacts, like skipping without a rope.",
+            "Once these are easy and pain-free, progress to single-leg hops.",
+        ),
+        cues = listOf("Quick and light — 'hot ground'.", "Stop if your calf hurts."),
+        why = "Heavy strength plus jumping work had the largest effects on running economy and performance " +
+            "(Llanos-Lagos 2024). Sets and reps are an app default, not from a study. Only shown once your calf is cleared.",
+    )
+
+    // ---- Daily stretches (docs/decisions.md §3) --------------------------------------------------
+
     val quadStretch = Exercise(
         id = "quad_stretch", name = "Kneeling quad stretch", block = "Daily", machine = "A pad or folded towel",
-        muscles = "Quads, hip flexors",
+        muscles = "Quads, hip flexors", load = LoadType.BODYWEIGHT,
         steps = listOf(
             "Kneel on a pad with one knee down and the other foot flat in front.",
             "Reach back, hold the back ankle, and draw that heel toward your glute.",
@@ -138,75 +205,137 @@ object Exercises {
             "Hold 90 seconds, then switch sides.",
         ),
         cues = listOf(
-            "Every day, including rest days.",
-            "After runs or in the evening, not right before a run.",
+            "For range of motion and comfort — stretching hasn't been shown to prevent injuries.",
+            "Long holds after runs or in the evening, not right before a run.",
             "Back off the depth if your knee complains.",
         ),
     )
+    val calfStretchStraight = Exercise(
+        id = "calf_stretch_straight", name = "Wall calf stretch (knee straight)", block = "Daily", machine = "A wall",
+        muscles = "Gastrocnemius", load = LoadType.BODYWEIGHT,
+        steps = listOf(
+            "Hands on a wall, one foot back, heel down, back knee straight.",
+            "Lean in until you feel a stretch in the upper calf. Hold, then switch sides.",
+        ),
+        cues = listOf("Back heel stays on the floor.", "A stretch, not pain."),
+    )
+    val calfStretchBent = Exercise(
+        id = "calf_stretch_bent", name = "Wall calf stretch (knee bent)", block = "Daily", machine = "A wall",
+        muscles = "Soleus (lower calf)", load = LoadType.BODYWEIGHT,
+        steps = listOf(
+            "Same position, but bring the back foot a little closer and bend the back knee.",
+            "Keep the heel down; feel it lower in the calf. Hold, then switch sides.",
+        ),
+        cues = listOf("Back heel stays on the floor.", "A stretch, not pain."),
+    )
 
-    val routine = listOf(legPress, calfRaise, pullUp, hipThrust, abduction, legCurl)
-    val all = routine + quadStretch
+    // ---- Calf rehab exercises (docs/decisions.md §4) ---------------------------------------------
+
+    val calfIsometric = Exercise(
+        id = "calf_isometric", name = "Single-leg calf hold (isometric)", block = "Calf", machine = "A wall for balance",
+        muscles = "Calves", load = LoadType.BODYWEIGHT, perSide = true, calf = true,
+        steps = listOf(
+            "Stand on one leg, hand on a wall.",
+            "Rise partway onto the ball of the foot — mid-range, where it's comfortable — and hold still.",
+            "Do it with the knee straight and again with the knee slightly bent.",
+        ),
+        cues = listOf("Comfortable range only.", "Mild discomfort is OK; sharp or rising pain means stop."),
+        why = "Experts start calf-strain loading with isometric holds because they are often less symptomatic early " +
+            "(Green 2022; Halabchi 2024). Hold times are app defaults, not from a study.",
+    )
+
+    // ---- Retired machine exercises (history only) -------------------------------------------------
+
+    private fun retired(id: String, name: String, muscles: String, inverted: Boolean = false) = Exercise(
+        id = id, name = name, block = "—", machine = "Machine (no longer in the routine)", muscles = muscles,
+        steps = emptyList(), cues = emptyList(), inverted = inverted, retired = true,
+    )
+    val legPress = retired("leg_press", "Leg press (machine)", "Quads, glutes")
+    val legPressCalf = retired("calf_raise", "Calf raise on leg press (machine)", "Calves").copy(perSide = true)
+    val hipThrustMachine = retired("hip_thrust", "Hip thrust (machine)", "Glutes, hamstrings")
+    val abductionMachine = retired("hip_abduction", "Hip abduction (machine)", "Glute medius")
+    val legCurlMachine = retired("leg_curl", "Seated leg curl (machine)", "Hamstrings")
+
+    val routine = listOf(splitSquat, calfRaiseStraight, calfRaiseBent, pullUp, hipThrust, sideAbduction, singleLegRdl)
+    val stretches = listOf(quadStretch, calfStretchStraight, calfStretchBent)
+    val retiredMachines = listOf(legPress, legPressCalf, hipThrustMachine, abductionMachine, legCurlMachine)
+    val all = routine + pogoHops + stretches + calfIsometric + retiredMachines
     fun byId(id: String): Exercise? = all.firstOrNull { it.id == id }
 }
 
-/** The machine routine for a strength day, from the plan's strength table. */
-fun strengthSession(kind: StrengthKind): StrengthSession? {
+/** What the calf guidance allows in today's strength session. */
+data class SessionOptions(
+    /** Leave out the routine's calf raises (the calf card has its own exercises). */
+    val skipCalfRaises: Boolean = false,
+    /** Include the plyometric block (only once the calf is cleared). */
+    val plyometrics: Boolean = true,
+)
+
+/**
+ * The dumbbell/bodyweight routine for a strength day (docs/decisions.md §1–2).
+ * Main lifts: split squat, hip thrust, single-leg RDL. Smaller lifts: the two calf raises, side-lying
+ * abduction and the optional assisted pull-up.
+ */
+fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions()): StrengthSession? {
     val e = Exercises
-    fun rx(vararg p: Triple<Exercise, Int, Int>) = p.map { Prescription(it.first, it.second, it.third) }
+    fun p(ex: Exercise, sets: Int, reps: Int, label: String? = null) = Prescription(ex, sets, reps, label)
+    fun build(items: List<Prescription>) = items.filter { !(options.skipCalfRaises && it.exercise.calf) }
+    val plyo = options.plyometrics
     return when (kind) {
         StrengthKind.NONE -> null
         StrengthKind.LEARN -> StrengthSession(
-            kind, rx(
-                Triple(e.legPress, 1, 12), Triple(e.calfRaise, 1, 12), Triple(e.pullUp, 1, 8),
-                Triple(e.hipThrust, 1, 12), Triple(e.abduction, 1, 15), Triple(e.legCurl, 1, 12),
-            ),
-            effort = "Light — just learn the machines and settings",
+            kind, build(listOf(
+                p(e.splitSquat, 1, 10), p(e.calfRaiseStraight, 1, 12), p(e.calfRaiseBent, 1, 12), p(e.pullUp, 1, 8),
+                p(e.hipThrust, 1, 10), p(e.sideAbduction, 1, 12), p(e.singleLegRdl, 1, 10),
+            )),
+            effort = "Light — learn the movements and pick starting weights",
             rest = "As needed", minutes = "15–20 min", restSec = 60, targetRir = 4,
-            notes = listOf("Write down seat settings and a comfortable starting weight for each machine."),
+            notes = listOf("Note a comfortable starting dumbbell for each exercise."),
         )
         StrengthKind.PHASE1 -> StrengthSession(
-            kind, rx(
-                Triple(e.legPress, 2, 12), Triple(e.calfRaise, 2, 12), Triple(e.pullUp, 2, 8),
-                Triple(e.hipThrust, 2, 12), Triple(e.abduction, 2, 15), Triple(e.legCurl, 2, 12),
-            ),
+            kind, build(listOf(
+                p(e.splitSquat, 3, 10, "8–10"), p(e.calfRaiseStraight, 2, 12), p(e.calfRaiseBent, 2, 12), p(e.pullUp, 2, 8),
+                p(e.hipThrust, 3, 10, "8–10"), p(e.sideAbduction, 2, 12), p(e.singleLegRdl, 3, 10, "8–10"),
+            )),
             effort = "Hard, about 3 reps left in the tank",
-            rest = "60–90 s between rounds", minutes = "15–20 min", restSec = 90, targetRir = 3,
-            notes = standardNotes,
+            rest = "60–90 s between sets", minutes = "25–30 min", restSec = 90, targetRir = 3,
+            notes = standardNotes + "Main lifts 3 sets (was 2 × 12): more weekly sets give a bit more strength (Ralston 2017).",
         )
         StrengthKind.PHASE2 -> StrengthSession(
-            kind, rx(
-                Triple(e.legPress, 3, 6), Triple(e.calfRaise, 2, 12), Triple(e.pullUp, 2, 8),
-                Triple(e.hipThrust, 3, 6), Triple(e.abduction, 2, 12), Triple(e.legCurl, 2, 8),
-            ),
-            effort = "Hard, about 2 reps left in the tank",
-            rest = "90 s – 2 min between rounds", minutes = "20–25 min", restSec = 120, targetRir = 2,
-            notes = standardNotes,
+            kind, build(listOf(
+                p(e.splitSquat, 3, 6, "5–6"), p(e.calfRaiseStraight, 2, 12), p(e.calfRaiseBent, 2, 12), p(e.pullUp, 2, 8),
+                p(e.hipThrust, 3, 6, "5–6"), p(e.sideAbduction, 2, 12), p(e.singleLegRdl, 3, 6, "5–6"),
+            ) + if (plyo) listOf(p(e.pogoHops, 3, 10)) else emptyList()),
+            effort = "Heavy, about 2 reps left in the tank",
+            rest = "90 s – 2 min between sets", minutes = "25–30 min", restSec = 120, targetRir = 2,
+            notes = standardNotes + "Heavy loads (≈ 5–6 hard reps) are what improved runners' economy and race times " +
+                "in the meta-analyses (Llanos-Lagos 2024).",
         )
         StrengthKind.PHASE3 -> StrengthSession(
-            kind, rx(
-                Triple(e.legPress, 2, 5), Triple(e.calfRaise, 1, 12), Triple(e.pullUp, 1, 8),
-                Triple(e.hipThrust, 2, 5), Triple(e.abduction, 1, 12), Triple(e.legCurl, 1, 8),
-            ),
-            effort = "Hard, about 2 reps left in the tank — keep the loads heavy",
-            rest = "90 s – 2 min between rounds", minutes = "About 15 min", restSec = 120, targetRir = 2,
+            kind, build(listOf(
+                p(e.splitSquat, 2, 5), p(e.calfRaiseStraight, 1, 12), p(e.calfRaiseBent, 1, 12), p(e.pullUp, 1, 8),
+                p(e.hipThrust, 2, 5), p(e.sideAbduction, 1, 12), p(e.singleLegRdl, 2, 5),
+            ) + if (plyo) listOf(p(e.pogoHops, 2, 10)) else emptyList()),
+            effort = "Heavy, about 2 reps left in the tank — keep the loads heavy",
+            rest = "90 s – 2 min between sets", minutes = "About 15–20 min", restSec = 120, targetRir = 2,
             notes = standardNotes + "One heavy session a week holds your strength (Spiering 2021).",
         )
         StrengthKind.LIGHT -> StrengthSession(
-            kind, rx(
-                Triple(e.legPress, 1, 5), Triple(e.calfRaise, 1, 12), Triple(e.pullUp, 1, 8),
-                Triple(e.hipThrust, 1, 5), Triple(e.abduction, 1, 12), Triple(e.legCurl, 1, 8),
-            ),
+            kind, build(listOf(
+                p(e.splitSquat, 1, 5), p(e.calfRaiseStraight, 1, 12), p(e.calfRaiseBent, 1, 12), p(e.pullUp, 1, 8),
+                p(e.hipThrust, 1, 5), p(e.sideAbduction, 1, 12), p(e.singleLegRdl, 1, 5),
+            )),
             effort = "Light — about 60% of your working weight",
             rest = "As needed", minutes = "About 10 min", restSec = 60, targetRir = 5,
-            notes = listOf("A light session: 1 set each. Leave the gym feeling fresh."),
+            notes = listOf("A light session: 1 set each. Leave feeling fresh."),
         )
     }
 }
 
 private val standardNotes = listOf(
     "Lift first, then run — or run later in the day (Eddens 2018).",
-    "Warm up with one light set on the leg press and the hip thrust.",
-    "Block 1: one set of leg press, calf raise, assisted pull-up, then rest. Repeat for the listed sets.",
-    "Block 2: one set each of hip thrust, hip abduction and leg curl, then rest. Repeat.",
+    "Warm up with one light set of split squats and hip thrusts.",
+    "Block 1: split squat, calf raises (and the optional pull-up). Block 2: hip thrust, side-lying abduction, " +
+        "single-leg RDL. One set of each in a block, then repeat.",
     "Add weight when every set feels easier than the target effort.",
 )

@@ -90,6 +90,7 @@ data class RunLog(
     val effort: Int? = null,          // 1–10
     val pain: Boolean = false,
     val raceTimeSec: Int? = null,     // finish time on race days
+    val avgHr: Int? = null,           // average heart rate from the watch
 )
 
 data class SetLog(val weight: Double, val reps: Int)
@@ -100,6 +101,7 @@ data class ExerciseLog(
     val feel: Feel? = null,      // older logs; newer ones record reps in reserve instead
     val rir: Int? = null,        // reps left in the tank on the last set
     val perSide: Boolean = false, // logged as a one-leg-at-a-time exercise (reps and weight are per leg)
+    val bodyweight: Boolean = false, // the no-equipment version was done
 ) {
     val topWeight: Double get() = sets.maxOfOrNull { it.weight } ?: 0.0
 }
@@ -118,4 +120,6 @@ data class Settings(
     val marathonPaceSec: Int = 618,      // 10:18 per mile, for a 4:30 finish
     val preplanLongestMiles: Double = 3.5,
     val halfTimeSec: Int? = null,
+    /** Personal easy-run heart-rate cap, calibrated with the talk test (docs/decisions.md §5). */
+    val easyHrCap: Int? = null,
 )

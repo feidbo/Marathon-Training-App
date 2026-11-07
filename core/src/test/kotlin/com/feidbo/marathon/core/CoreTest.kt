@@ -199,9 +199,35 @@ class FeedbackTest {
     private val settings = Settings()
     private val easyDay = Plan.dayOn(LocalDate.of(2026, 10, 21))!! // 3 mi easy
 
-    @Test fun easyTooFastWarns() {
-        val tips = runFeedback(easyDay, RunLog(3.0, paceSec = 10 * 60), settings, 3.75)
-        assertTrue(tips.any { it.level == TipLevel.WARN && it.text.contains("faster than easy") })
+    @Test fun easyFastPaceAloneIsNotAWarning() {
+        // Pace alone no longer flags "too fast" (decisions §5): with no effort/HR it's an info prompt.
+        val tips = runFeedback(easyDay, RunLog(3.0, paceSec = 10 * 60 + 30), settings, 3.75)
+        assertTrue(tips.none { it.level == TipLevel.WARN })
+        assertTrue(tips.any { it.level == TipLevel.INFO && it.text.contains("full sentences") })
+    }
+
+    @Test fun easyFastPaceWithEasyEffortTrustsEffort() {
+        val tips = runFeedback(easyDay, RunLog(3.0, paceSec = 10 * 60 + 30, effort = 3), settings, 3.75)
+        assertTrue(tips.none { it.level == TipLevel.WARN })
+        assertTrue(tips.any { it.text.contains("trust that") })
+    }
+
+    @Test fun easyWithHrAboveCapWarns() {
+        val capped = settings.copy(easyHrCap = 150)
+        val tips = runFeedback(easyDay, RunLog(3.0, paceSec = 10 * 60 + 30, effort = 3, avgHr = 158), capped, 3.75)
+        assertTrue(tips.any { it.level == TipLevel.WARN && it.text.contains("above your easy cap") })
+        val ok = runFeedback(easyDay, RunLog(3.0, paceSec = 10 * 60 + 30, effort = 3, avgHr = 141), capped, 3.75)
+        assertTrue(ok.none { it.level == TipLevel.WARN })
+    }
+
+    @Test fun easyEffortFiveWarns() {
+        val tips = runFeedback(easyDay, RunLog(3.0, paceSec = 12 * 60, effort = 5), settings, 3.75)
+        assertTrue(tips.any { it.level == TipLevel.WARN && it.text.contains("above easy") })
+    }
+
+    @Test fun suggestsHrCapWhenEasyAndNoCap() {
+        val tips = runFeedback(easyDay, RunLog(3.0, paceSec = 12 * 60, effort = 3, avgHr = 139), settings, 3.75)
+        assertTrue(tips.any { it.text.contains("~139") })
     }
 
     @Test fun easyInZoneIsGreat() {
@@ -249,50 +275,64 @@ class FeedbackTest {
 
 class ProgressionTest {
     private val p1 = strengthSession(StrengthKind.PHASE1)!!
-    private val legPress = p1.items.first { it.exercise.id == "leg_press" }
-    private val calf = p1.items.first { it.exercise.id == "calf_raise" }
+    private val squat = p1.items.first { it.exercise.id == "split_squat" }
+    private val calf = p1.items.first { it.exercise.id == "calf_raise_straight" }
     private val pull = p1.items.first { it.exercise.inverted }
     private fun day(y: Int, m: Int, d: Int) = Plan.dayOn(LocalDate.of(y, m, d))!!
-    private fun entry(day: PlannedDay, id: String, w: Double, reps: List<Int>, rir: Int? = null, feel: Feel? = null, perSide: Boolean = false) =
-        ExerciseHistoryEntry(day.index, day.strength, ExerciseLog(id, reps.map { SetLog(w, it) }, feel, rir, perSide))
+    private fun entry(day: PlannedDay, id: String, w: Double, reps: List<Int>, rir: Int? = null, feel: Feel? = null,
+                      perSide: Boolean = false, bodyweight: Boolean = false) =
+        ExerciseHistoryEntry(day.index, day.strength, ExerciseLog(id, reps.map { SetLog(w, it) }, feel, rir, perSide, bodyweight))
 
     private val mon = day(2026, 10, 19)
     private val thu = day(2026, 10, 22)
     private val nextMon = day(2026, 10, 26)
 
-    @Test fun easierThanTargetAddsAboutFivePercent() {
-        val a = loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "leg_press", 140.0, listOf(12, 12), rir = 4)))!!
+    @Test fun phase1PrescriptionMatchesDecisions() {
+        assertEquals(3, squat.sets); assertEquals(10, squat.reps); assertEquals("8–10/leg", squat.repsShown)
+        assertEquals(2, calf.sets); assertEquals(12, calf.reps)
+        assertEquals(listOf("split_squat", "calf_raise_straight", "calf_raise_bent", "assisted_pull_up", "hip_thrust_db",
+            "side_abduction", "single_leg_rdl"), p1.items.map { it.exercise.id })
+        val p2 = strengthSession(StrengthKind.PHASE2)!!
+        assertEquals(6, p2.items.first { it.exercise.id == "hip_thrust_db" }.reps)
+        assertTrue(p2.items.any { it.exercise.id == "pogo_hops" })
+        assertTrue(strengthSession(StrengthKind.PHASE2, SessionOptions(plyometrics = false))!!.items.none { it.exercise.id == "pogo_hops" })
+        assertTrue(strengthSession(StrengthKind.PHASE1, SessionOptions(skipCalfRaises = true))!!.items.none { it.exercise.calf })
+        assertTrue(strengthSession(StrengthKind.LIGHT)!!.items.none { it.exercise.id == "pogo_hops" })
+    }
+
+    @Test fun easierThanTargetAddsOneDumbbellStep() {
+        val a = loadAdvice(squat, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "split_squat", 40.0, listOf(10, 10, 10), rir = 4, perSide = true)))!!
         assertEquals(LoadChange.UP, a.change)
-        assertEquals(150.0, a.weight, 0.0) // +10 lb minimum step on a big lift
+        assertEquals(45.0, a.weight, 0.0)
     }
 
     @Test fun muchEasierThanTargetTakesBiggerJump() {
-        val a = loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "leg_press", 140.0, listOf(12, 12), rir = 6)))!!
+        val a = loadAdvice(squat, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "split_squat", 40.0, listOf(10, 10, 10), rir = 6)))!!
         assertEquals(LoadChange.BIG_UP, a.change)
-        assertEquals(160.0, a.weight, 0.0)
-        val small = loadAdvice(calf, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "calf_raise", 60.0, listOf(12, 12), rir = 6, perSide = true)))!!
-        assertEquals(70.0, small.weight, 0.0)
+        assertEquals(50.0, a.weight, 0.0)
+        val small = loadAdvice(calf, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "calf_raise_straight", 20.0, listOf(12, 12), rir = 6)))!!
+        assertEquals(25.0, small.weight, 0.0)
     }
 
     @Test fun onTargetHoldsAndMissedRepsBacksOff() {
-        val same = loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "leg_press", 140.0, listOf(12, 12), rir = 3)))!!
+        val same = loadAdvice(squat, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "split_squat", 40.0, listOf(10, 10, 10), rir = 3)))!!
         assertEquals(LoadChange.SAME, same.change)
-        assertEquals(140.0, same.weight, 0.0)
-        val down = loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "leg_press", 140.0, listOf(10, 8), rir = 0)))!!
+        assertEquals(40.0, same.weight, 0.0)
+        val down = loadAdvice(squat, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "split_squat", 40.0, listOf(8, 6), rir = 0)))!!
         assertEquals(LoadChange.DOWN, down.change)
-        assertEquals(125.0, down.weight, 0.0)
+        assertEquals(35.0, down.weight, 0.0)
     }
 
     @Test fun twoForTwoWithoutRir() {
-        val once = loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "leg_press", 140.0, listOf(12, 12))))!!
+        val once = loadAdvice(squat, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "split_squat", 40.0, listOf(10, 10, 10))))!!
         assertEquals(LoadChange.SAME, once.change)
-        val twice = loadAdvice(legPress, StrengthKind.PHASE1, nextMon.date,
-            listOf(entry(mon, "leg_press", 140.0, listOf(12, 12)), entry(thu, "leg_press", 140.0, listOf(12, 12))))!!
+        val twice = loadAdvice(squat, StrengthKind.PHASE1, nextMon.date,
+            listOf(entry(mon, "split_squat", 40.0, listOf(10, 10, 10)), entry(thu, "split_squat", 40.0, listOf(10, 10, 10))))!!
         assertEquals(LoadChange.UP, twice.change)
     }
 
     @Test fun olderFeelLogsStillWork() {
-        val a = loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "leg_press", 100.0, listOf(12, 12), feel = Feel.EASY)))!!
+        val a = loadAdvice(squat, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "split_squat", 40.0, listOf(10, 10, 10), feel = Feel.EASY)))!!
         assertEquals(LoadChange.BIG_UP, a.change)
     }
 
@@ -306,61 +346,129 @@ class ProgressionTest {
     @Test fun phaseChangeUsesEstimatedMaxAndStartsLight() {
         val lastP1 = day(2026, 12, 10)
         val firstP2 = day(2026, 12, 14)
-        val rx = strengthSession(StrengthKind.PHASE2)!!.items.first { it.exercise.id == "leg_press" }
-        val a = loadAdvice(rx, StrengthKind.PHASE2, firstP2.date, listOf(entry(lastP1, "leg_press", 200.0, listOf(12, 12), rir = 3)))!!
+        val rx = strengthSession(StrengthKind.PHASE2)!!.items.first { it.exercise.id == "split_squat" }
+        val a = loadAdvice(rx, StrengthKind.PHASE2, firstP2.date, listOf(entry(lastP1, "split_squat", 40.0, listOf(10, 10, 10), rir = 3)))!!
         assertEquals(LoadChange.NEW_TARGET, a.change)
-        // e1RM = 200 × (1 + 15/30) = 300; 6 reps with 2 left = 300 / (1 + 8/30) ≈ 237; ×0.9 first heavy week ≈ 213 → 210.
-        assertEquals(210.0, a.weight, 0.0)
+        // e1RM = 40 × (1 + 13/30) = 57.3; 6 reps with 2 left = 57.3 / (1 + 8/30) = 45.3; ×0.9 first heavy week = 40.7 → 40.
+        assertEquals(40.0, a.weight, 0.0)
     }
 
     @Test fun longBreakEasesBackIn() {
-        val a = loadAdvice(legPress, StrengthKind.PHASE1, LocalDate.of(2026, 11, 23),
-            listOf(entry(mon, "leg_press", 140.0, listOf(12, 12), rir = 3)))!!
+        val a = loadAdvice(squat, StrengthKind.PHASE1, LocalDate.of(2026, 11, 23),
+            listOf(entry(mon, "split_squat", 40.0, listOf(10, 10, 10), rir = 3)))!!
         assertEquals(LoadChange.RETURNING, a.change)
-        assertEquals(125.0, a.weight, 0.0)
+        assertEquals(35.0, a.weight, 0.0)
     }
 
     @Test fun lightDayIsSixtyPercent() {
-        val rx = strengthSession(StrengthKind.LIGHT)!!.items.first { it.exercise.id == "leg_press" }
+        val rx = strengthSession(StrengthKind.LIGHT)!!.items.first { it.exercise.id == "split_squat" }
         val p3 = day(2027, 2, 22)
-        val a = loadAdvice(rx, StrengthKind.LIGHT, LocalDate.of(2027, 3, 1), listOf(entry(p3, "leg_press", 250.0, listOf(5, 5), rir = 2)))!!
-        assertEquals(150.0, a.weight, 0.0)
+        val a = loadAdvice(rx, StrengthKind.LIGHT, LocalDate.of(2027, 3, 1), listOf(entry(p3, "split_squat", 50.0, listOf(5, 5), rir = 2)))!!
+        assertEquals(30.0, a.weight, 0.0)
     }
 
     @Test fun perSetWeightsUseWorkingSets() {
-        // Ramp up 120 → 140 and hit 12 easily at 140: progress from 140.
         val ramp = ExerciseHistoryEntry(mon.index, mon.strength,
-            ExerciseLog("leg_press", listOf(SetLog(120.0, 12), SetLog(140.0, 12)), rir = 4))
-        assertEquals(150.0, loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(ramp))!!.weight, 0.0)
-        // Back off 140 → 120 after the first set: hold, don't progress.
+            ExerciseLog("split_squat", listOf(SetLog(30.0, 10), SetLog(40.0, 10)), rir = 4))
+        assertEquals(45.0, loadAdvice(squat, StrengthKind.PHASE1, thu.date, listOf(ramp))!!.weight, 0.0)
         val backOff = ExerciseHistoryEntry(mon.index, mon.strength,
-            ExerciseLog("leg_press", listOf(SetLog(140.0, 12), SetLog(120.0, 12)), rir = 4))
-        val a = loadAdvice(legPress, StrengthKind.PHASE1, thu.date, listOf(backOff))!!
+            ExerciseLog("split_squat", listOf(SetLog(40.0, 10), SetLog(30.0, 10)), rir = 4))
+        val a = loadAdvice(squat, StrengthKind.PHASE1, thu.date, listOf(backOff))!!
         assertEquals(LoadChange.SAME, a.change)
-        assertEquals(140.0, a.weight, 0.0)
+        assertEquals(40.0, a.weight, 0.0)
     }
 
-    @Test fun calfRaiseSwitchesToSingleLeg() {
-        val rx = strengthSession(StrengthKind.PHASE1)!!.items.first { it.exercise.id == "calf_raise" }
-        assertEquals(12, rx.reps)
-        assertTrue(rx.exercise.perSide)
-        assertEquals("12/leg", rx.exercise.repsText(rx.reps))
-        // Two-leg history at 100 lb → about half per leg.
-        val twoLeg = entry(mon, "calf_raise", 100.0, listOf(15, 15), rir = 3)
-        val a = loadAdvice(rx, StrengthKind.PHASE1, thu.date, listOf(twoLeg))!!
-        assertEquals(LoadChange.NEW_TARGET, a.change)
-        assertEquals(55.0, a.weight, 0.0)
-        // Once logged single-leg, normal progression applies.
-        val oneLeg = ExerciseHistoryEntry(thu.index, thu.strength,
-            ExerciseLog("calf_raise", listOf(SetLog(55.0, 12), SetLog(55.0, 12)), rir = 4, perSide = true))
-        assertEquals(LoadChange.UP, loadAdvice(rx, StrengthKind.PHASE1, nextMon.date, listOf(twoLeg, oneLeg))!!.change)
-        // A one-leg set never counts as a PR against two-leg history.
-        val logs = mapOf(mon.index to DayLog(mon.index, DayStatus.DONE, strength = listOf(twoLeg.log)))
-        assertTrue(personalRecords(thu.index, listOf(oneLeg.log), logs).isEmpty())
+    @Test fun bodyweightGetsNoLoadAdvice() {
+        assertNull(loadAdvice(squat, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "split_squat", 0.0, listOf(12, 12), rir = 3, bodyweight = true))))
+        val abd = p1.items.first { it.exercise.id == "side_abduction" }
+        assertNull(loadAdvice(abd, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "side_abduction", 0.0, listOf(12, 12), rir = 3))))
+        // A bodyweight set never triggers the "enter the weight" warning.
+        val tips = strengthFeedback(squat, ExerciseLog("split_squat", listOf(SetLog(0.0, 10)), rir = 3, bodyweight = true), null, StrengthKind.PHASE1)
+        assertTrue(tips.none { it.text.contains("Enter the weight") })
+    }
+
+    @Test fun retiredMachineHistoryStillResolves() {
+        for (id in listOf("leg_press", "calf_raise", "hip_thrust", "hip_abduction", "leg_curl")) {
+            val ex = Exercises.byId(id)
+            assertTrue(id, ex != null && ex.retired)
+        }
+        assertTrue(Exercises.routine.none { it.retired })
     }
 
     @Test fun noHistoryNoAdvice() {
-        assertNull(loadAdvice(legPress, StrengthKind.PHASE1, thu.date, emptyList()))
+        assertNull(loadAdvice(squat, StrengthKind.PHASE1, thu.date, emptyList()))
+    }
+}
+
+class CalfGuideTest {
+    @Test fun asymmetryAndBenchmarks() {
+        val t = CalfTest(10, soreReps = 27, otherReps = 30)
+        assertEquals(0.1, CalfGuide.asymmetry(t)!!, 1e-9)
+        assertFalse(CalfGuide.raisesPassed(t)) // sore side under 30
+        assertTrue(CalfGuide.raisesPassed(CalfTest(10, soreReps = 31, otherReps = 33)))
+        assertFalse(CalfGuide.raisesPassed(CalfTest(10, soreReps = 30, otherReps = 40))) // 25% weaker
+        assertTrue(CalfGuide.hopsPassed(CalfTest(10, hops = 20, hopsSymptomFree = true)))
+        assertFalse(CalfGuide.hopsPassed(CalfTest(10, hops = 20, hopsSymptomFree = false)))
+    }
+
+    @Test fun stagesGateRoutineAndStretches() {
+        val early = CalfStatus(flagged = true, stage = 1)
+        assertTrue(CalfGuide.skipRoutineCalfRaises(early))
+        assertFalse(CalfGuide.plyometricsAllowed(early))
+        assertFalse(early.currentStage.calfStretchesAllowed)
+        val s3 = CalfStatus(flagged = true, stage = 3)
+        assertFalse(CalfGuide.skipRoutineCalfRaises(s3))
+        assertTrue(s3.currentStage.calfStretchesAllowed)
+        assertTrue(CalfGuide.plyometricsAllowed(CalfStatus()))
+        assertEquals(4, CalfStage.entries.size)
+    }
+}
+
+class WorkoutStepsTest {
+    private val settings = Settings()
+
+    @Test fun everyPlanRunDayParses() {
+        for (d in Plan.days.filter { it.run.isRun }) {
+            val steps = WorkoutSteps.steps(d, settings)
+            assertTrue("no steps for ${d.date}: ${d.text}", steps.isNotEmpty())
+            assertTrue("unparsed ${d.date}: ${d.text}", steps.none { it.kind == StepKind.NOTE && it.title == "Workout" })
+        }
+    }
+
+    @Test fun qualityWorkoutsHaveWarmupWorkAndCooldown() {
+        for (d in Plan.days.filter { it.run in setOf(RunKind.TEMPO, RunKind.HILLS, RunKind.FARTLEK) }) {
+            val kinds = WorkoutSteps.steps(d, settings).map { it.kind }
+            assertTrue("${d.date}", StepKind.WARMUP in kinds && StepKind.WORK in kinds && StepKind.COOLDOWN in kinds)
+        }
+    }
+
+    @Test fun specificWorkouts() {
+        val tempo = WorkoutSteps.steps(Plan.dayOn(LocalDate.of(2026, 12, 23))!!, settings)
+        assertEquals("Warm-up 1.5 mi", tempo[0].title)
+        assertEquals("2 × 10 min tempo", tempo[1].title)
+        assertEquals("… with 3 min easy jog between", tempo[2].title)
+        assertTrue(tempo[3].detail.contains("5 mi total"))
+        val mp = WorkoutSteps.steps(Plan.dayOn(LocalDate.of(2027, 1, 27))!!, settings)
+        assertEquals("4 mi at marathon pace", mp[1].title)
+        assertTrue(mp[1].detail.contains("10:18"))
+        assertEquals("Cool-down 1.5 mi", mp[2].title)
+        val long = WorkoutSteps.steps(Plan.dayOn(LocalDate.of(2027, 3, 14))!!, settings)
+        assertEquals("13 mi easy", long[0].title)
+        assertEquals("Last 4 mi at marathon pace", long[1].title)
+        val strides = WorkoutSteps.steps(Plan.dayOn(LocalDate.of(2026, 11, 25))!!, settings)
+        assertEquals("Then 6 × 15 s uphill strides", strides[1].title)
+        val noSeconds = WorkoutSteps.steps(Plan.dayOn(LocalDate.of(2027, 4, 15))!!, settings)
+        assertEquals("Then 4 × 15–20 s strides", noSeconds[1].title)
+        val fuel = WorkoutSteps.steps(Plan.dayOn(LocalDate.of(2027, 1, 10))!!, settings)
+        assertTrue(fuel.any { it.kind == StepKind.NOTE && it.detail.startsWith("Start practicing fuel") })
+    }
+
+    @Test fun cappedLongRunUsesScheduledDistance() {
+        // When the long-run rule shortens a run, the steps follow the scheduled distance.
+        val day = Plan.dayOn(LocalDate.of(2027, 3, 14))!!
+        val capped = day.copy(miles = 15.0, text = rewriteMiles(day.text, 15.0))
+        val steps = WorkoutSteps.steps(capped, settings)
+        assertEquals("11 mi easy", steps[0].title)
     }
 }
 

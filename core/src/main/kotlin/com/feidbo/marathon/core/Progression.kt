@@ -60,8 +60,9 @@ fun estimatedOneRepMax(weight: Double, reps: Int, rir: Int): Double = weight * (
 
 private fun loadForReps(oneRm: Double, reps: Int, rir: Int): Double = oneRm / (1 + (reps + rir) / 30.0)
 
-/** Smallest practical load step: 5 lb plates/pins, 2.5 lb under 50 lb. */
-private fun step(w: Double) = if (w < 50) 2.5 else 5.0
+/** Smallest practical load step: dumbbells and machine pins go up in 5 lb. */
+@Suppress("UNUSED_PARAMETER")
+private fun step(w: Double) = 5.0
 private fun roundDown(w: Double) = floor(w / step(w) + 1e-6) * step(w)
 private fun roundUp(w: Double) = ceil(w / step(w) - 1e-6) * step(w)
 
@@ -76,20 +77,13 @@ fun loadAdvice(rx: Prescription, kind: StrengthKind, date: LocalDate, history: L
     val working = history.lastOrNull { it.strength != StrengthKind.LIGHT && it.strength != StrengthKind.LEARN }
     val last = working ?: history.last()
     val lastDate = Plan.days[last.dayIndex].date
+    if (!ex.usesWeight || last.log.bodyweight) return null  // bodyweight: no load to suggest
     val inv = ex.inverted
     val lastW = workingWeight(last.log, inv)
     if (lastW <= 0.0 && !inv) return null
 
     fun advice(w: Double, change: LoadChange, reason: String) =
         LoadAdvice(maxOf(0.0, w), lastW, lastDate, change, reason)
-
-    // Switching from two legs to one: each leg moves roughly half the two-leg load.
-    if (ex.perSide && !last.log.perSide) {
-        val w = roundDown(lastW * 0.55 * if (kind == StrengthKind.LIGHT) 0.6 else 1.0)
-        return advice(w, LoadChange.NEW_TARGET,
-            "Now one leg at a time (${rx.reps} per leg). Start at about half your two-leg weight " +
-                "(${formatMiles(lastW)} lb) and adjust so the last reps on each leg are hard.")
-    }
 
     // Light sessions: about 60% of working weight (plan, Mar 1 and Apr 12).
     if (kind == StrengthKind.LIGHT) {
@@ -138,10 +132,12 @@ fun loadAdvice(rx: Prescription, kind: StrengthKind, date: LocalDate, history: L
     val missedBig = minReps <= target - 2
 
     // Step sizes: ACSM's 2–10%, with bigger jumps for the big lower-body lifts.
+    // Dumbbells come in 5 lb steps, so the smallest jump is one step (5 lb per dumbbell).
     fun up(big: Boolean): Double = when (ex.load) {
         LoadType.ASSISTED -> lastW - if (big) 10.0 else 5.0
-        LoadType.LOWER_COMPOUND -> roundUp(lastW + maxOf(if (big) 20.0 else 10.0, lastW * if (big) 0.10 else 0.05))
-        LoadType.LOWER_SMALL -> roundUp(lastW + maxOf(if (big) 10.0 else 5.0, lastW * if (big) 0.075 else 0.05))
+        LoadType.LOWER_COMPOUND -> roundUp(lastW + maxOf(if (big) 10.0 else 5.0, lastW * if (big) 0.10 else 0.05))
+        LoadType.LOWER_SMALL -> roundUp(lastW + maxOf(5.0, lastW * if (big) 0.075 else 0.05))
+        LoadType.BODYWEIGHT -> lastW
     }
     fun down(): Double = if (inv) roundUp(lastW + maxOf(5.0, lastW * 0.10)) else roundDown(lastW * 0.90)
 
