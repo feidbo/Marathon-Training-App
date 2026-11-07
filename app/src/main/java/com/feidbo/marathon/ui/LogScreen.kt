@@ -507,7 +507,7 @@ private fun ExerciseEditor(
                             Modifier.weight(1.2f), suffix = "lb", imeAction = ImeAction.Next)
                         Text("×", style = MaterialTheme.typography.titleMedium)
                     }
-                    NumberField(set.reps, { set.reps = it }, if (perSide) "Reps/leg" else "Reps", Modifier.weight(0.9f), decimal = false)
+                    NumberField(set.reps, { set.reps = it }, "Reps", Modifier.weight(0.9f), decimal = false)
                     IconButton(onClick = {
                         set.done = !set.done
                         onSetToggled(set.done)

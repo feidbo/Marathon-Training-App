@@ -25,7 +25,7 @@ enum class RunKind(val title: String, val isKey: Boolean = false) {
 /** Which strength prescription applies to a day. */
 enum class StrengthKind(val title: String) {
     NONE(""),
-    LEARN("Strength · learn the machines"),
+    LEARN("Strength · learn the movements"),
     PHASE1("Strength · 15–20 min"),
     PHASE2("Strength · 20–25 min"),
     PHASE3("Strength · 15 min, heavy"),
@@ -35,7 +35,7 @@ enum class StrengthKind(val title: String) {
 }
 
 enum class Phase(val number: Int, val title: String, val focus: String) {
-    REBUILD(1, "Rebuild", "Easy running, strides, learning the machines"),
+    REBUILD(1, "Rebuild", "Easy running, strides, building strength"),
     BASE(2, "Strength & base", "Heavier lifting, hills, tempo"),
     SPECIFIC(3, "Marathon-specific", "Marathon pace, long runs to 20 mi"),
     TAPER(4, "Taper & race", "Less volume, same intensity"),

@@ -31,6 +31,10 @@ jobs:
       - name: Unit tests
         run: ./gradlew :core:test --console=plain
 
+      # Old save files still load; screens and widget sizes render (Paparazzi, no emulator).
+      - name: App tests
+        run: ./gradlew :app:testDebugUnitTest --console=plain
+
       - name: Build APK
         run: ./gradlew :app:assembleRelease --console=plain
 

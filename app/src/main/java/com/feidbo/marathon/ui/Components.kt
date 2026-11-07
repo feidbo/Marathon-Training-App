@@ -91,7 +91,8 @@ fun Pill(text: String, container: Color, content: Color, modifier: Modifier = Mo
             .background(container)
             .padding(horizontal = 10.dp, vertical = 4.dp),
     ) {
-        Text(text, color = content, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+        Text(text, color = content, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold,
+            maxLines = 1, softWrap = false)
     }
 }
 

@@ -121,7 +121,7 @@ fun loadAdvice(rx: Prescription, kind: StrengthKind, date: LocalDate, history: L
         return advice(roundDown(w), LoadChange.NEW_TARGET,
             "New target: ${rx.sets} × ${rx.reps} with about ${session.targetRir} left. From ${formatMiles(lastW)} lb × $minReps " +
                 "(~$r left) your estimated max is about ${formatMiles(oneRm.roundToInt().toDouble())} lb, which puts ${rx.reps} reps at " +
-                "about ${formatMiles(roundDown(loadForReps(oneRm, rx.reps, session.targetRir)))} lb." +
+                "about ${loadForReps(oneRm, rx.reps, session.targetRir).roundToInt()} lb." +
                 if (firstHeavyWeek) " The plan says start the loads light this first heavy week, so a bit under that." else "")
     }
 

@@ -74,7 +74,7 @@
             android:id="@+id/w_detail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:maxLines="2"
+            android:maxLines="1"
             android:ellipsize="end"
             android:includeFontPadding="false"
             android:text="11:45–13:00 /mi · effort 3–4"

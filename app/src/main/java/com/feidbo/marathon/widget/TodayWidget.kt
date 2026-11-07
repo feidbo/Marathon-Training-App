@@ -9,6 +9,9 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.RelativeSizeSpan
 import android.util.SizeF
 import android.view.View
 import android.widget.RemoteViews
@@ -21,6 +24,7 @@ import com.feidbo.marathon.core.formatMiles
 import com.feidbo.marathon.core.primaryTarget
 import com.feidbo.marathon.core.strengthSession
 import com.feidbo.marathon.core.workoutTitle
+import com.feidbo.marathon.data.AppData
 import com.feidbo.marathon.data.Store
 import java.time.LocalDate
 import java.time.ZoneId
@@ -46,7 +50,7 @@ class TodayWidget : AppWidgetProvider() {
     }
 
     /** One layout per size range (docs/decisions.md §7). Every layout uses the same view ids. */
-    private enum class Size(val layout: Int, val minWidthDp: Float, val minHeightDp: Float) {
+    internal enum class Size(val layout: Int, val minWidthDp: Float, val minHeightDp: Float) {
         COMPACT(R.layout.widget_today_compact, 110f, 100f),
         TALL(R.layout.widget_today, 110f, 180f),        // 2×2 in portrait, about 130 × 220 dp
         WIDE(R.layout.widget_today_wide, 200f, 100f),   // 2×2 in landscape, about 269 × 117 dp
@@ -54,7 +58,7 @@ class TodayWidget : AppWidgetProvider() {
     }
 
     /** Everything a layout shows; worked out once and applied to each size. */
-    private class Content(
+    internal class Content(
         val header: String,
         val streak: String,
         val title: String,
@@ -99,7 +103,7 @@ class TodayWidget : AppWidgetProvider() {
             }
         }
 
-        private fun views(context: Context, size: Size, c: Content?): RemoteViews {
+        internal fun views(context: Context, size: Size, c: Content?): RemoteViews {
             val views = RemoteViews(context.packageName, size.layout)
             val open = PendingIntent.getActivity(
                 context, 0, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
@@ -109,13 +113,19 @@ class TodayWidget : AppWidgetProvider() {
             if (c == null) return views
             val roomy = size == Size.TALL || size == Size.LARGE
             views.setTextViewText(R.id.w_header, c.header)
-            views.setTextViewText(R.id.w_streak, c.streak)
+            // Narrow sizes: just the streak, so the day number keeps its room.
+            views.setTextViewText(R.id.w_streak, if (size == Size.TALL || size == Size.COMPACT) c.streak.substringBefore(" ·") else c.streak)
             views.setTextViewText(R.id.w_title, c.title)
-            views.setTextViewText(R.id.w_big, c.big)
+            // "11.5 mi": the unit at half size so long-run distances fit a 2×2.
+            views.setTextViewText(R.id.w_big, SpannableString(c.big).apply {
+                val unit = c.big.indexOf(" mi")
+                if (unit >= 0) setSpan(RelativeSizeSpan(0.5f), unit, c.big.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            })
             views.setTextViewText(R.id.w_detail, c.detail)
-            views.setViewVisibility(R.id.w_strength, if (c.strength != null) View.VISIBLE else View.GONE)
+            // The smallest size keeps the to-do line instead of the strength line.
+            views.setViewVisibility(R.id.w_strength, if (c.strength != null && size != Size.COMPACT) View.VISIBLE else View.GONE)
             c.strength?.let { views.setTextViewText(R.id.w_strength, it) }
-            views.setTextViewText(R.id.w_todo, if (size == Size.LARGE || size == Size.WIDE) c.todoLong else c.todoShort)
+            views.setTextViewText(R.id.w_todo, if (size == Size.LARGE) c.todoLong else c.todoShort)
             views.setTextViewText(R.id.w_footer, if (roomy) c.footer else c.footerShort)
             views.setViewVisibility(R.id.w_footer, if (size == Size.COMPACT) View.GONE else View.VISIBLE)
             return views
@@ -123,7 +133,10 @@ class TodayWidget : AppWidgetProvider() {
 
         private fun content(context: Context): Content? {
             val data = try { Store(context).load() } catch (_: Exception) { null } ?: return null
-            val today = LocalDate.now()
+            return content(data, LocalDate.now())
+        }
+
+        internal fun content(data: AppData, today: LocalDate): Content {
             val schedule = Schedule(data.logs, data.settings, today)
             val progress = com.feidbo.marathon.ui.AppViewModel.progressFor(data, schedule, today)
             val toRace = ChronoUnit.DAYS.between(today, Plan.raceDay)
