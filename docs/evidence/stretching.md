@@ -25,8 +25,8 @@ confidence interval [95% CI] 0.65 to 1.12)", "compatible with either a reduction
 Conclusion: "the evidence base … is very weak, with few trials at low risk of bias."
 
 ### P2. Pope RP, et al. Med Sci Sports Exerc 2000;32:271–277 — ABS (RCT)
-1538 army recruits, 12 weeks; one 20-s static stretch for each of six leg muscle groups (including the
-calf) in every warm-up vs no stretching. No significant effect on all injuries (HR 0.95, 0.77–1.18),
+1538 army recruits, 12 weeks; one 20-s static stretch for each of "six major leg muscle groups" in every
+warm-up vs no stretching (the abstract does not list which muscles). No significant effect on all injuries (HR 0.95, 0.77–1.18),
 soft-tissue injuries (HR 0.83, 0.63–1.09) or bone injuries. "Fitness … may be an important, modifiable
 risk factor."
 
@@ -80,8 +80,8 @@ Limit: hamstring, not calf; allocation method not described in the abstract.
 
 ## What the evidence does and doesn't say (no decisions here)
 
-- **Injury prevention:** multiple RCTs and reviews (P1–P5), including one that stretched the calf every
-  session (P2), found no clear injury reduction from stretching. The evidence is "very weak" overall (P1)
+- **Injury prevention:** multiple RCTs and reviews (P1–P5), including one that stretched six major leg
+  muscle groups every session (P2), found no clear injury reduction from stretching. The evidence is "very weak" overall (P1)
   and compatible with small benefits or harms.
 - **Performance:** long static stretches (≥ 60 s per muscle) right before effort cause small performance
   drops (P6, P7); short static stretches (< 60 s) or dynamic stretching, followed by dynamic activity, have
