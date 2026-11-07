@@ -29,8 +29,11 @@ object Game {
         return LevelInfo(idx + 1, levels[idx].second, xp, levels[idx].first, levels.getOrNull(idx + 1)?.first)
     }
 
-    /** XP for the daily quad stretch; a little more on rest days, when it's the whole job. */
+    /** XP for the daily stretch; a little more on rest days, when it's the whole job. */
     fun stretchXp(day: PlannedDay): Int = if (day.isTrainingDay) 5 else 10
+
+    /** XP for doing the day's calf-guidance exercises. */
+    const val CALF_XP = 5
 
     /** XP for a day's log. Honest "couldn't do it" logs still earn a little: listening to your body counts. */
     fun xpFor(day: PlannedDay, log: DayLog): Int {
@@ -91,6 +94,8 @@ object Game {
         Badge("halfway", "🧭", "Halfway There", "Train past the plan's halfway point (Jan 20)"),
         Badge("bib_ready", "🎽", "Bib Ready", "Every race-week workout done"),
         Badge("marathoner", "🏅", "Marathoner", "Finish the Eugene Marathon"),
+        Badge("calf_10", "🩹", "Calf Care", "Do your calf exercises on 10 days"),
+        Badge("calf_cleared", "🦿", "Calf Cleared", "Pass the calf test: 30+ raises each leg, within 10%"),
     )
 
     const val PERFECT_DAY_XP = 10
@@ -121,6 +126,9 @@ fun computeProgress(
     stretchDays: Set<Int>,
     today: LocalDate,
     marathonPaceSec: Int = Paces.DEFAULT_MP,
+    calfDays: Set<Int> = emptySet(),
+    calfTests: List<CalfTest> = emptyList(),
+    easyHrCap: Int? = null,
 ): Progress {
     val days = schedule.days
     var xp = 0
@@ -148,6 +156,7 @@ fun computeProgress(
         val d = sd.day
         val log = logs[d.index]
         if (d.isTrainingDay && d.date <= today) plannedSoFar++
+        if (d.index in calfDays) xp += Game.CALF_XP
         if (d.index in stretchDays) {
             xp += Game.stretchXp(d)
             if (!d.isTrainingDay) restStretches++
@@ -183,7 +192,7 @@ fun computeProgress(
         if (run != null && run.distance > 0) {
             miles += run.distance
             longest = maxOf(longest, run.distance)
-            if (d.run.isEasyType && run.paceSec != null && run.paceSec in (Paces.EASY_FAST - 10)..(Paces.EASY_SLOW + 90)) easyInZone++
+            if (d.run.isEasyType && easyRunInZone(run, easyHrCap)) easyInZone++
             if (d.run == RunKind.HILLS) hills++
             if (d.run == RunKind.TEMPO) tempos++
             if (d.run == RunKind.HALF_RACE) earned += "half"
@@ -236,6 +245,8 @@ fun computeProgress(
 
     val level = Game.level(xp)
     if (miles >= 26.2) earned += "miles_26"
+    if (calfDays.size >= 10) earned += "calf_10"
+    if (calfTests.any { CalfGuide.raisesPassed(it) }) earned += "calf_cleared"
     if (mpLocked >= 5) earned += "mp_5"
     if (easyInZone >= 50) earned += "easy_50"
     if (sundayLongs >= 10) earned += "sunday_10"
@@ -286,8 +297,22 @@ fun computeProgress(
         "pr_5" to (prCount.toDouble() to 5.0),
         "level_5" to (level.level.toDouble() to 5.0),
         "level_10" to (level.level.toDouble() to 10.0),
+        "calf_10" to (calfDays.size.toDouble() to 10.0),
     )
     return Progress(xp, level, streak, best, miles, longest, done, plannedSoFar, lifts, earned, perfect, fullWeeks, badgeProgress)
+}
+
+/**
+ * An easy run counts as "in the easy zone" when the effort says easy (3–4/10 or less) and the heart rate,
+ * if logged, is under your cap — or, with no effort logged, when the pace is in the plan's easy range
+ * (docs/decisions.md §5: effort first, pace as a guide).
+ */
+fun easyRunInZone(run: RunLog, easyHrCap: Int?): Boolean {
+    val hrOk = run.avgHr == null || easyHrCap == null || run.avgHr <= easyHrCap
+    val effort = run.effort
+    if (effort != null) return effort <= 4 && hrOk
+    val pace = run.paceSec ?: return false
+    return pace in (Paces.EASY_FAST - 10)..(Paces.EASY_SLOW + 90) && hrOk
 }
 
 object Cheers {
@@ -299,7 +324,7 @@ object Cheers {
     )
     private val rest = listOf(
         "Rest day honoured. Muscles grow when you rest. 😴", "Recovery is training too. 🛋️",
-        "Stretch done — your quads thank you. 🧘",
+        "Stretch done — your legs thank you. 🧘",
     )
     private val missed = listOf(
         "Listening to your body is a skill. 💚", "One day doesn't define a training block. Back at it soon. 🌤️",

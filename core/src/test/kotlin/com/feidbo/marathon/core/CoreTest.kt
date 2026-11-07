@@ -542,3 +542,56 @@ class GameTest {
         assertTrue("first_step" in p.badges)
     }
 }
+
+class StretchRoutineTest {
+    @Test fun fullRoutineAfterRuns() {
+        val segs = StretchRoutine.segments(calfAllowed = true, beforeRun = false)
+        assertEquals(6, segs.size)
+        assertEquals(listOf(90, 90, 60, 60, 60, 60), segs.map { it.seconds })
+        assertEquals(420, StretchRoutine.totalSeconds(segs))
+        assertEquals(listOf(90, 180, 240, 300, 360), StretchRoutine.boundaries(segs))
+    }
+
+    @Test fun beforeRunHoldsStayUnder60Seconds() {
+        val segs = StretchRoutine.segments(calfAllowed = true, beforeRun = true)
+        assertTrue(segs.all { it.seconds < 60 })
+    }
+
+    @Test fun calfStretchesPausedInEarlyStages() {
+        assertFalse(StretchRoutine.calfStretchesAllowed(CalfStatus(flagged = true, stage = 1)))
+        assertFalse(StretchRoutine.calfStretchesAllowed(CalfStatus(flagged = true, stage = 2)))
+        assertTrue(StretchRoutine.calfStretchesAllowed(CalfStatus(flagged = true, stage = 3)))
+        assertTrue(StretchRoutine.calfStretchesAllowed(CalfStatus()))
+        val segs = StretchRoutine.segments(calfAllowed = false, beforeRun = false)
+        assertEquals(listOf("quad_stretch", "quad_stretch"), segs.map { it.exercise.id })
+    }
+
+    @Test fun positionInRoutine() {
+        val segs = StretchRoutine.segments(calfAllowed = true, beforeRun = false)
+        assertEquals(0 to 90, StretchRoutine.at(segs, 0))
+        assertEquals(1 to 1, StretchRoutine.at(segs, 179))
+        assertEquals(2 to 60, StretchRoutine.at(segs, 180))
+        assertNull(StretchRoutine.at(segs, 420))
+    }
+}
+
+class EasyZoneTest {
+    @Test fun effortFirstThenPace() {
+        assertTrue(easyRunInZone(RunLog(4.0, paceSec = 630, effort = 3), null))          // 10:30 but easy effort
+        assertFalse(easyRunInZone(RunLog(4.0, paceSec = 720, effort = 6), null))         // slow but hard
+        assertFalse(easyRunInZone(RunLog(4.0, paceSec = 630, effort = 3, avgHr = 160), 150)) // HR over cap
+        assertTrue(easyRunInZone(RunLog(4.0, paceSec = 720), null))                       // no effort: pace decides
+        assertFalse(easyRunInZone(RunLog(4.0, paceSec = 600), null))
+    }
+
+    @Test fun calfXpAndBadges() {
+        val today = LocalDate.of(2026, 11, 2)
+        val calfDays = Plan.days.filter { it.date < today }.take(10).map { it.index }.toSet()
+        val base = computeProgress(Schedule(emptyMap(), Settings(), today), emptyMap(), emptySet(), today)
+        val p = computeProgress(Schedule(emptyMap(), Settings(), today), emptyMap(), emptySet(), today,
+            calfDays = calfDays, calfTests = listOf(CalfTest(0, soreReps = 30, otherReps = 32)))
+        assertEquals(base.xp + 10 * Game.CALF_XP, p.xp)
+        assertTrue("calf_10" in p.badges)
+        assertTrue("calf_cleared" in p.badges)
+    }
+}
