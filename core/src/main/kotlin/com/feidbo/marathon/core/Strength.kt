@@ -20,6 +20,8 @@ data class Exercise(
     /** A no-equipment version for days without dumbbells (null when the exercise is already bodyweight). */
     val bodyweightName: String? = null,
     val bodyweightSteps: List<String> = emptyList(),
+    /** Whether the bodyweight version is one leg at a time (null = same as the dumbbell version). */
+    val bodyweightPerSide: Boolean? = null,
     /** Skip it freely (the assisted pull-up needs a machine). */
     val optional: Boolean = false,
     /** Part of the calf work that the calf guidance can take over. */
@@ -31,11 +33,16 @@ data class Exercise(
 ) {
     fun repsText(reps: Int): String = if (perSide) "$reps/leg" else "$reps"
     val usesWeight: Boolean get() = load != LoadType.BODYWEIGHT
+    /** Whether the version done is one leg at a time. */
+    fun perSideFor(bodyweight: Boolean): Boolean = if (bodyweight) bodyweightPerSide ?: perSide else perSide
+    fun nameFor(bodyweight: Boolean): String = if (bodyweight) bodyweightName ?: name else name
 }
 
 /** [repsLabel] is shown instead of the number when the plan gives a range (e.g. "8–10"). */
 data class Prescription(val exercise: Exercise, val sets: Int, val reps: Int, val repsLabel: String? = null) {
-    val repsShown: String get() = (repsLabel ?: reps.toString()) + if (exercise.perSide) "/leg" else ""
+    val repsShown: String get() = repsShown(bodyweight = false)
+    fun repsShown(bodyweight: Boolean): String =
+        (repsLabel ?: reps.toString()) + if (exercise.perSideFor(bodyweight)) "/leg" else ""
 }
 
 data class StrengthSession(
@@ -139,7 +146,7 @@ object Exercises {
             "Pause one second at the top, then lower under control.",
         ),
         cues = listOf("Chin tucked.", "Push through your heels.", "Pause one second at the top."),
-        bodyweightName = "Single-leg hip thrust (bodyweight)",
+        bodyweightName = "Single-leg hip thrust (bodyweight)", bodyweightPerSide = true,
         bodyweightSteps = listOf(
             "Same set-up with no dumbbell; lift one foot and drive up through the other. All reps, then switch legs.",
         ),
@@ -171,7 +178,7 @@ object Exercises {
             "Drive the hip forward to stand tall. All reps, then the other leg.",
         ),
         cues = listOf("Hips stay square to the floor.", "Back flat; move at the hip, not the waist."),
-        bodyweightName = "Sliding leg curl (bodyweight)",
+        bodyweightName = "Sliding leg curl (bodyweight)", bodyweightPerSide = false,
         bodyweightSteps = listOf(
             "Lie on your back, heels on a towel on a smooth floor, hips lifted in a bridge.",
             "Slide your heels out until your legs are nearly straight, keeping the hips up, then curl them back in.",

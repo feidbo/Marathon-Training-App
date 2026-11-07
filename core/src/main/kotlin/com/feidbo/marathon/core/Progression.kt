@@ -190,4 +190,5 @@ fun personalRecords(dayIndex: Int, newLogs: List<ExerciseLog>, logs: Map<Int, Da
 
 /** Load advice for a strength day, using everything logged before it. */
 fun loadAdviceFor(rx: Prescription, day: PlannedDay, logs: Map<Int, DayLog>): LoadAdvice? =
-    loadAdvice(rx, day.strength, day.date, exerciseHistory(rx.exercise.id, logs).filter { it.dayIndex < day.index })
+    // Bodyweight sessions carry no load, so the dumbbell suggestion builds on the last dumbbell session.
+    loadAdvice(rx, day.strength, day.date, exerciseHistory(rx.exercise.id, logs).filter { it.dayIndex < day.index && !it.log.bodyweight })

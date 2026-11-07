@@ -22,6 +22,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.feidbo.marathon.MainActivity
 import com.feidbo.marathon.R
+import com.feidbo.marathon.core.StretchRoutine
+import com.feidbo.marathon.core.StretchSegment
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,13 +46,24 @@ data class Countdown(
 }
 
 /**
- * The rest timer (between strength sets) and the 3-minute stretch timer. State is saved so it survives
+ * The rest timer (between strength sets) and the daily stretch timer (a run of timed holds). State is saved so it survives
  * rotation and the app being closed; system alarms fire the alerts even when the app isn't open, and a
  * notification shows the live countdown.
  */
 object Timers {
-    const val STRETCH_TOTAL_MS = 180_000L
-    const val STRETCH_SIDE_MS = 90_000L
+    /** What a stretch countdown's label records, so the right holds come back after a restart. */
+    private const val CALF = "calf"
+    private const val BEFORE = "before"
+
+    fun stretchLabel(calfAllowed: Boolean, beforeRun: Boolean): String =
+        listOfNotNull(CALF.takeIf { calfAllowed }, BEFORE.takeIf { beforeRun }).joinToString(",").ifEmpty { "quad" }
+
+    /** The holds a stretch countdown runs through. */
+    fun stretchSegments(c: Countdown): List<StretchSegment> = stretchSegments(c.label)
+    fun stretchSegments(label: String): List<StretchSegment> {
+        val parts = label.split(",")
+        return StretchRoutine.segments(calfAllowed = CALF in parts, beforeRun = BEFORE in parts)
+    }
 
     private const val PREFS = "timers"
     private const val CH_LIVE = "timer_live"
@@ -112,11 +125,14 @@ object Timers {
 
     // ---- Stretch ------------------------------------------------------------------------------
 
-    fun startStretch(context: Context, dayIndex: Int) {
+    /** Starts (or resumes, if paused for the same day) the stretch timer. */
+    fun startStretch(context: Context, dayIndex: Int, calfAllowed: Boolean, beforeRun: Boolean) {
         val now = SystemClock.elapsedRealtime()
         val prior = _stretch.value?.takeIf { it.paused && it.dayIndex == dayIndex }
-        val remaining = prior?.pausedRemainingMs ?: STRETCH_TOTAL_MS
-        val c = Countdown(now + remaining, STRETCH_TOTAL_MS, "Quad stretch", dayIndex)
+        val label = prior?.label ?: stretchLabel(calfAllowed, beforeRun)
+        val total = StretchRoutine.totalSeconds(stretchSegments(label)) * 1000L
+        val remaining = prior?.pausedRemainingMs ?: total
+        val c = Countdown(now + remaining, total, label, dayIndex)
         _stretch.value = c
         context.prefs().writeCountdown("stretch", c)
         scheduleStretch(context, c)
@@ -153,10 +169,26 @@ object Timers {
     }
 
     private fun scheduleStretch(context: Context, c: Countdown) {
-        val remaining = c.remainingMs()
-        if (remaining > STRETCH_SIDE_MS) schedule(context, ACTION_STRETCH_SWITCH, c.endAt - STRETCH_SIDE_MS, 21)
+        scheduleNextSwitch(context, c)
         schedule(context, ACTION_STRETCH_DONE, c.endAt, 22)
-        showLive(context, NOTIF_STRETCH, "Quad stretch", "90 s per side — switch at the halfway buzz", c)
+        val holds = stretchSegments(c).size
+        showLive(context, NOTIF_STRETCH, "Stretch", "$holds holds — your phone buzzes at each switch", c)
+    }
+
+    /** One alarm at a time: the next switch after now. Each switch schedules the one after it. */
+    private fun scheduleNextSwitch(context: Context, c: Countdown) {
+        val elapsedMs = c.durationMs - c.remainingMs()
+        val next = StretchRoutine.boundaries(stretchSegments(c)).map { it * 1000L }.firstOrNull { it > elapsedMs + 500 }
+        if (next == null) cancel(context, ACTION_STRETCH_SWITCH, 21)
+        else schedule(context, ACTION_STRETCH_SWITCH, c.endAt - (c.durationMs - next), 21)
+    }
+
+    /** "Kneeling quad stretch — right side", for the hold running [elapsedMs] into the countdown. */
+    fun holdName(c: Countdown, elapsedMs: Long): String? {
+        val segs = stretchSegments(c)
+        val (i, _) = StretchRoutine.at(segs, (elapsedMs / 1000).toInt()) ?: return null
+        val s = segs[i]
+        return "${s.exercise.name} — ${s.side.label.lowercase()} side"
     }
 
     // ---- Alarms & notifications ---------------------------------------------------------------
@@ -238,8 +270,11 @@ object Timers {
         init(context)
         when (action) {
             ACTION_REST_DONE -> finishRestIfDue(context)
-            ACTION_STRETCH_SWITCH -> if (_stretch.value?.running == true) {
-                alert(context, "Switch sides 🔄", "90 seconds on the other leg", long = false)
+            ACTION_STRETCH_SWITCH -> {
+                val c = _stretch.value?.takeIf { it.running } ?: return
+                val next = holdName(c, c.durationMs - c.remainingMs() + 500)
+                alert(context, "Switch 🔄", next ?: "Next hold", long = false)
+                scheduleNextSwitch(context, c)
             }
             ACTION_STRETCH_DONE -> {
                 val c = _stretch.value ?: return

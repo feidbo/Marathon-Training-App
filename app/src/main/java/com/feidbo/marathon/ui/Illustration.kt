@@ -92,3 +92,4 @@ fun ExerciseIllustration(id: String, modifier: Modifier = Modifier, animate: Boo
         drawCircle(body, ill.headRadius * s, Offset(lerp(ill.head[0], ill.head[2]) * s, lerp(ill.head[1], ill.head[3]) * s))
     }
 }
+internal const val SLIDING_LEG_CURL = "sliding_leg_curl"

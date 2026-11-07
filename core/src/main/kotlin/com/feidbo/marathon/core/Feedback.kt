@@ -258,3 +258,14 @@ fun missAdvice(reason: MissReason): List<String> = when (reason) {
         "No problem — skip it and carry on. Never move a missed run onto Tuesday or stack it on another day.",
     )
 } + "Missed under a week: resume where you are. Missed 1–2 weeks: repeat your last full week. The app does this for you."
+
+/**
+ * Average pace of your last [count] easy-type runs before [beforeIndex] (null with fewer than 3).
+ * Used for the note that easy pace overlaps the plan's tempo range (docs/decisions.md §5).
+ */
+fun recentEasyPace(logs: Map<Int, DayLog>, beforeIndex: Int, count: Int = 5): Int? {
+    val paces = logs.values.filter { it.dayIndex < beforeIndex }.sortedByDescending { it.dayIndex }
+        .filter { log -> Plan.days.getOrNull(log.dayIndex)?.run?.isEasyType == true && log.run?.paceSec != null }
+        .take(count).mapNotNull { it.run?.paceSec }
+    return if (paces.size < 3) null else paces.average().toInt()
+}

@@ -123,12 +123,12 @@ fun ExerciseScreen(state: UiState, exerciseId: String, dayIndex: Int, onBack: ()
         ) {
             SectionCard {
                 ExerciseIllustration(ex.id, Modifier.fillMaxWidth().widthIn(max = 360.dp).align(Alignment.CenterHorizontally))
-                Text("Machine: ${ex.machine}", style = MaterialTheme.typography.bodyMedium)
+                Text("Equipment: ${ex.machine}", style = MaterialTheme.typography.bodyMedium)
                 Text("Works: ${ex.muscles}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (rx != null) {
                 SectionCard(container = MaterialTheme.colorScheme.primaryContainer) {
-                    Text("Today: ${rx.sets} sets × ${rx.exercise.repsText(rx.reps)} reps", style = MaterialTheme.typography.titleLarge)
+                    Text("Today: ${rx.sets} sets × ${rx.repsShown} reps", style = MaterialTheme.typography.titleLarge)
                     strengthSession(day!!.strength)?.let {
                         Text(it.effort, style = MaterialTheme.typography.bodyMedium)
                         Text("Rest: ${it.rest}", style = MaterialTheme.typography.bodyMedium)
@@ -156,6 +156,25 @@ fun ExerciseScreen(state: UiState, exerciseId: String, dayIndex: Int, onBack: ()
                     }
                 }
             }
+            if (ex.bodyweightName != null) {
+                SectionCard {
+                    Text("No dumbbells? ${ex.bodyweightName}", style = MaterialTheme.typography.titleMedium)
+                    if (ex.bodyweightPerSide == false) {
+                        Text("Both legs together: log the reps for the pair.", style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    ex.bodyweightSteps.forEach { Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp)) }
+                    Text("Choose \"Bodyweight\" when you log it. Bodyweight sets log reps only, so there's no weight suggestion.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp))
+                }
+            }
+            if (ex.retired) {
+                SectionCard {
+                    Text("This machine exercise is no longer in your routine (it was swapped for a dumbbell or bodyweight " +
+                        "exercise). Your history is kept below.", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
             SectionCard {
                 Text("Form cues", style = MaterialTheme.typography.titleMedium)
                 ex.cues.forEach { Text("✓ $it", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp)) }
@@ -164,15 +183,23 @@ fun ExerciseScreen(state: UiState, exerciseId: String, dayIndex: Int, onBack: ()
                         style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp))
                 }
             }
-            if (ex.id != "quad_stretch") {
+            if (ex.why.isNotEmpty()) {
+                SectionCard {
+                    Text("Why this exercise", style = MaterialTheme.typography.titleMedium)
+                    Text(ex.why, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+                }
+            }
+            if (ex.block != "Daily") {
                 SectionCard {
                     Text("Your history", style = MaterialTheme.typography.titleMedium)
                     if (history.isEmpty()) Text("Nothing logged yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    val best = if (ex.inverted) history.minOfOrNull { it.log.topWeight } else history.maxOfOrNull { it.log.topWeight }
+                    // Weight records only count dumbbell / machine sets; bodyweight sessions are listed but carry no load.
+                    val weighted = history.filter { !it.log.bodyweight && it.log.topWeight > 0 && it.log.sets.isNotEmpty() }
+                    val best = if (ex.inverted) weighted.minOfOrNull { it.log.topWeight } else weighted.maxOfOrNull { it.log.topWeight }
                     best?.let { Text("Best: ${formatMiles(it)} lb ${if (ex.inverted) "(least assistance)" else ""}", fontWeight = FontWeight.SemiBold) }
-                    if (!ex.inverted && history.size >= 2) {
-                        val first = history.first().let { estimatedOneRepMax(it.log.topWeight, it.log.sets.minOf { s -> s.reps }, it.log.rir ?: 3) }
-                        val now = history.last().let { estimatedOneRepMax(it.log.topWeight, it.log.sets.minOf { s -> s.reps }, it.log.rir ?: 2) }
+                    if (!ex.inverted && weighted.size >= 2) {
+                        val first = weighted.first().let { estimatedOneRepMax(it.log.topWeight, it.log.sets.minOf { s -> s.reps }, it.log.rir ?: 3) }
+                        val now = weighted.last().let { estimatedOneRepMax(it.log.topWeight, it.log.sets.minOf { s -> s.reps }, it.log.rir ?: 2) }
                         if (first > 0) Text(
                             "Estimated max: ${formatMiles(now.roundToInt().toDouble())} lb " +
                                 "(${if (now >= first) "+" else ""}${((now / first - 1) * 100).roundToInt()}% since your first session)",
@@ -197,7 +224,14 @@ fun ExerciseScreen(state: UiState, exerciseId: String, dayIndex: Int, onBack: ()
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(state: UiState, onSaved: () -> Unit, onSave: (Settings) -> Unit, onReset: () -> Unit) {
+fun SettingsScreen(
+    state: UiState,
+    onSaved: () -> Unit,
+    onSave: (Settings) -> Unit,
+    onReset: () -> Unit,
+    onOpenAmendments: () -> Unit,
+    onOpenWhatsNew: () -> Unit,
+) {
     val s = state.settings
     var mpMin by remember { mutableStateOf((s.marathonPaceSec / 60).toString()) }
     var mpSec by remember { mutableStateOf((s.marathonPaceSec % 60).toString().padStart(2, '0')) }
@@ -205,6 +239,7 @@ fun SettingsScreen(state: UiState, onSaved: () -> Unit, onSave: (Settings) -> Un
     var hM by remember { mutableStateOf(s.halfTimeSec?.let { ((it % 3600) / 60).toString() } ?: "") }
     var hS by remember { mutableStateOf(s.halfTimeSec?.let { (it % 60).toString().padStart(2, '0') } ?: "") }
     var longest by remember { mutableStateOf(formatMiles(s.preplanLongestMiles)) }
+    var hrCap by remember { mutableStateOf(s.easyHrCap?.toString() ?: "") }
     var confirmReset by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -251,6 +286,18 @@ fun SettingsScreen(state: UiState, onSaved: () -> Unit, onSave: (Settings) -> Un
                 }
             }
             SectionCard {
+                Text("Easy heart-rate cap (optional)", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Easy means below your first breathing threshold, which sits at a very individual heart rate — so the app " +
+                        "doesn't use an age formula. To set yours: on an easy run, check you can talk in full sentences, " +
+                        "then use that run's average heart rate from your Garmin. Leave blank to judge easy by effort only.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                NumberField(hrCap, { if (it.length <= 3) hrCap = it }, "Easy runs: stay under", Modifier.fillMaxWidth(),
+                    decimal = false, suffix = "bpm")
+            }
+            SectionCard {
                 Text("Longest run in the 30 days before Oct 16", style = MaterialTheme.typography.titleMedium)
                 Text("Used for the 10% long-run rule at the start of the plan.", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -263,6 +310,8 @@ fun SettingsScreen(state: UiState, onSaved: () -> Unit, onSave: (Settings) -> Un
                             marathonPaceSec = minSecToSeconds(mpMin, mpSec)?.takeIf { it in 5 * 60..16 * 60 } ?: s.marathonPaceSec,
                             halfTimeSec = minSecToSeconds(hM, hS, hH)?.takeIf { it in 80 * 60..200 * 60 } ?: s.halfTimeSec,
                             preplanLongestMiles = longest.toDoubleOrNull()?.takeIf { it in 0.5..30.0 } ?: s.preplanLongestMiles,
+                            // Blank clears the cap; out-of-range numbers keep the old value.
+                            easyHrCap = if (hrCap.isBlank()) null else hrCap.toIntOrNull()?.takeIf { it in 90..210 } ?: s.easyHrCap,
                         ),
                     )
                     onSaved()
@@ -281,6 +330,10 @@ fun SettingsScreen(state: UiState, onSaved: () -> Unit, onSave: (Settings) -> Un
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
+            OutlinedButton(onClick = onOpenAmendments, modifier = Modifier.fillMaxWidth()) {
+                Text("Changes from the original plan, with sources")
+            }
+            TextButton(onClick = onOpenWhatsNew, modifier = Modifier.fillMaxWidth()) { Text("What's new in this version") }
             TextButton(onClick = { confirmReset = true }) {
                 Text("Reset all my data", color = MaterialTheme.colorScheme.error)
             }

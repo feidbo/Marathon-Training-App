@@ -68,12 +68,16 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.feidbo.marathon.core.CalfGuide
 import com.feidbo.marathon.core.ExerciseLog
+import com.feidbo.marathon.core.Exercises
 import com.feidbo.marathon.core.Feel
 import com.feidbo.marathon.core.Prescription
 import com.feidbo.marathon.core.RunKind
 import com.feidbo.marathon.core.RunLog
+import com.feidbo.marathon.core.SessionOptions
 import com.feidbo.marathon.core.SetLog
+import com.feidbo.marathon.core.StrengthKind
 import com.feidbo.marathon.core.Tip
 import com.feidbo.marathon.core.TipLevel
 import com.feidbo.marathon.core.fmt
@@ -100,10 +104,15 @@ private class SetEntry(weight: String, reps: String, done: Boolean) {
 /** Editable state for one exercise. */
 private class ExerciseEntry(
     val rx: Prescription, sets: List<SetEntry>, rir: Int?, skipped: Boolean, private val legacyFeel: Feel?,
+    bodyweight: Boolean,
 ) {
     val sets = mutableStateListOf<SetEntry>().apply { addAll(sets) }
     var rir by mutableStateOf(rir)
     var skipped by mutableStateOf(skipped)
+    /** Doing the no-equipment version: reps only, no weight. */
+    var bodyweight by mutableStateOf(bodyweight)
+    val ex get() = rx.exercise
+    val weighted: Boolean get() = ex.usesWeight && !bodyweight
 
     /** Changing one set's weight carries forward to later sets that still had the old weight and aren't done. */
     fun setWeight(i: Int, value: String) {
@@ -115,14 +124,21 @@ private class ExerciseEntry(
     fun toLog(): ExerciseLog? {
         if (skipped) return null
         val done = sets.filter { it.done }.mapNotNull { st ->
-            st.reps.toIntOrNull()?.takeIf { it > 0 }?.let { SetLog(st.weight.toDoubleOrNull() ?: 0.0, it) }
+            st.reps.toIntOrNull()?.takeIf { it > 0 }?.let { SetLog(if (weighted) st.weight.toDoubleOrNull() ?: 0.0 else 0.0, it) }
         }
         return if (done.isEmpty()) null
-        else ExerciseLog(rx.exercise.id, done, if (rir == null) legacyFeel else null, rir, perSide = rx.exercise.perSide)
+        else ExerciseLog(
+            ex.id, done, if (rir == null) legacyFeel else null, rir,
+            perSide = ex.perSideFor(bodyweight),
+            bodyweight = bodyweight && ex.usesWeight,
+        )
     }
 
-    fun toDraft() = DraftExercise(rx.exercise.id, sets.map { DraftSet(it.weight, it.reps, it.done) }, rir, skipped)
+    fun toDraft() = DraftExercise(ex.id, sets.map { DraftSet(it.weight, it.reps, it.done) }, rir, skipped, bodyweight)
 }
+
+/** The block an exercise belongs to ("1a" → "1"), for the circuit order. */
+private fun blockOf(e: ExerciseEntry) = e.ex.block.takeWhile { it.isDigit() }.ifEmpty { e.ex.block }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -151,12 +167,30 @@ fun LogScreen(
     var raceS by rememberSaveable { mutableStateOf(existingRun?.raceTimeSec?.let { (it % 60).toString().padStart(2, '0') } ?: "") }
     var effort by rememberSaveable { mutableStateOf((existingRun?.effort ?: defaultEffort(day.run)).toFloat()) }
     var pain by rememberSaveable { mutableStateOf(existingRun?.pain ?: false) }
+    var avgHr by rememberSaveable { mutableStateOf(existingRun?.avgHr?.toString() ?: "") }
     var didRun by rememberSaveable { mutableStateOf(existing == null || existingRun != null) }
 
-    val session = strengthSession(day.strength)
+    // The calf guidance can take over the calf raises and hold back the hops (docs/decisions.md §4).
+    val calf = state.data.calf
+    val options = SessionOptions(
+        skipCalfRaises = CalfGuide.skipRoutineCalfRaises(calf),
+        plyometrics = CalfGuide.plyometricsAllowed(calf),
+    )
+    val session = strengthSession(day.strength, options)
+    // Exercises already logged for this day that today's routine doesn't list (e.g. machine lifts logged
+    // before the dumbbell routine) stay editable, so saving never drops them.
+    val extraRx = remember {
+        val ids = session?.items?.map { it.exercise.id }.orEmpty().toSet()
+        val logged = existing?.strength.orEmpty().map { it.exerciseId } + draft?.exercises.orEmpty().filter { d -> d.sets.any { it.done } }.map { it.id }
+        logged.distinct().filter { it !in ids }.mapNotNull { id ->
+            val ex = Exercises.byId(id) ?: return@mapNotNull null
+            val p = existing?.strength?.firstOrNull { it.exerciseId == id }
+            Prescription(ex, p?.sets?.size ?: 1, p?.sets?.firstOrNull()?.reps ?: 10)
+        }
+    }
     // Start from the saved draft if there is one (it's the newest), else the existing log, else today's suggestions.
     val entries = remember {
-        session?.items?.map { rx ->
+        (session?.items.orEmpty() + extraRx).map { rx ->
             val fromDraft = draft?.exercises?.firstOrNull { it.id == rx.exercise.id }
             val prior = existing?.strength?.firstOrNull { it.exerciseId == rx.exercise.id }
             val start = loadAdviceFor(rx, day, state.logs)?.weight?.let(::formatMiles) ?: ""
@@ -167,7 +201,7 @@ fun LogScreen(
                         fromDraft.sets.getOrNull(i)?.let { SetEntry(it.weight, it.reps, it.done) }
                             ?: SetEntry(fromDraft.sets.lastOrNull()?.weight ?: start, rx.reps.toString(), false)
                     },
-                    fromDraft.rir, fromDraft.skipped, prior?.feel,
+                    fromDraft.rir, fromDraft.skipped, prior?.feel, fromDraft.bodyweight,
                 )
                 else -> ExerciseEntry(
                     rx,
@@ -176,10 +210,10 @@ fun LogScreen(
                         if (p != null) SetEntry(formatMiles(p.weight), p.reps.toString(), done = true)
                         else SetEntry(start, rx.reps.toString(), done = false)
                     },
-                    prior?.rir, false, prior?.feel,
+                    prior?.rir, false, prior?.feel, prior?.bodyweight ?: false,
                 )
             }
-        }.orEmpty()
+        }
     }
 
     // Save what's been entered: on every tick, when leaving, and when the app goes to the background.
@@ -208,20 +242,22 @@ fun LogScreen(
             effort = effort.toInt(),
             pain = pain,
             raceTimeSec = minSecToSeconds(raceM, raceS, raceH),
+            avgHr = avgHr.toIntOrNull()?.takeIf { it in 40..230 },
         )
     }
 
     var restSec by rememberSaveable { mutableIntStateOf(session?.restSec ?: 90) }
     val rest by Timers.rest.collectAsStateWithLifecycle()
-    // Circuit order from the plan: one set of each exercise in a block, then the next round.
-    val order = remember(entries) {
-        listOf(entries.take(3), entries.drop(3)).flatMap { block ->
+    // Circuit order: one set of each exercise in a block, then the next round.
+    val blocks = remember(entries) { entries.groupBy(::blockOf).values.toList() }
+    val order = remember(blocks) {
+        blocks.flatMap { block ->
             val rounds = block.maxOfOrNull { it.rx.sets } ?: 0
             (0 until rounds).flatMap { r -> block.filter { it.sets.size > r }.map { it to r } }
         }
     }
     fun nextUp(): String? = order.firstOrNull { (e, i) -> !e.skipped && !e.sets[i].done }
-        ?.let { (e, i) -> "${e.rx.exercise.name}, set ${i + 1} of ${e.sets.size}" }
+        ?.let { (e, i) -> "${e.ex.nameFor(e.bodyweight)}, set ${i + 1} of ${e.sets.size}" }
 
     // Ask once for notification permission (Android 13+) so rest alerts can show when the app is closed.
     val notifPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -279,6 +315,9 @@ fun LogScreen(
                                 Spacer(Modifier.height(8.dp))
                             }
                             MinSecField(paceMin, paceSec, { paceMin = it }, { paceSec = it }, "Average pace per mile")
+                            Spacer(Modifier.height(8.dp))
+                            NumberField(avgHr, { if (it.length <= 3) avgHr = it }, "Average heart rate (from your watch)",
+                                Modifier.fillMaxWidth(), decimal = false, suffix = "bpm")
                             if (day.run == RunKind.MARATHON_PACE || day.run == RunKind.TEMPO) {
                                 Spacer(Modifier.height(8.dp))
                                 MinSecField(segMin, segSec, { segMin = it }, { segSec = it },
@@ -318,10 +357,19 @@ fun LogScreen(
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Text(
-                            "Order: one set of each exercise in a block, then repeat (${session.items.take(3).joinToString(" → ") { it.exercise.name }}, " +
-                                "then ${session.items.drop(3).joinToString(" → ") { it.exercise.name }}). Warm up first with a light set on the leg press and hip thrust.",
+                            "Order: one set of each exercise in a block, then repeat the block. " +
+                                blocks.mapIndexed { i, b -> "Block ${i + 1}: " + b.joinToString(" → ") { it.ex.nameFor(it.bodyweight) } }
+                                    .joinToString(". ") + ". Warm up first with a light set of split squats and hip thrusts.",
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        if (options.skipCalfRaises) {
+                            Text("Calf raises are left out today — your Calf card on the Today screen has your calf exercises.",
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                        }
+                        if (!options.plyometrics && day.strength in setOf(StrengthKind.PHASE2, StrengthKind.PHASE3)) {
+                            Text("Pogo hops join once your calf passes its hop test (Calf card).",
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                        }
                         entries.forEach { e ->
                             ExerciseEditor(state, dayIndex, e, onChange = ::saveDraft) { nowDone ->
                                 focus.clearFocus() // put the keyboard away so the rest timer is in view
@@ -382,38 +430,58 @@ private fun ExerciseEditor(
     val ex = rx.exercise
     val day = state.schedule[dayIndex]!!.day
     val last = lastWorkingSet(ex.id, dayIndex, state.logs)
-    val advice = loadAdviceFor(rx, day, state.logs)
+    // Weight suggestions only for dumbbell sets (docs/decisions.md §2).
+    val advice = if (e.weighted) loadAdviceFor(rx, day, state.logs) else null
     val targetRir = strengthSession(day.strength)?.targetRir ?: 2
     val allDone = e.sets.all { it.done }
+    val perSide = ex.perSideFor(e.bodyweight)
     Column(Modifier.padding(top = 16.dp)) {
         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
         Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            ExerciseIllustration(ex.id, Modifier.size(48.dp), animate = false)
+            ExerciseIllustration(if (e.bodyweight && ex.id == Exercises.singleLegRdl.id) SLIDING_LEG_CURL else ex.id,
+                Modifier.size(48.dp), animate = false)
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    "${if (allDone) "✅ " else ""}${ex.name} · ${rx.sets} × ${ex.repsText(rx.reps)}",
+                    "${if (allDone) "✅ " else ""}${ex.nameFor(e.bodyweight)} · ${rx.sets} × ${rx.repsShown(e.bodyweight)}",
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Text(
-                    last?.let { "Last: ${setsText(it.log)}" + if (it.log.perSide) " per leg" else "" }
-                        ?: "First time — pick a weight that's hard by the last rep",
+                    last?.let { "Last: ${setsText(it.log)}" }
+                        ?: if (e.weighted) "First time — pick a weight that's hard by the last rep" else "Reps only — no weight to log",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             TextButton(onClick = { e.skipped = !e.skipped; onChange() }) { Text(if (e.skipped) "Undo skip" else "Skip") }
         }
+        if (ex.retired) {
+            Text("Logged on a machine before the dumbbell routine. Kept so your history stays complete.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (!e.skipped && ex.usesWeight && ex.bodyweightName != null) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(top = 4.dp)) {
+                FilterChip(selected = !e.bodyweight, onClick = { e.bodyweight = false; onChange() }, label = { Text("Dumbbells") })
+                FilterChip(selected = e.bodyweight, onClick = { e.bodyweight = true; onChange() }, label = { Text("Bodyweight") })
+            }
+            if (e.bodyweight) {
+                ex.bodyweightSteps.forEach {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
         if (advice != null && !e.skipped) {
+            val each = if (ex.weightLabel.startsWith("Each")) " in each hand" else ""
             Text(
-                "Suggested ${formatMiles(advice.weight)} lb${if (ex.perSide) " per leg" else ""} (${advice.deltaText}). ${advice.reason}",
+                "Suggested ${formatMiles(advice.weight)} lb$each (${advice.deltaText}). ${advice.reason}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(vertical = 4.dp),
             )
         }
-        if (ex.perSide && !e.skipped) {
-            Text("One leg at a time: do ${rx.reps} on each leg — that's one set. Log the weight and reps per leg.",
+        if (perSide && !e.skipped) {
+            Text("One leg at a time: do the reps on each leg — that's one set. Log the reps per leg.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (!e.skipped) {
@@ -429,10 +497,17 @@ private fun ExerciseEditor(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text("Set ${i + 1}", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(44.dp))
-                    NumberField(set.weight, { e.setWeight(i, it) }, if (ex.inverted) "Assist" else "Weight",
-                        Modifier.weight(1.2f), suffix = "lb", imeAction = ImeAction.Next)
-                    Text("×", style = MaterialTheme.typography.titleMedium)
-                    NumberField(set.reps, { set.reps = it }, if (ex.perSide) "Reps/leg" else "Reps", Modifier.weight(0.9f), decimal = false)
+                    if (e.weighted) {
+                        NumberField(set.weight, { e.setWeight(i, it) },
+                            when {
+                                ex.inverted -> "Assist"
+                                ex.weightLabel.startsWith("Each") -> "Each DB"
+                                else -> "Weight"
+                            },
+                            Modifier.weight(1.2f), suffix = "lb", imeAction = ImeAction.Next)
+                        Text("×", style = MaterialTheme.typography.titleMedium)
+                    }
+                    NumberField(set.reps, { set.reps = it }, if (perSide) "Reps/leg" else "Reps", Modifier.weight(0.9f), decimal = false)
                     IconButton(onClick = {
                         set.done = !set.done
                         onSetToggled(set.done)

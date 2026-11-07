@@ -69,6 +69,7 @@ fun SectionCard(
     modifier: Modifier = Modifier,
     container: Color = MaterialTheme.colorScheme.surface,
     onClick: (() -> Unit)? = null,
+    border: androidx.compose.foundation.BorderStroke? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
@@ -76,6 +77,7 @@ fun SectionCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = container),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = border,
     ) {
         Column(Modifier.padding(16.dp), content = content)
     }
@@ -179,18 +181,29 @@ fun minSecToSeconds(min: String, sec: String, hours: String = ""): Int? {
 }
 
 /**
- * The 3-minute quad-stretch timer (90 s per side) for [dayIndex]. It runs in [Timers], so it survives
- * rotation and keeps going in the background, buzzing at the switch and at the end.
- * [onFinished] is called when it runs out on screen.
+ * The daily stretch timer for [dayIndex]: a run of timed holds (quad, then the wall calf stretches when
+ * [calfAllowed]). It runs in [Timers], so it survives rotation and keeps going in the background,
+ * buzzing at each switch and at the end. [onFinished] is called when it runs out on screen.
  */
 @Composable
-fun StretchTimer(dayIndex: Int, onFinished: (Int) -> Unit, modifier: Modifier = Modifier) {
+fun StretchTimer(
+    dayIndex: Int,
+    calfAllowed: Boolean,
+    beforeRun: Boolean,
+    onFinished: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val all by Timers.stretch.collectAsStateWithLifecycle()
     val c = all?.takeIf { it.dayIndex == dayIndex }
-    var remainingMs by remember { mutableStateOf(c?.remainingMs() ?: Timers.STRETCH_TOTAL_MS) }
-    LaunchedEffect(c) {
-        remainingMs = c?.remainingMs() ?: Timers.STRETCH_TOTAL_MS
+    val segments = remember(c?.label, calfAllowed, beforeRun) {
+        if (c != null) Timers.stretchSegments(c)
+        else com.feidbo.marathon.core.StretchRoutine.segments(calfAllowed, beforeRun)
+    }
+    val totalMs = com.feidbo.marathon.core.StretchRoutine.totalSeconds(segments) * 1000L
+    var remainingMs by remember { mutableStateOf(c?.remainingMs() ?: totalMs) }
+    LaunchedEffect(c, totalMs) {
+        remainingMs = c?.remainingMs() ?: totalMs
         while (c != null && c.running) {
             remainingMs = c.remainingMs()
             if (remainingMs == 0L) {
@@ -200,30 +213,36 @@ fun StretchTimer(dayIndex: Int, onFinished: (Int) -> Unit, modifier: Modifier = 
             delay(250)
         }
     }
-    val remaining = ((remainingMs + 999) / 1000).toInt()
-    val firstSide = remaining > 90
-    val sideRemaining = if (firstSide) remaining - 90 else remaining
+    val elapsedSec = ((totalMs - remainingMs) / 1000).toInt().coerceAtLeast(0)
+    val (index, segLeft) = com.feidbo.marathon.core.StretchRoutine.at(segments, elapsedSec) ?: (segments.lastIndex to 0)
+    val seg = segments[index]
+    val next = segments.getOrNull(index + 1)
+    val justSwitched = c?.running == true && index > 0 && segLeft > seg.seconds - 5
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(64.dp)) {
-            val progress = sideRemaining / 90f
+            val progress = segLeft / seg.seconds.toFloat()
             val track = MaterialTheme.colorScheme.surfaceVariant
             Canvas(Modifier.fillMaxSize()) {
                 drawArc(track, 0f, 360f, false, style = androidx.compose.ui.graphics.drawscope.Stroke(8.dp.toPx()))
                 drawArc(Green, -90f, 360f * progress, false,
                     style = androidx.compose.ui.graphics.drawscope.Stroke(8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
             }
-            Text(fmt("%d:%02d", sideRemaining / 60, sideRemaining % 60), style = MaterialTheme.typography.labelLarge)
+            Text(fmt("%d:%02d", segLeft / 60, segLeft % 60), style = MaterialTheme.typography.labelLarge)
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(if (firstSide) "First leg" else "Second leg", style = MaterialTheme.typography.titleMedium)
-            Text(
-                if (!firstSide && remaining > 85 && c?.running == true) "Switch sides!" else "Kneel, hold your ankle, tuck your pelvis.",
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text("${index + 1}/${segments.size} · ${seg.side.label} side", style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (justSwitched) "Switch! ${seg.exercise.name}" else seg.exercise.name,
+                style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            next?.let {
+                Text("Next: ${it.exercise.name}, ${it.side.label.lowercase()}", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
+        Spacer(Modifier.width(8.dp))
         androidx.compose.material3.FilledTonalButton(onClick = {
-            if (c?.running == true) Timers.pauseStretch(context) else Timers.startStretch(context, dayIndex)
+            if (c?.running == true) Timers.pauseStretch(context) else Timers.startStretch(context, dayIndex, calfAllowed, beforeRun)
         }) { Text(if (c?.running == true) "Pause" else if (c?.paused == true) "Resume" else "Start") }
     }
 }
@@ -332,12 +351,17 @@ fun XpToast(text: String?, key: Any?, onShown: () -> Unit, modifier: Modifier = 
     }
 }
 
-/** "140 lb × 12, 12" when every set used the same weight, otherwise "120×12, 140×10 lb". */
+/** "140 lb × 12, 12" when every set used the same weight, otherwise "120×12, 140×10 lb"; "bodyweight × 12, 12". */
 fun setsText(log: com.feidbo.marathon.core.ExerciseLog): String {
     val sets = log.sets.filter { it.reps > 0 }
+    val ex = com.feidbo.marathon.core.Exercises.byId(log.exerciseId)
+    val per = if (log.perSide) "/leg" else ""
+    if (log.bodyweight || ex?.usesWeight == false || sets.all { it.weight <= 0.0 }) {
+        return "bodyweight × ${sets.joinToString(", ") { it.reps.toString() }}$per"
+    }
     return if (sets.map { it.weight }.distinct().size <= 1) {
-        "${com.feidbo.marathon.core.formatMiles(sets.firstOrNull()?.weight ?: 0.0)} lb × ${sets.joinToString(", ") { it.reps.toString() }}"
+        "${com.feidbo.marathon.core.formatMiles(sets.firstOrNull()?.weight ?: 0.0)} lb × ${sets.joinToString(", ") { it.reps.toString() }}$per"
     } else {
-        sets.joinToString(", ") { "${com.feidbo.marathon.core.formatMiles(it.weight)}×${it.reps}" } + " lb"
+        sets.joinToString(", ") { "${com.feidbo.marathon.core.formatMiles(it.weight)}×${it.reps}" } + " lb" + if (log.perSide) " (reps/leg)" else ""
     }
 }

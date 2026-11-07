@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Default 2×2 (docs/decisions.md §7). Min sizes follow the developer guide's 2×2 sizes on a reference phone:
+  ~130 dp wide in portrait and ~117 dp tall in landscape. Responsive layouts fill whatever size it's given.
+-->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="250dp"
+    android:minWidth="110dp"
     android:minHeight="110dp"
-    android:minResizeWidth="180dp"
-    android:minResizeHeight="80dp"
-    android:targetCellWidth="4"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="100dp"
+    android:targetCellWidth="2"
     android:targetCellHeight="2"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="3600000"

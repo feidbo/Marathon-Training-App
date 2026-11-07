@@ -47,7 +47,7 @@ def ik(root, target, l1, l2, bend):
 
 
 def figure(hip, torso_deg, hand, elbow_bend, ankle, knee_bend, foot_deg,
-           far_hand=None, far_ankle=None, far_foot_deg=None, far_offset=(2.5, -1.5)):
+           far_hand=None, far_ankle=None, far_foot_deg=None, far_offset=(2.5, -1.5), far_knee_bend=None):
     """Returns (head, chains) where each chain is (points, far)."""
     shoulder = polar(hip, TORSO, torso_deg)
     head = polar(hip, TORSO + NECK + HEAD_R, torso_deg)
@@ -60,7 +60,7 @@ def figure(hip, torso_deg, hand, elbow_bend, ankle, knee_bend, foot_deg,
         fhip = pt(hip[0] + ox, hip[1] + oy)
         fsh = pt(shoulder[0] + ox, shoulder[1] + oy)
         if far_ankle is not None:
-            fk, fa = ik(fhip, far_ankle, THIGH, SHIN, knee_bend)
+            fk, fa = ik(fhip, far_ankle, THIGH, SHIN, knee_bend if far_knee_bend is None else far_knee_bend)
             chains.append(([fhip, fk, fa, polar(fa, FOOT, far_foot_deg if far_foot_deg is not None else foot_deg)], True))
         if far_hand is not None:
             fe, fh = ik(fsh, far_hand, UPPER_ARM, FOREARM, elbow_bend)
@@ -264,6 +264,166 @@ def quad_stretch():
     return props, s, e
 
 
+# ---- Dumbbell / bodyweight routine ---------------------------------------------------------------
+
+def dumbbell(c, moved=None):
+    """A dumbbell seen end-on: a weight disc at the hand."""
+    return circle(c[0], c[1] + 2, 3.2, "WEIGHT", (moved[0], moved[1] + 2, 3.2) if moved else None)
+
+
+def split_squat():
+    # Facing right. Back foot laces-down on a bench behind; front foot flat. Dumbbells hang at the sides.
+    front_ankle = (66, 88)
+    back_ankle = (24, 67)
+    def pose(hip):
+        hand = (hip[0] + 2, hip[1] + 4)
+        head, chains = figure(hip, 90, hand, -1, front_ankle, 1, 0,
+                              far_hand=(hip[0] + 4, hip[1] + 3), far_ankle=back_ankle, far_foot_deg=175,
+                              far_offset=(-1.5, -1.0))
+        return head, chains, hand
+    sh, sc, s_hand = pose((49, 50))
+    eh, ec, e_hand = pose((45, 62))
+    props = [
+        FLOOR,
+        rect(6, 70, 22, 5, "PAD"),
+        line((10, 75), (10, 92), 3), line((24, 75), (24, 92), 3),
+        dumbbell(s_hand, e_hand),
+    ]
+    return props, (sh, sc), (eh, ec)
+
+
+def _calf_raise(bent):
+    # Facing right, one foot on a step edge (heel hanging off), hand on a wall, dumbbell in the other hand.
+    toe = (60, 87)
+    wall_hand = (80, 34)
+    def pose(foot_deg):
+        r = math.radians(foot_deg)
+        ankle = pt(toe[0] - FOOT * math.cos(r), toe[1] + FOOT * math.sin(r))
+        hip = pt(ankle[0] - 5, ankle[1] - 35.5) if bent else pt(ankle[0], ankle[1] - (THIGH + SHIN - 0.3))
+        head, chains = figure(hip, 92, wall_hand, 1, ankle, 1, foot_deg,
+                              far_hand=(hip[0] + 1, hip[1] + 3), far_ankle=(hip[0] - 14, hip[1] + 30), far_foot_deg=-60,
+                              far_knee_bend=-1)
+        return head, chains, (hip[0] + 3.5, hip[1] + 1.5)
+    sh, sc, s_dumb = pose(22)
+    eh, ec, e_dumb = pose(-22)
+    props = [
+        FLOOR,
+        rect(55, 88, 30, 4, "PAD"),                                            # step
+        line((84, 8), (84, 92), 3),                                            # wall
+        dumbbell(s_dumb, e_dumb),
+    ]
+    return props, (sh, sc), (eh, ec)
+
+
+def calf_raise_straight():
+    return _calf_raise(False)
+
+
+def calf_raise_bent():
+    return _calf_raise(True)
+
+
+def calf_isometric():
+    # Hold: one foot on the floor, heel partway up, hand on the wall. The pose barely moves.
+    toe = (58, 90)
+    def pose(foot_deg):
+        r = math.radians(foot_deg)
+        ankle = pt(toe[0] - FOOT * math.cos(r), toe[1] + FOOT * math.sin(r))
+        hip = pt(ankle[0], ankle[1] - (THIGH + SHIN - 0.3))
+        return figure(hip, 92, (80, 38), 1, ankle, 1, foot_deg,
+                      far_hand=(hip[0] + 2, hip[1] + 6), far_ankle=(hip[0] - 14, hip[1] + 30), far_foot_deg=-60,
+                      far_knee_bend=-1)
+    s = pose(-24)
+    e = pose(-26)
+    props = [FLOOR, line((84, 8), (84, 92), 3)]
+    return props, s, e
+
+
+def hip_thrust_db():
+    props, s, e = hip_thrust()
+    # Same movement with a dumbbell held across the hips instead of a machine belt.
+    props = [p for p in props if not (p[0] == "LINE" and p[4] == "FRAME" and p[1][1] == 79)]
+    props = [circle(47, 78, 4.5, "WEIGHT", (49, 62, 4.5)) if p[0] == "CIRCLE" else p for p in props]
+    return props, s, e
+
+
+def side_abduction():
+    # Lying on the left side, seen from the front: the top leg lifts to about 40 degrees.
+    hip = (54, 80)
+    torso = 184
+    def pose(leg_deg):
+        ankle = polar(hip, THIGH + SHIN - 0.3, leg_deg)
+        arm_end = polar(polar(hip, TORSO, torso), UPPER_ARM + FOREARM - 0.1, 2)   # top arm rests along the body
+        return figure(hip, torso, arm_end, 1, ankle, 1, leg_deg - 70,
+                      far_ankle=polar((hip[0], hip[1] + 4), THIGH + SHIN - 0.3, -3), far_foot_deg=-70,
+                      far_offset=(0, 4))
+    s = pose(2)
+    e = pose(38)
+    props = [FLOOR, rect(6, 88, 90, 4, "PAD")]
+    return props, s, e
+
+
+def single_leg_rdl():
+    # Facing right: hinge on one leg; the free leg reaches back as the chest lowers. Dumbbell in hand.
+    ankle = (52, 88)
+    def pose(hip, torso, free_ankle, free_foot):
+        shoulder = polar(hip, TORSO, torso)
+        hand = (shoulder[0] + 1, shoulder[1] + UPPER_ARM + FOREARM - 1.5)
+        head, chains = figure(hip, torso, hand, 1, ankle, 1, 0,
+                              far_ankle=free_ankle, far_foot_deg=free_foot, far_knee_bend=-1)
+        return head, chains, hand
+    sh, sc, s_hand = pose((51, 48), 90, (48, 82), -70)
+    eh, ec, e_hand = pose((46, 52), 14, polar((46, 52), THIGH + SHIN - 0.5, 188), 100)
+    props = [FLOOR, dumbbell(s_hand, e_hand)]
+    return props, (sh, sc), (eh, ec)
+
+
+def sliding_leg_curl():
+    # On the back, hips up, heels on a towel: slide the heels out, then curl them back in.
+    def pose(hip, heel):
+        return figure(hip, 188, (38, 89), 1, heel, 1, 95,
+                      far_hand=(40, 89), far_ankle=(heel[0] + 1, heel[1]))
+    s = pose((52, 76), (91, 86))
+    e = pose((54, 70), (70, 86))
+    props = [FLOOR, rect(86, 88, 10, 4, "PAD", (65, 88, 10, 4))]
+    return props, s, e
+
+
+def pogo_hops():
+    # Facing right, quick hops off the balls of the feet.
+    def pose(lift):
+        hip = (50, 50 - lift)
+        ankle = (50, 86 - lift)
+        return figure(hip, 92, (54, 60 - lift), -1, ankle, 1, -40,
+                      far_hand=(56, 59 - lift), far_ankle=(48, 86 - lift))
+    s = pose(0)
+    e = pose(7)
+    return [FLOOR], s, e
+
+
+def _calf_stretch(bent):
+    # Facing a wall at the right: hands on the wall, front foot forward, back heel down.
+    front_ankle = (66, 88)
+    back_ankle = (38, 88) if bent else (28, 88)
+    def pose(hip):
+        return figure(hip, 70, (82, 36), 1, back_ankle, 1, 0,
+                      far_hand=(82, 40), far_ankle=front_ankle, far_foot_deg=0, far_knee_bend=1)
+    if bent:
+        s, e = pose((48, 58)), pose((50, 60))
+    else:
+        s, e = pose((48, 52)), pose((50, 53))
+    props = [FLOOR, line((86, 8), (86, 92), 3)]
+    return props, s, e
+
+
+def calf_stretch_straight():
+    return _calf_stretch(False)
+
+
+def calf_stretch_bent():
+    return _calf_stretch(True)
+
+
 EXERCISES = {
     "leg_press": leg_press,
     "calf_raise": calf_raise,
@@ -272,6 +432,17 @@ EXERCISES = {
     "hip_abduction": hip_abduction,
     "leg_curl": leg_curl,
     "quad_stretch": quad_stretch,
+    "split_squat": split_squat,
+    "calf_raise_straight": calf_raise_straight,
+    "calf_raise_bent": calf_raise_bent,
+    "hip_thrust_db": hip_thrust_db,
+    "side_abduction": side_abduction,
+    "single_leg_rdl": single_leg_rdl,
+    "sliding_leg_curl": sliding_leg_curl,
+    "pogo_hops": pogo_hops,
+    "calf_stretch_straight": calf_stretch_straight,
+    "calf_stretch_bent": calf_stretch_bent,
+    "calf_isometric": calf_isometric,
 }
 
 

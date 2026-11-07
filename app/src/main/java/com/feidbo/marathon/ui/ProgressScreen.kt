@@ -270,10 +270,19 @@ private fun StrengthSummary(state: UiState, onOpenExercise: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Lifts: ${state.progress.strengthSessions} sessions", style = MaterialTheme.typography.titleMedium)
         val nextDay = state.schedule.days.firstOrNull { it.date >= state.today && it.day.strength.isPlanned && it.index !in state.logs }?.day
-        Exercises.routine.forEach { ex ->
+        // The current routine, then anything else you've logged (pogo hops, the old machine lifts) so no history is hidden.
+        val logged = (listOf(Exercises.pogoHops) + Exercises.retiredMachines).filter { exerciseHistory(it.id, state.logs).isNotEmpty() }
+        val retiredShown = logged.any { it.retired }
+        (Exercises.routine + logged).forEach { ex ->
+            if (ex.retired && ex == logged.first { it.retired } && retiredShown) {
+                Text("Machine lifts (before the dumbbell routine)", style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
+            }
             val h = exerciseHistory(ex.id, state.logs)
             val last = h.lastOrNull()
-            val best = if (ex.inverted) h.minOfOrNull { it.log.topWeight } else h.maxOfOrNull { it.log.topWeight }
+            // Weight records only count loaded sets; bodyweight sessions carry no load.
+            val weighted = h.filter { !it.log.bodyweight && it.log.topWeight > 0 }
+            val best = if (ex.inverted) weighted.minOfOrNull { it.log.topWeight } else weighted.maxOfOrNull { it.log.topWeight }
             SectionCard(onClick = { onOpenExercise(ex.id) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     ExerciseIllustration(ex.id, Modifier.size(52.dp), animate = false)
@@ -282,19 +291,21 @@ private fun StrengthSummary(state: UiState, onOpenExercise: (String) -> Unit) {
                         Text(ex.name, style = MaterialTheme.typography.titleSmall)
                         Text(
                             if (last == null) "Not logged yet"
-                            else "Last: ${formatMiles(last.log.topWeight)} lb (${shortDate(state.schedule.days[last.dayIndex].date)})",
+                            else "Last: ${setsText(last.log)} (${shortDate(state.schedule.days[last.dayIndex].date)})",
                             style = MaterialTheme.typography.bodySmall,
                         )
-                        val nextRx = nextDay?.let { d -> strengthSession(d.strength)?.items?.firstOrNull { it.exercise.id == ex.id } }
-                        val advice = if (nextDay != null && nextRx != null) loadAdviceFor(nextRx, nextDay, state.logs) else null
-                        advice?.let {
-                            Text("Next (${shortDate(nextDay!!.date)}): ${formatMiles(it.weight)} lb · ${it.deltaText}",
-                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.SemiBold)
+                        if (!ex.retired) {
+                            val nextRx = nextDay?.let { d -> strengthSession(d.strength)?.items?.firstOrNull { it.exercise.id == ex.id } }
+                            val advice = if (nextDay != null && nextRx != null) loadAdviceFor(nextRx, nextDay, state.logs) else null
+                            advice?.let {
+                                Text("Next (${shortDate(nextDay!!.date)}): ${formatMiles(it.weight)} lb · ${it.deltaText}",
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold)
+                            }
                         }
-                        if (h.size >= 2) {
-                            val first = h.first().log.topWeight
-                            val change = last!!.log.topWeight - first
+                        if (weighted.size >= 2) {
+                            val first = weighted.first().log.topWeight
+                            val change = weighted.last().log.topWeight - first
                             val better = if (ex.inverted) change < 0 else change > 0
                             if (change != 0.0) Text(
                                 "${if (better) "📈" else "📉"} ${if (change > 0) "+" else ""}${formatMiles(change)} lb since you started",

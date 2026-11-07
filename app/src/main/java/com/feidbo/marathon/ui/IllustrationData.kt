@@ -146,4 +146,176 @@ internal val illustrations: Map<String, Illustration> = mapOf(
             Chain(floatArrayOf(44.94f, 33.02f, 51.70f, 45.28f, 57.97f, 56.67f), floatArrayOf(42.18f, 34.15f, 38.39f, 47.63f, 34.88f, 60.15f), far = false),
         ),
     ),
+    "split_squat" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+            Shape(ShapeKind.RECT, floatArrayOf(6.00f, 70.00f, 22.00f, 5.00f, 6.00f, 70.00f, 22.00f, 5.00f), 0.00f, ShapeStyle.PAD),
+            Shape(ShapeKind.LINE, floatArrayOf(10.00f, 75.00f, 10.00f, 92.00f, 10.00f, 75.00f, 10.00f, 92.00f), 3.00f, ShapeStyle.FRAME),
+            Shape(ShapeKind.LINE, floatArrayOf(24.00f, 75.00f, 24.00f, 92.00f, 24.00f, 75.00f, 24.00f, 92.00f), 3.00f, ShapeStyle.FRAME),
+            Shape(ShapeKind.CIRCLE, floatArrayOf(51.00f, 56.00f, 3.20f, 47.00f, 68.00f, 3.20f), 0.00f, ShapeStyle.WEIGHT),
+        ),
+        head = floatArrayOf(49.00f, 13.00f, 45.00f, 25.00f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(47.50f, 49.00f, 43.82f, 69.68f, 24.00f, 67.00f, 17.03f, 66.39f), floatArrayOf(43.50f, 61.00f, 38.01f, 81.27f, 24.00f, 67.00f, 17.03f, 66.39f), far = true),
+            Chain(floatArrayOf(47.50f, 22.00f, 49.94f, 35.79f, 52.22f, 48.59f), floatArrayOf(43.50f, 34.00f, 45.94f, 47.79f, 48.22f, 60.59f), far = true),
+            Chain(floatArrayOf(49.00f, 50.00f, 57.58f, 69.17f, 65.74f, 87.43f, 72.74f, 87.43f), floatArrayOf(45.00f, 62.00f, 65.12f, 68.02f, 66.00f, 88.00f, 73.00f, 88.00f), far = false),
+            Chain(floatArrayOf(49.00f, 50.00f, 49.00f, 23.00f), floatArrayOf(45.00f, 62.00f, 45.00f, 35.00f), far = false),
+            Chain(floatArrayOf(49.00f, 23.00f, 49.90f, 36.97f, 50.74f, 49.94f), floatArrayOf(45.00f, 35.00f, 45.90f, 48.97f, 46.74f, 61.94f), far = false),
+        ),
+    ),
+    "calf_raise_straight" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+            Shape(ShapeKind.RECT, floatArrayOf(55.00f, 88.00f, 30.00f, 4.00f, 55.00f, 88.00f, 30.00f, 4.00f), 0.00f, ShapeStyle.PAD),
+            Shape(ShapeKind.LINE, floatArrayOf(84.00f, 8.00f, 84.00f, 92.00f, 84.00f, 8.00f, 84.00f, 92.00f), 3.00f, ShapeStyle.FRAME),
+            Shape(ShapeKind.CIRCLE, floatArrayOf(57.01f, 52.42f, 3.20f, 57.01f, 47.18f, 3.20f), 0.00f, ShapeStyle.WEIGHT),
+        ),
+        head = floatArrayOf(52.22f, 11.94f, 52.22f, 6.70f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(56.01f, 47.42f, 38.46f, 58.95f, 39.51f, 78.92f, 43.01f, 84.98f), floatArrayOf(56.01f, 42.18f, 38.46f, 53.71f, 39.51f, 73.68f, 43.01f, 79.74f), far = true),
+            Chain(floatArrayOf(55.07f, 20.44f, 54.82f, 34.44f, 54.59f, 47.44f), floatArrayOf(55.07f, 15.20f, 54.82f, 29.20f, 54.59f, 42.20f), far = true),
+            Chain(floatArrayOf(53.51f, 48.92f, 55.98f, 69.77f, 53.51f, 89.62f, 60.00f, 87.00f), floatArrayOf(53.51f, 43.68f, 55.98f, 64.53f, 53.51f, 84.38f, 60.00f, 87.00f), far = false),
+            Chain(floatArrayOf(53.51f, 48.92f, 52.57f, 21.94f), floatArrayOf(53.51f, 43.68f, 52.57f, 16.70f), far = false),
+            Chain(floatArrayOf(52.57f, 21.94f, 65.39f, 27.57f, 77.29f, 32.81f), floatArrayOf(52.57f, 16.70f, 64.41f, 24.17f, 75.41f, 31.10f), far = false),
+        ),
+    ),
+    "calf_raise_bent" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+            Shape(ShapeKind.RECT, floatArrayOf(55.00f, 88.00f, 30.00f, 4.00f, 55.00f, 88.00f, 30.00f, 4.00f), 0.00f, ShapeStyle.PAD),
+            Shape(ShapeKind.LINE, floatArrayOf(84.00f, 8.00f, 84.00f, 92.00f, 84.00f, 8.00f, 84.00f, 92.00f), 3.00f, ShapeStyle.FRAME),
+            Shape(ShapeKind.CIRCLE, floatArrayOf(52.01f, 57.62f, 3.20f, 52.01f, 52.38f, 3.20f), 0.00f, ShapeStyle.WEIGHT),
+        ),
+        head = floatArrayOf(47.22f, 17.14f, 47.22f, 11.90f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(51.01f, 52.62f, 33.46f, 64.15f, 34.51f, 84.12f, 38.01f, 90.18f), floatArrayOf(51.01f, 47.38f, 33.46f, 58.91f, 34.51f, 78.88f, 38.01f, 84.94f), far = true),
+            Chain(floatArrayOf(50.07f, 25.64f, 49.82f, 39.64f, 49.59f, 52.64f), floatArrayOf(50.07f, 20.40f, 49.82f, 34.40f, 49.59f, 47.40f), far = true),
+            Chain(floatArrayOf(48.51f, 54.12f, 60.94f, 71.05f, 53.51f, 89.62f, 60.00f, 87.00f), floatArrayOf(48.51f, 48.88f, 60.94f, 65.81f, 53.51f, 84.38f, 60.00f, 87.00f), far = false),
+            Chain(floatArrayOf(48.51f, 54.12f, 47.57f, 27.14f), floatArrayOf(48.51f, 48.88f, 47.57f, 21.90f), far = false),
+            Chain(floatArrayOf(47.57f, 27.14f, 61.27f, 30.03f, 73.99f, 32.73f), floatArrayOf(47.57f, 21.90f, 60.69f, 26.79f, 72.87f, 31.34f), far = false),
+        ),
+    ),
+    "hip_thrust_db" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+            Shape(ShapeKind.RECT, floatArrayOf(6.00f, 72.00f, 18.00f, 6.00f, 6.00f, 72.00f, 18.00f, 6.00f), 0.00f, ShapeStyle.PAD),
+            Shape(ShapeKind.LINE, floatArrayOf(10.00f, 78.00f, 10.00f, 92.00f, 10.00f, 78.00f, 10.00f, 92.00f), 3.00f, ShapeStyle.FRAME),
+            Shape(ShapeKind.LINE, floatArrayOf(20.00f, 78.00f, 20.00f, 92.00f, 20.00f, 78.00f, 20.00f, 92.00f), 3.00f, ShapeStyle.FRAME),
+            Shape(ShapeKind.CIRCLE, floatArrayOf(47.00f, 78.00f, 4.50f, 49.00f, 62.00f, 4.50f), 0.00f, ShapeStyle.WEIGHT),
+        ),
+        head = floatArrayOf(9.23f, 69.35f, 9.02f, 64.71f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(46.50f, 80.50f, 64.12f, 69.08f, 73.00f, 87.00f, 80.00f, 87.00f), floatArrayOf(48.50f, 64.50f, 69.31f, 67.34f, 73.00f, 87.00f, 80.00f, 87.00f), far = true),
+            Chain(floatArrayOf(21.13f, 71.27f, 34.35f, 75.88f, 46.62f, 80.17f), floatArrayOf(21.52f, 63.56f, 35.50f, 64.24f, 48.48f, 64.88f), far = true),
+            Chain(floatArrayOf(44.00f, 82.00f, 61.77f, 70.81f, 72.00f, 88.00f, 79.00f, 88.00f), floatArrayOf(46.00f, 66.00f, 66.83f, 68.68f, 72.00f, 88.00f, 79.00f, 88.00f), far = false),
+            Chain(floatArrayOf(44.00f, 82.00f, 18.63f, 72.77f), floatArrayOf(46.00f, 66.00f, 19.02f, 65.06f), far = false),
+            Chain(floatArrayOf(18.63f, 72.77f, 31.94f, 77.10f, 44.30f, 81.12f), floatArrayOf(19.02f, 65.06f, 33.01f, 65.50f, 46.00f, 65.91f), far = false),
+        ),
+    ),
+    "side_abduction" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+            Shape(ShapeKind.RECT, floatArrayOf(6.00f, 88.00f, 90.00f, 4.00f, 6.00f, 88.00f, 90.00f, 4.00f), 0.00f, ShapeStyle.PAD),
+        ),
+        head = floatArrayOf(17.09f, 82.58f, 17.09f, 82.58f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(54.00f, 84.00f, 74.95f, 82.60f, 94.64f, 86.13f, 97.03f, 92.71f), floatArrayOf(54.00f, 84.00f, 74.95f, 82.60f, 94.64f, 86.13f, 97.03f, 92.71f), far = true),
+            Chain(floatArrayOf(54.00f, 80.00f, 74.76f, 76.82f, 94.68f, 78.58f, 97.30f, 85.07f), floatArrayOf(54.00f, 80.00f, 68.91f, 65.21f, 86.07f, 54.94f, 92.01f, 58.65f), far = false),
+            Chain(floatArrayOf(54.00f, 80.00f, 27.07f, 81.88f), floatArrayOf(54.00f, 80.00f, 27.07f, 81.88f), far = false),
+            Chain(floatArrayOf(27.07f, 81.88f, 40.97f, 80.21f, 53.95f, 80.94f), floatArrayOf(27.07f, 81.88f, 40.97f, 80.21f, 53.95f, 80.94f), far = false),
+        ),
+    ),
+    "single_leg_rdl" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+            Shape(ShapeKind.CIRCLE, floatArrayOf(52.00f, 48.50f, 3.20f, 73.20f, 72.97f, 3.20f), 0.00f, ShapeStyle.WEIGHT),
+        ),
+        head = floatArrayOf(51.00f, 11.00f, 81.90f, 43.05f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(53.50f, 46.50f, 40.90f, 63.30f, 48.00f, 82.00f, 50.39f, 88.58f), floatArrayOf(48.50f, 50.50f, 27.79f, 53.97f, 8.07f, 57.28f, 6.85f, 50.39f), far = true),
+            Chain(floatArrayOf(51.00f, 48.00f, 55.98f, 68.40f, 52.00f, 88.00f, 59.00f, 88.00f), floatArrayOf(46.00f, 52.00f, 58.30f, 69.02f, 52.00f, 88.00f, 59.00f, 88.00f), far = false),
+            Chain(floatArrayOf(51.00f, 48.00f, 51.00f, 21.00f), floatArrayOf(46.00f, 52.00f, 72.20f, 45.47f), far = false),
+            Chain(floatArrayOf(51.00f, 21.00f, 55.92f, 34.11f, 52.00f, 46.50f), floatArrayOf(72.20f, 45.47f, 77.12f, 58.58f, 73.20f, 70.97f), far = false),
+        ),
+    ),
+    "sliding_leg_curl" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+            Shape(ShapeKind.RECT, floatArrayOf(86.00f, 88.00f, 10.00f, 4.00f, 65.00f, 88.00f, 10.00f, 4.00f), 0.00f, ShapeStyle.PAD),
+        ),
+        head = floatArrayOf(15.36f, 81.15f, 17.36f, 75.15f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(54.50f, 74.50f, 75.50f, 74.70f, 92.00f, 86.00f, 91.39f, 79.03f), floatArrayOf(56.50f, 68.50f, 77.45f, 67.07f, 71.00f, 86.00f, 70.39f, 79.03f), far = true),
+            Chain(floatArrayOf(27.76f, 78.26f, 41.59f, 76.10f, 40.00f, 89.00f), floatArrayOf(29.76f, 72.26f, 43.14f, 76.38f, 40.00f, 89.00f), far = true),
+            Chain(floatArrayOf(52.00f, 76.00f, 72.95f, 77.38f, 91.00f, 86.00f, 90.39f, 79.03f), floatArrayOf(54.00f, 70.00f, 74.72f, 66.56f, 70.00f, 86.00f, 69.39f, 79.03f), far = false),
+            Chain(floatArrayOf(52.00f, 76.00f, 25.26f, 79.76f), floatArrayOf(54.00f, 70.00f, 27.26f, 73.76f), far = false),
+            Chain(floatArrayOf(25.26f, 79.76f, 38.75f, 76.02f, 38.00f, 89.00f), floatArrayOf(27.26f, 73.76f, 41.02f, 76.36f, 38.00f, 89.00f), far = false),
+        ),
+    ),
+    "pogo_hops" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+        ),
+        head = floatArrayOf(48.71f, 13.02f, 48.71f, 6.02f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(52.50f, 48.50f, 58.10f, 68.74f, 48.00f, 86.00f, 53.36f, 90.50f), floatArrayOf(52.50f, 41.50f, 58.10f, 61.74f, 48.00f, 79.00f, 53.36f, 83.50f), far = true),
+            Chain(floatArrayOf(51.56f, 21.52f, 53.20f, 35.42f, 54.73f, 48.33f), floatArrayOf(51.56f, 14.52f, 53.20f, 28.42f, 54.73f, 41.33f), far = true),
+            Chain(floatArrayOf(50.00f, 50.00f, 59.81f, 68.57f, 50.00f, 86.00f, 55.36f, 90.50f), floatArrayOf(50.00f, 43.00f, 59.81f, 61.57f, 50.00f, 79.00f, 55.36f, 83.50f), far = false),
+            Chain(floatArrayOf(50.00f, 50.00f, 49.06f, 23.02f), floatArrayOf(50.00f, 43.00f, 49.06f, 16.02f), far = false),
+            Chain(floatArrayOf(49.06f, 23.02f, 50.91f, 36.90f, 52.63f, 49.79f), floatArrayOf(49.06f, 16.02f, 50.91f, 29.90f, 52.63f, 42.79f), far = false),
+        ),
+    ),
+    "calf_stretch_straight" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+            Shape(ShapeKind.LINE, floatArrayOf(86.00f, 8.00f, 86.00f, 92.00f, 86.00f, 8.00f, 86.00f, 92.00f), 3.00f, ShapeStyle.FRAME),
+        ),
+        head = floatArrayOf(60.65f, 17.23f, 62.65f, 18.23f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(50.50f, 50.50f, 61.16f, 68.60f, 66.00f, 88.01f, 73.00f, 88.01f), floatArrayOf(52.50f, 51.50f, 65.48f, 68.01f, 66.00f, 88.00f, 73.00f, 88.00f), far = true),
+            Chain(floatArrayOf(59.73f, 25.13f, 72.24f, 31.41f, 82.00f, 40.00f), floatArrayOf(61.73f, 26.13f, 75.48f, 28.75f, 82.00f, 40.00f), far = true),
+            Chain(floatArrayOf(48.00f, 52.00f, 37.81f, 70.36f, 28.09f, 87.84f, 35.09f, 87.84f), floatArrayOf(50.00f, 53.00f, 38.83f, 70.78f, 28.18f, 87.71f, 35.18f, 87.71f), far = false),
+            Chain(floatArrayOf(48.00f, 52.00f, 57.23f, 26.63f), floatArrayOf(50.00f, 53.00f, 59.23f, 27.63f), far = false),
+            Chain(floatArrayOf(57.23f, 26.63f, 71.02f, 29.04f, 82.00f, 36.00f), floatArrayOf(59.23f, 27.63f, 73.18f, 26.45f, 82.00f, 36.00f), far = false),
+        ),
+    ),
+    "calf_stretch_bent" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+            Shape(ShapeKind.LINE, floatArrayOf(86.00f, 8.00f, 86.00f, 92.00f, 86.00f, 8.00f, 86.00f, 92.00f), 3.00f, ShapeStyle.FRAME),
+        ),
+        head = floatArrayOf(60.65f, 23.23f, 62.65f, 25.23f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(50.50f, 56.50f, 68.00f, 68.10f, 66.00f, 88.00f, 73.00f, 88.00f), floatArrayOf(52.50f, 58.50f, 70.91f, 68.61f, 66.00f, 88.00f, 73.00f, 88.00f), far = true),
+            Chain(floatArrayOf(59.73f, 31.13f, 73.68f, 30.01f, 82.00f, 40.00f), floatArrayOf(61.73f, 33.13f, 75.10f, 28.98f, 82.00f, 40.00f), far = true),
+            Chain(floatArrayOf(48.00f, 58.00f, 55.17f, 77.74f, 38.00f, 88.00f, 45.00f, 88.00f), floatArrayOf(50.00f, 60.00f, 56.34f, 80.02f, 38.00f, 88.00f, 45.00f, 88.00f), far = false),
+            Chain(floatArrayOf(48.00f, 58.00f, 57.23f, 32.63f), floatArrayOf(50.00f, 60.00f, 59.23f, 34.63f), far = false),
+            Chain(floatArrayOf(57.23f, 32.63f, 70.84f, 29.34f, 82.00f, 36.00f), floatArrayOf(59.23f, 34.63f, 71.64f, 28.15f, 82.00f, 36.00f), far = false),
+        ),
+    ),
+    "calf_isometric" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+            Shape(ShapeKind.LINE, floatArrayOf(84.00f, 8.00f, 84.00f, 92.00f, 84.00f, 8.00f, 84.00f, 92.00f), 3.00f, ShapeStyle.FRAME),
+        ),
+        head = floatArrayOf(50.32f, 9.47f, 50.42f, 9.25f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(54.11f, 44.95f, 36.56f, 56.48f, 37.61f, 76.45f, 41.11f, 82.51f), floatArrayOf(54.21f, 44.73f, 36.66f, 56.26f, 37.71f, 76.23f, 41.21f, 82.29f), far = true),
+            Chain(floatArrayOf(53.17f, 17.97f, 53.35f, 31.97f, 53.52f, 44.97f), floatArrayOf(53.27f, 17.75f, 53.45f, 31.75f, 53.62f, 44.75f), far = true),
+            Chain(floatArrayOf(51.61f, 46.45f, 54.08f, 67.30f, 51.61f, 87.15f, 58.00f, 90.00f), floatArrayOf(51.71f, 46.23f, 54.18f, 67.08f, 51.71f, 86.93f, 58.00f, 90.00f), far = false),
+            Chain(floatArrayOf(51.61f, 46.45f, 50.67f, 19.47f), floatArrayOf(51.71f, 46.23f, 50.77f, 19.25f), far = false),
+            Chain(floatArrayOf(50.67f, 19.47f, 62.51f, 26.94f, 73.50f, 33.89f), floatArrayOf(50.77f, 19.25f, 62.56f, 26.81f, 73.50f, 33.83f), far = false),
+        ),
+    ),
 )

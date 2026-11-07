@@ -37,7 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.feidbo.marathon.core.Plan
+import com.feidbo.marathon.ui.AmendmentsScreen
 import com.feidbo.marathon.ui.AppViewModel
+import com.feidbo.marathon.ui.CalfActions
+import com.feidbo.marathon.ui.WHATS_NEW_VERSION
+import com.feidbo.marathon.ui.WhatsNewDialog
 import com.feidbo.marathon.ui.CatchUpDialog
 import com.feidbo.marathon.ui.CelebrationOverlay
 import com.feidbo.marathon.ui.ExerciseScreen
@@ -59,6 +63,7 @@ import java.time.LocalDate
 sealed interface Screen {
     data class Log(val dayIndex: Int) : Screen
     data class Exercise(val id: String, val dayIndex: Int) : Screen
+    data object Amendments : Screen
 }
 
 enum class Tab(val label: String, val icon: ImageVector) {
@@ -115,6 +120,8 @@ private fun App(vm: AppViewModel) {
     var date by remember { mutableStateOf(clampToPlan(state.today)) }
     var missedFor by remember { mutableStateOf<Int?>(null) }
     var catchUp by remember { mutableStateOf(false) }
+    var whatsNew by rememberSaveable { mutableStateOf(state.data.whatsNewSeen < WHATS_NEW_VERSION) }
+    val calfActions = remember(vm) { CalfActions(vm::setCalf, vm::addCalfTest, vm::toggleCalfDay) }
     fun push(s: Screen) = stack.add(s)
     fun pop() { if (stack.isNotEmpty()) stack.removeAt(stack.lastIndex) }
 
@@ -163,6 +170,7 @@ private fun App(vm: AppViewModel) {
                     }
                 }
                 is Screen.Exercise -> key(top) { ExerciseScreen(state, top.id, top.dayIndex, onBack = ::pop) }
+                Screen.Amendments -> AmendmentsScreen(onBack = ::pop)
                 null -> when (tab) {
                     Tab.TODAY -> TodayScreen(
                         state = state,
@@ -176,6 +184,7 @@ private fun App(vm: AppViewModel) {
                         onUndo = vm::clearLog,
                         onCatchUp = { catchUp = true },
                         onStretchDone = vm::markStretchDone,
+                        calfActions = calfActions,
                     )
                     Tab.PROGRESS -> ProgressScreen(
                         state = state,
@@ -187,6 +196,8 @@ private fun App(vm: AppViewModel) {
                         onSaved = { tab = Tab.TODAY },
                         onSave = vm::updateSettings,
                         onReset = { vm.resetAll(); tab = Tab.TODAY },
+                        onOpenAmendments = { push(Screen.Amendments) },
+                        onOpenWhatsNew = { whatsNew = true },
                     )
                 }
             }
@@ -209,6 +220,12 @@ private fun App(vm: AppViewModel) {
             catchUp = false
         }
     }
+    if (whatsNew) {
+        WhatsNewDialog(
+            onDismiss = { whatsNew = false; vm.markWhatsNewSeen() },
+            onOpenAmendments = { whatsNew = false; vm.markWhatsNewSeen(); push(Screen.Amendments) },
+        )
+    }
     celebration?.let { CelebrationOverlay(it, onDismiss = vm::dismissCelebration) }
 }
 
@@ -220,6 +237,7 @@ private val screenStackSaver = listSaver<SnapshotStateList<Screen>, String>(
             when (it) {
                 is Screen.Log -> "log:${it.dayIndex}"
                 is Screen.Exercise -> "ex:${it.id}:${it.dayIndex}"
+                Screen.Amendments -> "amend"
             }
         }
     },
@@ -229,6 +247,7 @@ private val screenStackSaver = listSaver<SnapshotStateList<Screen>, String>(
             when (p[0]) {
                 "log" -> p.getOrNull(1)?.toIntOrNull()?.let { Screen.Log(it) }
                 "ex" -> p.getOrNull(2)?.toIntOrNull()?.let { Screen.Exercise(p[1], it) }
+                "amend" -> Screen.Amendments
                 else -> null
             }
         }.toMutableStateList()

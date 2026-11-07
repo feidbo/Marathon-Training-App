@@ -3,6 +3,8 @@ package com.feidbo.marathon.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.feidbo.marathon.core.Badge
+import com.feidbo.marathon.core.CalfStatus
+import com.feidbo.marathon.core.CalfTest
 import com.feidbo.marathon.core.Cheers
 import com.feidbo.marathon.core.DayLog
 import com.feidbo.marathon.core.DayStatus
@@ -82,7 +84,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun build(data: AppData, today: LocalDate): UiState {
         val schedule = Schedule(data.logs, data.settings, today)
-        return UiState(data, today, schedule, computeProgress(schedule, data.logs, data.stretchDays, today, data.settings.marathonPaceSec))
+        return UiState(data, today, schedule, progressFor(data, schedule, today))
     }
 
     init {
@@ -233,16 +235,55 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // ---- Calf guidance (docs/decisions.md §4) -------------------------------------------------
+
+    fun setCalf(status: CalfStatus) {
+        update { it.copy(calf = status) }
+    }
+
+    fun addCalfTest(test: CalfTest) {
+        val (before, after) = update { d -> d.copy(calfTests = d.calfTests.filter { it.dayIndex != test.dayIndex } + test) }
+        celebrateBadges(before, after, "Calf test saved 🦵")
+    }
+
+    fun toggleCalfDay(dayIndex: Int) {
+        val wasDone = dayIndex in _state.value.data.calfDays
+        val (before, after) = update { d -> d.copy(calfDays = if (wasDone) d.calfDays - dayIndex else d.calfDays + dayIndex) }
+        if (!wasDone) celebrateBadges(before, after, null) ?: run {
+            _toast.value = Toast("🦵 Calf work done · +${after.progress.xp - before.progress.xp} XP")
+        }
+    }
+
+    /** Shows the full celebration when a log earned a badge or level; returns null when there was nothing to show. */
+    private fun celebrateBadges(before: UiState, after: UiState, title: String?): Unit? {
+        val badges = newBadges(before, after)
+        val levelUp = levelUp(before, after)
+        if (badges.isEmpty() && levelUp == null) return null
+        _celebration.value = Celebration(
+            kind = Celebration.Kind.REST,
+            title = title ?: "Nice work! 🦵",
+            xp = after.progress.xp - before.progress.xp,
+            levelUp = levelUp,
+            newBadges = badges,
+            streak = after.progress.streak,
+        )
+        return Unit
+    }
+
+    fun markWhatsNewSeen() {
+        if (_state.value.data.whatsNewSeen < WHATS_NEW_VERSION) update { it.copy(whatsNewSeen = WHATS_NEW_VERSION) }
+    }
+
     fun updateSettings(settings: Settings) {
         update { it.copy(settings = settings) }
     }
 
     fun finishOnboarding(preplanLongest: Double) {
-        update { it.copy(onboarded = true, settings = it.settings.copy(preplanLongestMiles = preplanLongest)) }
+        update { it.copy(onboarded = true, whatsNewSeen = WHATS_NEW_VERSION, settings = it.settings.copy(preplanLongestMiles = preplanLongest)) }
     }
 
     fun resetAll() {
-        update { AppData(onboarded = true, settings = Settings(preplanLongestMiles = it.settings.preplanLongestMiles)) }
+        update { AppData(onboarded = true, whatsNewSeen = it.whatsNewSeen, settings = Settings(preplanLongestMiles = it.settings.preplanLongestMiles)) }
     }
 
     private fun levelUp(before: UiState, after: UiState): LevelInfo? =
@@ -269,5 +310,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
         val planRange = Plan.start..Plan.raceDay
+
+        /** Progress from everything logged (also used by the widget). */
+        fun progressFor(data: AppData, schedule: Schedule, today: LocalDate): Progress = computeProgress(
+            schedule, data.logs, data.stretchDays, today, data.settings.marathonPaceSec,
+            calfDays = data.calfDays, calfTests = data.calfTests, easyHrCap = data.settings.easyHrCap,
+        )
     }
 }

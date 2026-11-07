@@ -595,3 +595,26 @@ class EasyZoneTest {
         assertTrue("calf_cleared" in p.badges)
     }
 }
+
+class BodyweightVersionTest {
+    @Test fun perSideFollowsTheVersionDone() {
+        assertFalse(Exercises.hipThrust.perSideFor(false))
+        assertTrue(Exercises.hipThrust.perSideFor(true))          // single-leg hip thrust
+        assertTrue(Exercises.singleLegRdl.perSideFor(false))
+        assertFalse(Exercises.singleLegRdl.perSideFor(true))      // sliding leg curl uses both legs
+        assertTrue(Exercises.splitSquat.perSideFor(true))
+        assertEquals("Sliding leg curl (bodyweight)", Exercises.singleLegRdl.nameFor(true))
+        val rx = strengthSession(StrengthKind.PHASE1)!!.items.first { it.exercise.id == "hip_thrust_db" }
+        assertEquals("8–10", rx.repsShown)
+        assertEquals("8–10/leg", rx.repsShown(bodyweight = true))
+    }
+}
+
+class RecentEasyPaceTest {
+    @Test fun averagesTheLastEasyRuns() {
+        val easy = Plan.days.filter { it.run == RunKind.EASY }.take(6)
+        val logs = easy.mapIndexed { i, d -> d.index to DayLog(d.index, DayStatus.DONE, RunLog(d.miles, paceSec = 620 + i * 2)) }.toMap()
+        assertNull(recentEasyPace(logs, easy[2].index))                   // only 2 before it
+        assertEquals((622 + 624 + 626 + 628 + 630) / 5, recentEasyPace(logs, easy.last().index + 1))
+    }
+}

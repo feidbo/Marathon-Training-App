@@ -29,6 +29,7 @@ import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,6 +42,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,7 +75,14 @@ import com.feidbo.marathon.core.lastWorkingSet
 import com.feidbo.marathon.core.primaryTarget
 import com.feidbo.marathon.core.runFeedback
 import com.feidbo.marathon.core.strengthSession
+import com.feidbo.marathon.core.CalfGuide
 import com.feidbo.marathon.core.LoadChange
+import com.feidbo.marathon.core.SessionOptions
+import com.feidbo.marathon.core.StepKind
+import com.feidbo.marathon.core.StretchRoutine
+import com.feidbo.marathon.core.WorkoutSteps
+import com.feidbo.marathon.core.Zones
+import com.feidbo.marathon.core.recentEasyPace
 import com.feidbo.marathon.core.loadAdviceFor
 import com.feidbo.marathon.core.workoutTitle
 import com.feidbo.marathon.timer.Timers
@@ -105,6 +114,7 @@ fun TodayScreen(
     onUndo: (Int) -> Unit,
     onCatchUp: () -> Unit,
     onStretchDone: (Int) -> Unit,
+    calfActions: CalfActions,
 ) {
     val sd = state.schedule.on(date)
     val today = state.today
@@ -158,7 +168,7 @@ fun TodayScreen(
                 Text("🏅 Eugene is done!", style = MaterialTheme.typography.headlineSmall)
                 Text("Check Progress for everything you accomplished.")
             }
-            else -> DayContent(state, sd, onLog, onMissed, onOpenExercise, onToggleStretch, onUndo, onStretchDone)
+            else -> DayContent(state, sd, onLog, onMissed, onOpenExercise, onToggleStretch, onUndo, onStretchDone, calfActions)
         }
 
         WeekStrip(state, date, onDateChange)
@@ -251,14 +261,28 @@ private fun DayContent(
     onToggleStretch: (Int) -> Unit,
     onUndo: (Int) -> Unit,
     onStretchDone: (Int) -> Unit,
+    calfActions: CalfActions,
 ) {
     val day = sd.day
     val log = state.logs[day.index]
     val isFuture = day.date > state.today
+    val calf = state.data.calf
 
     if (log != null) LoggedCard(state, sd, onLog, onUndo)
 
     WorkoutHero(state, sd)
+
+    WorkoutStepsCard(state, sd)
+
+    // Calf guidance sits near the top while it's on: it shapes the whole day.
+    if (calf.flagged && day.date >= state.today.minusDays(1)) {
+        CalfCard(
+            calf, state.data.calfTests, sd,
+            today = day.date <= state.today,
+            doneToday = day.index in state.data.calfDays,
+            actions = calfActions, onOpenExercise = onOpenExercise,
+        )
+    }
 
     if (day.isTrainingDay || day.date <= state.today) QuestsCard(state, sd)
 
@@ -288,15 +312,19 @@ private fun DayContent(
         }
     }
 
-    strengthSession(day.strength)?.let { session ->
+    val options = SessionOptions(CalfGuide.skipRoutineCalfRaises(calf), CalfGuide.plyometricsAllowed(calf))
+    strengthSession(day.strength, options)?.let { session ->
         SectionCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("🏋️  ${day.strength.title}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 Text(session.minutes, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(session.effort, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Lift first, then run. Tap an exercise to see how.", style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                (if (calf.flagged && day.run.isRun) "Run first, then lift (calf guidance). " else "Lift first, then run. ") +
+                    "Dumbbells or bodyweight — choose when you log. Tap an exercise to see how.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(Modifier.height(8.dp))
             session.items.forEachIndexed { i, rx ->
                 if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
@@ -316,8 +344,9 @@ private fun DayContent(
                         Text("${rx.exercise.block}. ${rx.exercise.name}", style = MaterialTheme.typography.titleSmall)
                         Text(
                             when {
-                                last == null -> "No benchmark yet — find a weight that's hard by the last rep"
-                                else -> "Last: ${setsText(last.log)}"
+                                last != null -> "Last: ${setsText(last.log)}"
+                                !rx.exercise.usesWeight -> "Bodyweight"
+                                else -> "No benchmark yet — find a weight that's hard by the last rep"
                             },
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -331,13 +360,15 @@ private fun DayContent(
                             )
                         }
                     }
-                    Text("${rx.sets} × ${rx.exercise.repsText(rx.reps)}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                    Text("${rx.sets} × ${rx.repsShown}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
     }
 
     StretchCard(state, sd, onToggleStretch, onOpenExercise, onStretchDone)
+
+    if (!calf.flagged && day.date >= state.today) CalfOffRow(sd, calfActions)
 }
 
 /** Today's checklist: each part of the day with its XP, plus the perfect-day bonus. */
@@ -354,7 +385,10 @@ private fun QuestsCard(state: UiState, sd: ScheduledDay) {
                 log?.status != DayStatus.MISSED && (log?.run?.distance ?: 0.0) > 0))
         }
         if (day.strength.isPlanned) add(Quest("🏋️", "Strength routine", 25, log?.strength?.any { e -> e.sets.any { it.reps > 0 } } == true))
-        add(Quest("🧘", "Quad stretch · 3 min", Game.stretchXp(day), stretched))
+        val calf = state.data.calf
+        if (calf.flagged) add(Quest("🦵", "Calf exercises", Game.CALF_XP, day.index in state.data.calfDays))
+        val stretchMin = StretchRoutine.totalSeconds(StretchRoutine.segments(StretchRoutine.calfStretchesAllowed(calf), false)) / 60
+        add(Quest("🧘", "Stretch · $stretchMin min (optional mobility)", Game.stretchXp(day), stretched))
         if (day.isTrainingDay) add(Quest("✨", "Perfect day bonus", Game.PERFECT_DAY_XP, log?.status == DayStatus.DONE && stretched))
     }
     val done = quests.count { it.done }
@@ -427,7 +461,7 @@ private fun WorkoutHero(state: UiState, sd: ScheduledDay) {
                     Text("Plan said ${formatMiles(sd.original.miles)} mi", color = Gold, style = MaterialTheme.typography.labelLarge)
                 }
             } else if (day.strength.isPlanned) {
-                Text("No run today — just the machines.", color = Color.White.copy(alpha = 0.9f))
+                Text("No run today — just strength.", color = Color.White.copy(alpha = 0.9f))
             } else {
                 Text("Recover. Your body adapts on rest days. 😴", color = Color.White.copy(alpha = 0.9f))
             }
@@ -444,9 +478,21 @@ private fun WorkoutHero(state: UiState, sd: ScheduledDay) {
                         color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                if (day.run == RunKind.EASY_STRIDES) {
-                    Text("Strides: 15–20 s quick and relaxed (8–9/10), full recovery between.", color = Color.White.copy(alpha = 0.9f),
-                        style = MaterialTheme.typography.bodySmall)
+                if (day.run.isEasyType) {
+                    val cap = state.settings.easyHrCap
+                    Text(
+                        "Easy is judged by effort: you can talk in full sentences. The pace range is only a guide." +
+                            (cap?.let { " Keep heart rate under $it." } ?: ""),
+                        color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodySmall,
+                    )
+                    recentEasyPace(state.logs, day.index)?.takeIf { it <= Paces.TEMPO_SLOW }?.let { pace ->
+                        Text(
+                            "Your recent easy runs average ${formatPace(pace)} /mi, inside the plan's tempo range for a 2:20 half " +
+                                "(${Zones.tempo.rangeText}). If the talk test says easy, your fitness may be ahead of the plan's " +
+                                "estimate — the Mar 7 half resets your paces.",
+                            color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(4.dp))
@@ -482,24 +528,72 @@ private fun HeroStat(label: String, value: String, modifier: Modifier = Modifier
     }
 }
 
+/** Numbered, watch-ready steps for the day's run (docs/decisions.md §6). */
+@Composable
+private fun WorkoutStepsCard(state: UiState, sd: ScheduledDay) {
+    val day = sd.day
+    val steps = remember(day, state.settings) { WorkoutSteps.steps(day, state.settings) }
+    // A plain easy run is one step; the hero already says it all.
+    if (steps.count { it.kind != StepKind.NOTE } < 2) return
+    var expanded by rememberSaveable(day.index) { mutableStateOf(true) }
+    SectionCard {
+        Row(Modifier.fillMaxWidth().clickable { expanded = !expanded }, verticalAlignment = Alignment.CenterVertically) {
+            Text("⌚  Step by step", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(if (expanded) "Hide" else "Show", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        }
+        WorkoutSteps.purpose(day)?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (expanded) {
+            Spacer(Modifier.height(8.dp))
+            var n = 0
+            steps.forEach { step ->
+                val numbered = step.kind != StepKind.NOTE
+                if (numbered) n++
+                val accent = when (step.kind) {
+                    StepKind.WORK -> Gold
+                    StepKind.RECOVERY -> com.feidbo.marathon.ui.theme.Sky
+                    StepKind.NOTE -> MaterialTheme.colorScheme.outline
+                    else -> StatusColors.done
+                }
+                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.Top) {
+                    Box(
+                        Modifier.size(26.dp).clip(CircleShape).background(accent.copy(alpha = 0.22f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(if (numbered) "$n" else "i", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(step.title, style = MaterialTheme.typography.titleSmall)
+                        Text(step.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Text(WorkoutSteps.GARMIN_TIP, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
 @Composable
 private fun StretchCard(
     state: UiState, sd: ScheduledDay, onToggle: (Int) -> Unit, onOpenExercise: (String, Int) -> Unit, onStretchDone: (Int) -> Unit,
 ) {
-    val context = LocalContext.current
     val done = sd.index in state.data.stretchDays
     val canLog = sd.date <= state.today
-    var showTimer by remember { mutableStateOf(false) }
+    val calfAllowed = StretchRoutine.calfStretchesAllowed(state.data.calf)
+    val active by Timers.stretch.collectAsStateWithLifecycle()
+    val running = active?.dayIndex == sd.index
+    var showTimer by rememberSaveable(sd.index) { mutableStateOf(false) }
+    var beforeRun by rememberSaveable(sd.index) { mutableStateOf(false) }
+    val minutes = StretchRoutine.totalSeconds(StretchRoutine.segments(calfAllowed, beforeRun)) / 60.0
     SectionCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.clickable { onOpenExercise("quad_stretch", sd.index) }) {
-                ExerciseIllustration("quad_stretch", Modifier.size(56.dp), animate = false)
-            }
-            Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text("Kneeling quad stretch", style = MaterialTheme.typography.titleSmall)
-                Text("3 min · 90 s per side · after your run or in the evening", style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("🧘  Stretch · ${formatMiles(minutes)} min", style = MaterialTheme.typography.titleMedium)
+                Text("Optional mobility, for comfort and range of motion. Stretching hasn't been shown to prevent injuries.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             IconButton(onClick = { onToggle(sd.index) }, enabled = canLog) {
                 Icon(
@@ -510,10 +604,50 @@ private fun StretchCard(
                 )
             }
         }
-        val active by Timers.stretch.collectAsStateWithLifecycle()
+        Spacer(Modifier.height(6.dp))
+        StretchRoutine.exercises(calfAllowed).forEach { ex ->
+            val sec = if (ex.id == "quad_stretch") {
+                if (beforeRun) StretchRoutine.QUAD_BEFORE_RUN_SEC else StretchRoutine.QUAD_SEC
+            } else if (beforeRun) StretchRoutine.CALF_BEFORE_RUN_SEC else StretchRoutine.CALF_SEC
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onOpenExercise(ex.id, sd.index) }
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ExerciseIllustration(ex.id, Modifier.size(48.dp), animate = false)
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(ex.name, style = MaterialTheme.typography.titleSmall)
+                    Text("$sec s each side · ${ex.muscles}", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        if (!calfAllowed) {
+            Text("Calf stretches are paused while your calf is in stage 1–2.", style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary)
+        }
         if (canLog && !done) {
-            if (showTimer || active?.dayIndex == sd.index) StretchTimer(sd.index, onFinished = onStretchDone)
-            else TextButton(onClick = { showTimer = true; Timers.startStretch(context, sd.index) }) { Text("⏱  Start 3-minute timer") }
+            Spacer(Modifier.height(4.dp))
+            if (!running) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    FilterChip(selected = !beforeRun, onClick = { beforeRun = false }, label = { Text("After a run") })
+                    FilterChip(selected = beforeRun, onClick = { beforeRun = true }, label = { Text("Before a run") })
+                }
+                Text(
+                    if (beforeRun) "Before a run: holds under 60 s — long holds right before effort slightly reduce performance."
+                    else "Long holds are best after your run or in the evening.",
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (showTimer || running) {
+                StretchTimer(sd.index, calfAllowed, beforeRun, onFinished = onStretchDone)
+            } else {
+                TextButton(onClick = { showTimer = true }) { Text("⏱  Open the stretch timer") }
+            }
         }
     }
 }
@@ -524,8 +658,18 @@ private fun LoggedCard(state: UiState, sd: ScheduledDay, onEdit: (Int) -> Unit, 
     val (emoji, label, color) = when (log.status) {
         DayStatus.DONE -> Triple("✅", "Done!", StatusColors.done)
         DayStatus.PARTIAL -> Triple("💪", "Partly done", StatusColors.partial)
-        DayStatus.MISSED -> Triple("💚", "Rest taken: ${log.missReason?.label ?: ""}", StatusColors.missed)
+        DayStatus.MISSED -> Triple("💚", "Rest taken", StatusColors.missed)
     }
+    val summary = buildList {
+        if (log.status == DayStatus.MISSED) log.missReason?.let { add(it.label) }
+        log.run?.let { r ->
+            add("${formatMiles(r.distance)} mi")
+            r.paceSec?.let { add("${formatPace(it)} /mi") }
+            r.avgHr?.let { add("$it bpm") }
+        }
+        val lifts = log.strength.count { e -> e.sets.any { it.reps > 0 } }
+        if (lifts > 0) add("$lifts lifts")
+    }.joinToString(" · ")
     val tips: List<Tip> = log.run?.let {
         runFeedback(sd.day, it, state.settings, state.schedule.longestInPrior30(sd.date))
     }.orEmpty().filter { it.level != TipLevel.GREAT }
@@ -539,29 +683,30 @@ private fun LoggedCard(state: UiState, sd: ScheduledDay, onEdit: (Int) -> Unit, 
             dismissButton = { TextButton(onClick = { confirmUndo = false }) { Text("Keep it") } },
         )
     }
-    SectionCard(container = color.copy(alpha = 0.12f)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(emoji, fontSize = 28.sp)
-            Spacer(Modifier.width(10.dp))
+    // A plain card with a coloured edge: the tips keep their own tints instead of sitting on a tinted card.
+    SectionCard(border = androidx.compose.foundation.BorderStroke(1.5.dp, color.copy(alpha = 0.55f))) {
+        Row(verticalAlignment = Alignment.Top) {
+            Box(
+                Modifier.size(44.dp).clip(CircleShape).background(color.copy(alpha = 0.16f)),
+                contentAlignment = Alignment.Center,
+            ) { Text(emoji, fontSize = 22.sp) }
+            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(label, style = MaterialTheme.typography.titleMedium)
-                val parts = buildList {
-                    log.run?.let { r ->
-                        add("${formatMiles(r.distance)} mi")
-                        r.paceSec?.let { add("${formatPace(it)} /mi") }
-                    }
-                    val lifts = log.strength.count { e -> e.sets.any { it.reps > 0 } }
-                    if (lifts > 0) add("$lifts lifts")
+                Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                    maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                if (summary.isNotEmpty()) {
+                    Text(summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                if (parts.isNotEmpty()) Text(parts.joinToString(" · "), style = MaterialTheme.typography.bodyMedium)
             }
-            Pill("+${log.xp} XP", Gold, Color.Black)
         }
         if (tips.isNotEmpty()) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
             TipList(tips)
         }
-        Row {
+        Spacer(Modifier.height(6.dp))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Pill("+${log.xp} XP", Gold, Color.Black)
+            Spacer(Modifier.weight(1f))
             if (log.status != DayStatus.MISSED) TextButton(onClick = { onEdit(sd.index) }) { Text("Edit") }
             TextButton(onClick = { confirmUndo = true }) { Text("Undo") }
         }
