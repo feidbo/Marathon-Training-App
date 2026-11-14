@@ -103,3 +103,37 @@ highest; cranes lowest.
   (strength-gain) outcomes in runners; the evidence is mostly acute EMG (see X1), plus one small
   unilateral-vs-bilateral training RCT (Q1).
 - Nordic hamstring curls need the ankles anchored (partner or fixed object).
+
+---
+
+## Addendum, Nov 14 2026 — is there a dumbbell exercise that trains the pull-up muscles?
+
+Searched Europe PMC (titles/abstracts) for EMG and training studies on rows, pullovers, pull-downs and
+pull-ups. ABS = abstract read; FT = full text read.
+
+### L1. Di Fonza D, et al. J Funct Morphol Kinesiol 2026 (PMC13510307) — FT (narrative review, 23 EMG studies)
+- Covers lat pull-down, pullover, seated row, barbell row, bent-over row and pull-up. No dumbbell-row study
+  is among the 23.
+- "the pullover appeared to preferentially activate the pectoralis major rather than selectively target
+  the LD."
+- Among rows, the inverted row had the highest latissimus amplitude, but from one study of 7 men (L2),
+  "preliminary pending replication".
+- Findings "reflect acute EMG amplitude rather than longitudinal training outcomes".
+
+### L2. Fenwick CM, Brown SH, McGill SM. J Strength Cond Res 2009;23:350–358 — ABS (EMG, 7 men)
+- Inverted row vs standing bent-over row vs standing one-armed cable row. "The inverted row elicited the
+  highest activation of the latissimus dorsi muscles, upper back, and hip extensor muscles" with the
+  lowest spine load. The bent-over row "produced large activation symmetrically across the back but
+  produced the largest lumbar spine load."
+
+### L3. Marchetti PH, Uchida MC. J Appl Biomech 2011;27:380–384 — ABS (EMG, 8 men)
+- "the barbell pullover exercise emphasized the muscle action of the pectoralis major more than that of
+  the latissimus dorsi".
+
+### L4. Li Q, et al. Eur J Sport Sci 2025 (PMC11667758) — ABS (RCT, 34 men, 8 weeks)
+- Both groups trained only the lat pull-down; pull-up repetitions improved significantly in both. Shows a
+  different pulling exercise can carry over to pull-ups — but it is a vertical pull, not a row.
+
+### What was not found
+- No EMG or training study of the **one-arm dumbbell row** specifically (one search hit, unrelated).
+- No trial testing whether any row (dumbbell or otherwise) improves pull-up performance.
