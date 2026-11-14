@@ -34,7 +34,7 @@ private val amendments = listOf(
     Amendment(
         "Strength, Phase 1 (to Dec 13)",
         "Leg press, hip thrust and leg curl 2 × 12; other machines 2 sets of 8–15. Twice a week.",
-        "Main lifts (split squat, hip thrust, single-leg RDL) 3 × 8–10; smaller lifts 2 sets. About 3 reps left in the tank.",
+        "Main lifts (split squat, single-leg RDL) 3 × 8–10; smaller lifts 2 sets. About 3 reps left in the tank.",
         "More weekly sets give a bit more strength (Ralston 2017); 8–12 reps suits people new to lifting (ACSM 2009).",
         "Moderate",
     ),
@@ -57,8 +57,8 @@ private val amendments = listOf(
         "Dumbbell / bodyweight routine",
         "Leg press, leg-press calf raise, hip thrust machine, hip abductor, seated leg curl, assisted pull-up.",
         "Bulgarian split squat · single-leg calf raise, knee straight · single-leg calf raise, knee bent (new) · " +
-            "dumbbell hip thrust · side-lying hip abduction (then side plank) · single-leg RDL (or sliding leg curl) · " +
-            "assisted pull-up only when there's a machine. Each has a bodyweight version. Your machine history is kept; " +
+            "single-leg RDL (or sliding leg curl) · side-lying hip abduction (then side plank) · assisted pull-up last, " +
+            "only when there's a machine. The hip thrust was dropped at your request. Each has a bodyweight version. Your machine history is kept; " +
             "the new exercises start fresh benchmarks.",
         "Matched by muscle. Split squats built strength as well as back squats (Speirs 2016). Knee straight vs bent " +
             "shifts calf work between gastrocnemius and soleus (Hébert-Losier 2012; Kovács 2024). Side-lying abduction " +

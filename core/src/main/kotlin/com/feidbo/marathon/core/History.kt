@@ -9,7 +9,8 @@ fun completionStatus(day: PlannedDay, run: RunLog?, strength: List<ExerciseLog>)
         else -> day.miles * 0.9
     }
     val ranEnough = !day.run.isRun || (run != null && run.distance >= required - 0.01)
-    val lifted = !day.strength.isPlanned || strength.count { e -> e.sets.any { it.reps > 0 } } >= 4
+    // The routine is 5 exercises plus the optional pull-up, or 3 while the calf guidance holds back the calf raises.
+    val lifted = !day.strength.isPlanned || strength.count { e -> e.sets.any { it.reps > 0 } } >= 3
     return if (ranEnough && lifted) DayStatus.DONE else DayStatus.PARTIAL
 }
 

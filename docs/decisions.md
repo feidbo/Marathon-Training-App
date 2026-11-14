@@ -179,3 +179,15 @@ I re-read each decision against the evidence logs for overstatement:
 - The unverified "35 calf raises" figure from my earlier answer is **not used**.
 - Plyometrics are gated behind your calf hop test because the calf evidence (K1) puts hopping before
   running and high-impact loading.
+
+---
+
+### Amendment, Nov 14 2026 (your request)
+
+- **Dumbbell hip thrust removed** from the routine (preference, not evidence). Sets already logged stay in
+  your history. Glutes are still trained by the split squat and single-leg RDL (exercises Q1–Q3, G1), but
+  no exercise replaces the hip thrust one-for-one.
+- **Order:** split squat → calf raise (knee straight) → calf raise (knee bent) → single-leg RDL →
+  side-lying hip abduction → optional assisted pull-up (last).
+- A strength day counts as done with 3 exercises logged (was 4), since the routine is now 5 plus the
+  optional pull-up, and 3 while the calf guidance holds back the calf raises.

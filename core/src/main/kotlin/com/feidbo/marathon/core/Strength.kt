@@ -114,7 +114,7 @@ object Exercises {
             "soleus capacity as central to calf-strain recovery (Green 2022).",
     )
     val pullUp = Exercise(
-        id = "assisted_pull_up", name = "Assisted pull-up (optional)", block = "1d",
+        id = "assisted_pull_up", name = "Assisted pull-up (optional)", block = "2c",
         machine = "Assisted pull-up machine — skip it when there isn't one",
         muscles = "Lats, upper back, biceps",
         steps = listOf(
@@ -135,7 +135,7 @@ object Exercises {
         why = "Kept as an optional extra, as you asked.",
     )
     val hipThrust = Exercise(
-        id = "hip_thrust_db", name = "Dumbbell hip thrust", block = "2a",
+        id = "hip_thrust_db", name = "Dumbbell hip thrust", block = "—", retired = true,
         machine = "One dumbbell and a bench or bed edge",
         muscles = "Glutes, hamstrings", load = LoadType.LOWER_COMPOUND,
         weightLabel = "Dumbbell (lb)",
@@ -150,7 +150,7 @@ object Exercises {
         bodyweightSteps = listOf(
             "Same set-up with no dumbbell; lift one foot and drive up through the other. All reps, then switch legs.",
         ),
-        why = "Replaces the hip thrust machine; hip thrusts give very high glute activation (Neto 2020).",
+        why = "Removed from the routine at your request (Nov 2026). Your logged sets stay in your history.",
     )
     val sideAbduction = Exercise(
         id = "side_abduction", name = "Side-lying hip abduction", block = "2b",
@@ -167,7 +167,7 @@ object Exercises {
             "(Distefano 2009); side plank with abduction was highest of 18 (Boren 2011).",
     )
     val singleLegRdl = Exercise(
-        id = "single_leg_rdl", name = "Single-leg Romanian deadlift", block = "2c",
+        id = "single_leg_rdl", name = "Single-leg Romanian deadlift", block = "2a",
         machine = "One dumbbell",
         muscles = "Hamstrings, glutes", load = LoadType.LOWER_COMPOUND, perSide = true,
         weightLabel = "Dumbbell (lb)",
@@ -263,10 +263,12 @@ object Exercises {
     val abductionMachine = retired("hip_abduction", "Hip abduction (machine)", "Glute medius")
     val legCurlMachine = retired("leg_curl", "Seated leg curl (machine)", "Hamstrings")
 
-    val routine = listOf(splitSquat, calfRaiseStraight, calfRaiseBent, pullUp, hipThrust, sideAbduction, singleLegRdl)
+    val routine = listOf(splitSquat, calfRaiseStraight, calfRaiseBent, singleLegRdl, sideAbduction, pullUp)
+    /** Dropped from the routine but kept so logged sets still show. */
+    val retiredOther = listOf(hipThrust)
     val stretches = listOf(quadStretch, calfStretchStraight, calfStretchBent)
     val retiredMachines = listOf(legPress, legPressCalf, hipThrustMachine, abductionMachine, legCurlMachine)
-    val all = routine + pogoHops + stretches + calfIsometric + retiredMachines
+    val all = routine + pogoHops + stretches + calfIsometric + retiredOther + retiredMachines
     fun byId(id: String): Exercise? = all.firstOrNull { it.id == id }
 }
 
@@ -280,8 +282,8 @@ data class SessionOptions(
 
 /**
  * The dumbbell/bodyweight routine for a strength day (docs/decisions.md §1–2).
- * Main lifts: split squat, hip thrust, single-leg RDL. Smaller lifts: the two calf raises, side-lying
- * abduction and the optional assisted pull-up.
+ * Main lifts: split squat and single-leg RDL. Smaller lifts: the two calf raises, side-lying abduction and,
+ * last, the optional assisted pull-up. (The dumbbell hip thrust was removed at the user's request.)
  */
 fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions()): StrengthSession? {
     val e = Exercises
@@ -292,8 +294,8 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
         StrengthKind.NONE -> null
         StrengthKind.LEARN -> StrengthSession(
             kind, build(listOf(
-                p(e.splitSquat, 1, 10), p(e.calfRaiseStraight, 1, 12), p(e.calfRaiseBent, 1, 12), p(e.pullUp, 1, 8),
-                p(e.hipThrust, 1, 10), p(e.sideAbduction, 1, 12), p(e.singleLegRdl, 1, 10),
+                p(e.splitSquat, 1, 10), p(e.calfRaiseStraight, 1, 12), p(e.calfRaiseBent, 1, 12),
+                p(e.singleLegRdl, 1, 10), p(e.sideAbduction, 1, 12), p(e.pullUp, 1, 8),
             )),
             effort = "Light — learn the movements and pick starting weights",
             rest = "As needed", minutes = "15–20 min", restSec = 60, targetRir = 4,
@@ -301,36 +303,36 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
         )
         StrengthKind.PHASE1 -> StrengthSession(
             kind, build(listOf(
-                p(e.splitSquat, 3, 10, "8–10"), p(e.calfRaiseStraight, 2, 12), p(e.calfRaiseBent, 2, 12), p(e.pullUp, 2, 8),
-                p(e.hipThrust, 3, 10, "8–10"), p(e.sideAbduction, 2, 12), p(e.singleLegRdl, 3, 10, "8–10"),
+                p(e.splitSquat, 3, 10, "8–10"), p(e.calfRaiseStraight, 2, 12), p(e.calfRaiseBent, 2, 12),
+                p(e.singleLegRdl, 3, 10, "8–10"), p(e.sideAbduction, 2, 12), p(e.pullUp, 2, 8),
             )),
             effort = "Hard, about 3 reps left in the tank",
-            rest = "60–90 s between sets", minutes = "25–30 min", restSec = 90, targetRir = 3,
+            rest = "60–90 s between sets", minutes = "20–25 min", restSec = 90, targetRir = 3,
             notes = standardNotes + "Main lifts 3 sets (was 2 × 12): more weekly sets give a bit more strength (Ralston 2017).",
         )
         StrengthKind.PHASE2 -> StrengthSession(
             kind, build(listOf(
-                p(e.splitSquat, 3, 6, "5–6"), p(e.calfRaiseStraight, 2, 12), p(e.calfRaiseBent, 2, 12), p(e.pullUp, 2, 8),
-                p(e.hipThrust, 3, 6, "5–6"), p(e.sideAbduction, 2, 12), p(e.singleLegRdl, 3, 6, "5–6"),
+                p(e.splitSquat, 3, 6, "5–6"), p(e.calfRaiseStraight, 2, 12), p(e.calfRaiseBent, 2, 12),
+                p(e.singleLegRdl, 3, 6, "5–6"), p(e.sideAbduction, 2, 12), p(e.pullUp, 2, 8),
             ) + if (plyo) listOf(p(e.pogoHops, 3, 10)) else emptyList()),
             effort = "Heavy, about 2 reps left in the tank",
-            rest = "90 s – 2 min between sets", minutes = "25–30 min", restSec = 120, targetRir = 2,
+            rest = "90 s – 2 min between sets", minutes = "20–25 min", restSec = 120, targetRir = 2,
             notes = standardNotes + "Heavy loads (≈ 5–6 hard reps) are what improved runners' economy and race times " +
                 "in the meta-analyses (Llanos-Lagos 2024).",
         )
         StrengthKind.PHASE3 -> StrengthSession(
             kind, build(listOf(
-                p(e.splitSquat, 2, 5), p(e.calfRaiseStraight, 1, 12), p(e.calfRaiseBent, 1, 12), p(e.pullUp, 1, 8),
-                p(e.hipThrust, 2, 5), p(e.sideAbduction, 1, 12), p(e.singleLegRdl, 2, 5),
+                p(e.splitSquat, 2, 5), p(e.calfRaiseStraight, 1, 12), p(e.calfRaiseBent, 1, 12),
+                p(e.singleLegRdl, 2, 5), p(e.sideAbduction, 1, 12), p(e.pullUp, 1, 8),
             ) + if (plyo) listOf(p(e.pogoHops, 2, 10)) else emptyList()),
             effort = "Heavy, about 2 reps left in the tank — keep the loads heavy",
-            rest = "90 s – 2 min between sets", minutes = "About 15–20 min", restSec = 120, targetRir = 2,
+            rest = "90 s – 2 min between sets", minutes = "About 15 min", restSec = 120, targetRir = 2,
             notes = standardNotes + "One heavy session a week holds your strength (Spiering 2021).",
         )
         StrengthKind.LIGHT -> StrengthSession(
             kind, build(listOf(
-                p(e.splitSquat, 1, 5), p(e.calfRaiseStraight, 1, 12), p(e.calfRaiseBent, 1, 12), p(e.pullUp, 1, 8),
-                p(e.hipThrust, 1, 5), p(e.sideAbduction, 1, 12), p(e.singleLegRdl, 1, 5),
+                p(e.splitSquat, 1, 5), p(e.calfRaiseStraight, 1, 12), p(e.calfRaiseBent, 1, 12),
+                p(e.singleLegRdl, 1, 5), p(e.sideAbduction, 1, 12), p(e.pullUp, 1, 8),
             )),
             effort = "Light — about 60% of your working weight",
             rest = "As needed", minutes = "About 10 min", restSec = 60, targetRir = 5,
@@ -341,8 +343,8 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
 
 private val standardNotes = listOf(
     "Lift first, then run — or run later in the day (Eddens 2018).",
-    "Warm up with one light set of split squats and hip thrusts.",
-    "Block 1: split squat, calf raises (and the optional pull-up). Block 2: hip thrust, side-lying abduction, " +
-        "single-leg RDL. One set of each in a block, then repeat.",
+    "Warm up with one light set of split squats and single-leg RDLs.",
+    "Block 1: split squat, then the two calf raises. Block 2: single-leg RDL, side-lying abduction, then the " +
+        "optional pull-up. One set of each in a block, then repeat.",
     "Add weight when every set feels easier than the target effort.",
 )

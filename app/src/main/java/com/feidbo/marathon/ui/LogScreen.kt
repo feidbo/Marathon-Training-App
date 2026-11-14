@@ -359,7 +359,7 @@ fun LogScreen(
                         Text(
                             "Order: one set of each exercise in a block, then repeat the block. " +
                                 blocks.mapIndexed { i, b -> "Block ${i + 1}: " + b.joinToString(" → ") { it.ex.nameFor(it.bodyweight) } }
-                                    .joinToString(". ") + ". Warm up first with a light set of split squats and hip thrusts.",
+                                    .joinToString(". ") + ". Warm up first with a light set of split squats and single-leg RDLs.",
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         if (options.skipCalfRaises) {
@@ -456,7 +456,7 @@ private fun ExerciseEditor(
             TextButton(onClick = { e.skipped = !e.skipped; onChange() }) { Text(if (e.skipped) "Undo skip" else "Skip") }
         }
         if (ex.retired) {
-            Text("Logged on a machine before the dumbbell routine. Kept so your history stays complete.",
+            Text("No longer in your routine. Kept so your history stays complete.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (!e.skipped && ex.usesWeight && ex.bodyweightName != null) {

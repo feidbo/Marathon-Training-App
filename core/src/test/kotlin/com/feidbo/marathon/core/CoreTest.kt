@@ -290,10 +290,13 @@ class ProgressionTest {
     @Test fun phase1PrescriptionMatchesDecisions() {
         assertEquals(3, squat.sets); assertEquals(10, squat.reps); assertEquals("8–10/leg", squat.repsShown)
         assertEquals(2, calf.sets); assertEquals(12, calf.reps)
-        assertEquals(listOf("split_squat", "calf_raise_straight", "calf_raise_bent", "assisted_pull_up", "hip_thrust_db",
-            "side_abduction", "single_leg_rdl"), p1.items.map { it.exercise.id })
+        // Hip thrust removed; abduction second to last, pull-up last (user request, Nov 2026).
+        assertEquals(listOf("split_squat", "calf_raise_straight", "calf_raise_bent", "single_leg_rdl", "side_abduction",
+            "assisted_pull_up"), p1.items.map { it.exercise.id })
+        for (k in StrengthKind.entries) strengthSession(k)?.let { s -> assertTrue(s.items.none { it.exercise.id == "hip_thrust_db" }) }
+        assertTrue(Exercises.byId("hip_thrust_db")!!.retired)   // logged sets still resolve
         val p2 = strengthSession(StrengthKind.PHASE2)!!
-        assertEquals(6, p2.items.first { it.exercise.id == "hip_thrust_db" }.reps)
+        assertEquals(6, p2.items.first { it.exercise.id == "single_leg_rdl" }.reps)
         assertTrue(p2.items.any { it.exercise.id == "pogo_hops" })
         assertTrue(strengthSession(StrengthKind.PHASE2, SessionOptions(plyometrics = false))!!.items.none { it.exercise.id == "pogo_hops" })
         assertTrue(strengthSession(StrengthKind.PHASE1, SessionOptions(skipCalfRaises = true))!!.items.none { it.exercise.calf })
@@ -604,9 +607,9 @@ class BodyweightVersionTest {
         assertFalse(Exercises.singleLegRdl.perSideFor(true))      // sliding leg curl uses both legs
         assertTrue(Exercises.splitSquat.perSideFor(true))
         assertEquals("Sliding leg curl (bodyweight)", Exercises.singleLegRdl.nameFor(true))
-        val rx = strengthSession(StrengthKind.PHASE1)!!.items.first { it.exercise.id == "hip_thrust_db" }
-        assertEquals("8–10", rx.repsShown)
-        assertEquals("8–10/leg", rx.repsShown(bodyweight = true))
+        val rx = strengthSession(StrengthKind.PHASE1)!!.items.first { it.exercise.id == "single_leg_rdl" }
+        assertEquals("8–10/leg", rx.repsShown)
+        assertEquals("8–10", rx.repsShown(bodyweight = true))
     }
 }
 

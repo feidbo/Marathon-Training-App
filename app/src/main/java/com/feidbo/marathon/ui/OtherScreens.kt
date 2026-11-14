@@ -156,7 +156,7 @@ fun ExerciseScreen(state: UiState, exerciseId: String, dayIndex: Int, onBack: ()
                     }
                 }
             }
-            if (ex.bodyweightName != null) {
+            if (ex.bodyweightName != null && !ex.retired) {
                 SectionCard {
                     Text("No dumbbells? ${ex.bodyweightName}", style = MaterialTheme.typography.titleMedium)
                     if (ex.bodyweightPerSide == false) {
@@ -171,8 +171,8 @@ fun ExerciseScreen(state: UiState, exerciseId: String, dayIndex: Int, onBack: ()
             }
             if (ex.retired) {
                 SectionCard {
-                    Text("This machine exercise is no longer in your routine (it was swapped for a dumbbell or bodyweight " +
-                        "exercise). Your history is kept below.", style = MaterialTheme.typography.bodyMedium)
+                    Text("This exercise is no longer in your routine. Your history is kept below.",
+                        style = MaterialTheme.typography.bodyMedium)
                 }
             }
             SectionCard {
