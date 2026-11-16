@@ -318,4 +318,48 @@ internal val illustrations: Map<String, Illustration> = mapOf(
             Chain(floatArrayOf(50.67f, 19.47f, 62.51f, 26.94f, 73.50f, 33.89f), floatArrayOf(50.77f, 19.25f, 62.56f, 26.81f, 73.50f, 33.83f), far = false),
         ),
     ),
+    "dumbbell_row" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+            Shape(ShapeKind.RECT, floatArrayOf(8.00f, 68.00f, 48.00f, 5.00f, 8.00f, 68.00f, 48.00f, 5.00f), 0.00f, ShapeStyle.PAD),
+            Shape(ShapeKind.LINE, floatArrayOf(14.00f, 73.00f, 14.00f, 92.00f, 14.00f, 73.00f, 14.00f, 92.00f), 3.00f, ShapeStyle.FRAME),
+            Shape(ShapeKind.LINE, floatArrayOf(50.00f, 73.00f, 50.00f, 92.00f, 50.00f, 73.00f, 50.00f, 92.00f), 3.00f, ShapeStyle.FRAME),
+            Shape(ShapeKind.CIRCLE, floatArrayOf(63.74f, 76.24f, 3.20f, 58.74f, 59.24f, 3.20f), 0.00f, ShapeStyle.WEIGHT),
+        ),
+        head = floatArrayOf(72.64f, 46.85f, 72.64f, 46.85f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(36.00f, 52.00f, 30.62f, 72.30f, 12.00f, 65.00f, 5.00f, 65.00f), floatArrayOf(36.00f, 52.00f, 30.62f, 72.30f, 12.00f, 65.00f, 5.00f, 65.00f), far = true),
+            Chain(floatArrayOf(62.74f, 48.24f, 49.84f, 53.68f, 54.00f, 66.00f), floatArrayOf(62.74f, 48.24f, 49.84f, 53.68f, 54.00f, 66.00f), far = true),
+            Chain(floatArrayOf(36.00f, 52.00f, 28.52f, 71.62f, 40.00f, 88.00f, 47.00f, 88.00f), floatArrayOf(36.00f, 52.00f, 28.52f, 71.62f, 40.00f, 88.00f, 47.00f, 88.00f), far = false),
+            Chain(floatArrayOf(36.00f, 52.00f, 62.74f, 48.24f), floatArrayOf(36.00f, 52.00f, 62.74f, 48.24f), far = false),
+            Chain(floatArrayOf(62.74f, 48.24f, 59.66f, 61.90f, 63.74f, 74.24f), floatArrayOf(62.74f, 48.24f, 48.76f, 48.91f, 58.74f, 57.24f), far = false),
+        ),
+    ),
+    "curl_up" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+        ),
+        head = floatArrayOf(15.01f, 86.65f, 18.47f, 70.36f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(54.50f, 84.50f, 71.53f, 72.21f, 85.00f, 87.00f, 92.00f, 87.00f), floatArrayOf(54.50f, 84.50f, 71.53f, 72.21f, 85.00f, 87.00f, 92.00f, 87.00f), far = true),
+            Chain(floatArrayOf(52.00f, 86.00f, 69.43f, 74.29f, 84.00f, 88.00f, 91.00f, 88.00f), floatArrayOf(52.00f, 86.00f, 69.43f, 74.29f, 84.00f, 88.00f, 91.00f, 88.00f), far = false),
+            Chain(floatArrayOf(52.00f, 86.00f, 25.00f, 86.47f), floatArrayOf(52.00f, 86.00f, 27.53f, 74.59f), far = false),
+            Chain(floatArrayOf(25.00f, 86.47f, 23.74f, 72.53f, 17.01f, 83.65f), floatArrayOf(27.53f, 74.59f, 31.98f, 61.32f, 20.47f, 67.36f), far = false),
+        ),
+    ),
+    "ab_rollout" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+            Shape(ShapeKind.RECT, floatArrayOf(58.00f, 89.00f, 10.00f, 3.00f, 89.00f, 89.00f, 10.00f, 3.00f), 0.00f, ShapeStyle.PAD),
+        ),
+        head = floatArrayOf(71.74f, 57.42f, 82.86f, 68.78f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(36.00f, 67.00f, 34.00f, 88.00f, 14.00f, 88.00f, 8.00f, 90.00f), floatArrayOf(46.00f, 72.00f, 34.00f, 88.00f, 14.00f, 88.00f, 8.00f, 90.00f), far = false),
+            Chain(floatArrayOf(36.00f, 67.00f, 62.08f, 60.01f), floatArrayOf(46.00f, 72.00f, 72.90f, 69.65f), far = false),
+            Chain(floatArrayOf(62.08f, 60.01f, 66.18f, 73.40f, 63.00f, 86.00f), floatArrayOf(72.90f, 69.65f, 85.09f, 76.53f, 94.00f, 86.00f), far = false),
+        ),
+    ),
 )

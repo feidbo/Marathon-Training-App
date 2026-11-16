@@ -291,8 +291,15 @@ class ProgressionTest {
         assertEquals(3, squat.sets); assertEquals(10, squat.reps); assertEquals("8–10/leg", squat.repsShown)
         assertEquals(2, calf.sets); assertEquals(12, calf.reps)
         // Hip thrust removed; abduction second to last, pull-up last (user request, Nov 2026).
+        // Then the dumbbell row beside the pull-up (do one), and the abs block to finish.
         assertEquals(listOf("split_squat", "calf_raise_straight", "calf_raise_bent", "single_leg_rdl", "side_abduction",
-            "assisted_pull_up"), p1.items.map { it.exercise.id })
+            "assisted_pull_up", "dumbbell_row", "curl_up", "ab_rollout"), p1.items.map { it.exercise.id })
+        val row = p1.items.first { it.exercise.id == "dumbbell_row" }
+        assertEquals(p1.items.first { it.exercise.id == "assisted_pull_up" }.sets, row.sets)
+        assertEquals("8–10/arm", row.repsShown)
+        assertEquals("12–15", p1.items.first { it.exercise.id == "curl_up" }.repsShown)
+        assertEquals(listOf("curl_up", "ab_rollout"), strengthSession(StrengthKind.PHASE2)!!.items.takeLast(2).map { it.exercise.id })
+        assertNull(loadAdviceFor(p1.items.first { it.exercise.id == "curl_up" }, mon, emptyMap()))
         for (k in StrengthKind.entries) strengthSession(k)?.let { s -> assertTrue(s.items.none { it.exercise.id == "hip_thrust_db" }) }
         assertTrue(Exercises.byId("hip_thrust_db")!!.retired)   // logged sets still resolve
         val p2 = strengthSession(StrengthKind.PHASE2)!!

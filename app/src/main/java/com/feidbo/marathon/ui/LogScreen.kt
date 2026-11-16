@@ -246,6 +246,20 @@ fun LogScreen(
         )
     }
 
+    // The pulling slot is one or the other: the machine pull-up, or the dumbbell row when there's no machine.
+    // Starts on whatever this day (draft or log) already used, else what you did last time, else the pull-up.
+    val pullIds = Exercises.pullChoices.map { it.id }
+    var useRow by rememberSaveable {
+        val row = Exercises.dumbbellRow.id
+        val here = draft?.exercises?.firstOrNull { it.id in pullIds && !it.skipped && it.sets.any { s -> s.done } }?.id
+            ?: existing?.strength?.firstOrNull { it.exerciseId in pullIds }?.exerciseId
+        val last = state.logs.values.filter { it.dayIndex < dayIndex }.sortedByDescending { it.dayIndex }
+            .firstNotNullOfOrNull { l -> l.strength.firstOrNull { it.exerciseId in pullIds }?.exerciseId }
+        mutableStateOf((here ?: last) == row)
+    }
+    fun hiddenPull(e: ExerciseEntry) = e.ex.id in pullIds && (e.ex.id == Exercises.dumbbellRow.id) != useRow
+    val hasPullChoice = entries.count { it.ex.id in pullIds } == 2
+
     var restSec by rememberSaveable { mutableIntStateOf(session?.restSec ?: 90) }
     val rest by Timers.rest.collectAsStateWithLifecycle()
     // Circuit order: one set of each exercise in a block, then the next round.
@@ -256,7 +270,7 @@ fun LogScreen(
             (0 until rounds).flatMap { r -> block.filter { it.sets.size > r }.map { it to r } }
         }
     }
-    fun nextUp(): String? = order.firstOrNull { (e, i) -> !e.skipped && !e.sets[i].done }
+    fun nextUp(): String? = order.firstOrNull { (e, i) -> !e.skipped && !(hasPullChoice && hiddenPull(e)) && !e.sets[i].done }
         ?.let { (e, i) -> "${e.ex.nameFor(e.bodyweight)}, set ${i + 1} of ${e.sets.size}" }
 
     // Ask once for notification permission (Android 13+) so rest alerts can show when the app is closed.
@@ -358,7 +372,7 @@ fun LogScreen(
                         }
                         Text(
                             "Order: one set of each exercise in a block, then repeat the block. " +
-                                blocks.mapIndexed { i, b -> "Block ${i + 1}: " + b.joinToString(" → ") { it.ex.nameFor(it.bodyweight) } }
+                                blocks.mapIndexed { i, b -> "Block ${i + 1}: " + b.filter { !(hasPullChoice && hiddenPull(it)) }.joinToString(" → ") { it.ex.nameFor(it.bodyweight) } }
                                     .joinToString(". ") + ". Warm up first with a light set of split squats and single-leg RDLs.",
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -371,6 +385,16 @@ fun LogScreen(
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                         }
                         entries.forEach { e ->
+                            if (hasPullChoice && e.ex.id == pullIds.first()) {
+                                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.padding(top = 16.dp))
+                                Text("Pulling exercise — pick one:", style = MaterialTheme.typography.labelLarge,
+                                    modifier = Modifier.padding(top = 8.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    FilterChip(selected = !useRow, onClick = { useRow = false; saveDraft() }, label = { Text("Pull-up machine") })
+                                    FilterChip(selected = useRow, onClick = { useRow = true; saveDraft() }, label = { Text("Dumbbell row") })
+                                }
+                            }
+                            if (hasPullChoice && hiddenPull(e)) return@forEach
                             ExerciseEditor(state, dayIndex, e, onChange = ::saveDraft) { nowDone ->
                                 focus.clearFocus() // put the keyboard away so the rest timer is in view
                                 saveDraft()
@@ -389,7 +413,7 @@ fun LogScreen(
                 }
 
                 val run = currentRun()
-                val lifts = entries.mapNotNull { it.toLog() }
+                val lifts = entries.filter { !(hasPullChoice && hiddenPull(it)) }.mapNotNull { it.toLog() }
                 val setsDone = lifts.sumOf { it.sets.size }
                 val canSave = run != null || lifts.isNotEmpty() || (!day.run.isRun && session == null)
                 Button(
@@ -481,7 +505,7 @@ private fun ExerciseEditor(
             )
         }
         if (perSide && !e.skipped) {
-            Text("One leg at a time: do the reps on each leg — that's one set. Log the reps per leg.",
+            Text("One ${ex.sideWord} at a time: do the reps on each ${ex.sideWord} — that's one set. Log the reps per ${ex.sideWord}.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (!e.skipped) {

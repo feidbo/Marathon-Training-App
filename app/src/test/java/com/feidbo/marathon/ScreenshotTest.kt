@@ -120,6 +120,8 @@ class ScreenshotTest {
             ExerciseLog("single_leg_rdl", List(3) { SetLog(0.0, 10) }, rir = 3, perSide = false, bodyweight = true),
         ), xp = 25)
         val data = base().copy(logs = mapOf(prior.index to history))
+        // Tall enough for the whole routine, down to the pull-up / row switch and the abs block.
+        paparazzi.unsafeUpdateConfig(DeviceConfig.PIXEL_5.copy(screenHeight = 9600, softButtons = false))
         paparazzi.snapshot {
             // LogScreen asks for notification permission through an activity-result launcher.
             val owner = object : androidx.activity.result.ActivityResultRegistryOwner {

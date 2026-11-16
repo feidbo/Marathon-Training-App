@@ -424,6 +424,62 @@ def calf_stretch_bent():
     return _calf_stretch(True)
 
 
+# ---- Pulling without a machine, and the abs block ------------------------------------------------
+
+def dumbbell_row():
+    # Facing right: left hand and knee on a bench, back flat, right arm rows the dumbbell to the ribs.
+    hip = (36, 52)
+    torso = 8
+    shoulder = polar(hip, TORSO, torso)
+    def pose(hand):
+        head, chains = figure(hip, torso, hand, -1, (40, 88), -1, 0,
+                              far_hand=(54, 66), far_ankle=(12, 65), far_foot_deg=180,
+                              far_offset=(0, 0), far_knee_bend=1)
+        return head, chains
+    s_hand = (shoulder[0] + 1, shoulder[1] + UPPER_ARM + FOREARM - 1)
+    e_hand = (shoulder[0] - 4, shoulder[1] + 9)
+    s, e = pose(s_hand), pose(e_hand)
+    props = [
+        FLOOR,
+        rect(8, 68, 48, 5, "PAD"),
+        line((14, 73), (14, 92), 3), line((50, 73), (50, 92), 3),
+        dumbbell(s_hand, e_hand),
+    ]
+    return props, s, e
+
+
+def curl_up():
+    # On the back, knees bent, feet flat: shoulders curl off the floor.
+    hip = (52, 86)
+    ankle = (84, 88)
+    def pose(torso):
+        shoulder = polar(hip, TORSO, torso)
+        head_c = polar(hip, TORSO + NECK + HEAD_R, torso)
+        hand = (head_c[0] + 2, head_c[1] - 3)
+        return figure(hip, torso, hand, -1, ankle, 1, 0, far_ankle=(85, 87))
+    s, e = pose(181), pose(155)
+    return [FLOOR], s, e
+
+
+def ab_rollout():
+    # Kneeling, hands on a towel: slide out until the body is long, then pull back.
+    knee = (34, 88)
+    def pose(hip, torso, hand):
+        shoulder = polar(hip, TORSO, torso)
+        head_c = polar(hip, TORSO + NECK + HEAD_R, torso)
+        el, hd = ik(shoulder, hand, UPPER_ARM, FOREARM, 1)
+        chains = [
+            ([hip, knee, (14, 88), (8, 90)], False),
+            ([hip, shoulder], False),
+            ([shoulder, el, hd], False),
+        ]
+        return head_c, chains
+    s = pose((36, 67), 15, (63, 86))
+    e = pose((46, 72), 5, (94, 86))
+    props = [FLOOR, rect(58, 89, 10, 3, "PAD", (89, 89, 10, 3))]
+    return props, s, e
+
+
 EXERCISES = {
     "leg_press": leg_press,
     "calf_raise": calf_raise,
@@ -443,6 +499,9 @@ EXERCISES = {
     "calf_stretch_straight": calf_stretch_straight,
     "calf_stretch_bent": calf_stretch_bent,
     "calf_isometric": calf_isometric,
+    "dumbbell_row": dumbbell_row,
+    "curl_up": curl_up,
+    "ab_rollout": ab_rollout,
 }
 
 

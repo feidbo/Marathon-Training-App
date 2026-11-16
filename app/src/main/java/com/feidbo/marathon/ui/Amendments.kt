@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /** Bump when there's a new "What's new" note to show once after updating. */
-const val WHATS_NEW_VERSION = 2
+const val WHATS_NEW_VERSION = 3
 
 /** One change from the original plan document, with what it rests on (docs/decisions.md, docs/evidence/). */
 private class Amendment(val title: String, val was: String, val now: String, val evidence: String, val strength: String)
@@ -65,6 +65,26 @@ private val amendments = listOf(
             "and side plank ranked highest for the side of the hip (Distefano 2009; Boren 2011). Muscle-activity studies " +
             "show what an exercise works, not which builds the most strength (Vigotsky 2017).",
         "Weak to moderate",
+    ),
+    Amendment(
+        "Pulling without a machine (new)",
+        "Assisted pull-up only.",
+        "On days without a pull-up machine, pick the one-arm dumbbell row when you log (or the inverted row under a " +
+            "sturdy table). Same sets as the pull-up.",
+        "It works the same muscles, but no study has tested the dumbbell row itself or whether rows improve pull-ups. " +
+            "The inverted row had the highest lat activity of three rows in one small study (Fenwick 2009); the pullover " +
+            "mainly works the chest (Di Fonza 2026).",
+        "Weak",
+    ),
+    Amendment(
+        "Abs block (new)",
+        "—",
+        "Two exercises end each strength session: curl-up with a 3-second hold (2 × 12–15) and towel roll-out (2 × 8–10).",
+        "Both showed high ab activity in a review of 67 studies (Oliva-Lozano 2020). Sets and reps are app defaults: " +
+            "no trial has tested the dose that grows the abs. Ab work builds the muscle; whether it shows depends mostly " +
+            "on body fat — six weeks of ab exercises alone changed no fat measure (Vispute 2011), though one small trial " +
+            "found more trunk fat lost with long ab sessions (Brobakken 2023).",
+        "Weak",
     ),
     Amendment(
         "Stretching",
@@ -171,13 +191,9 @@ fun WhatsNewDialog(onDismiss: () -> Unit, onOpenAmendments: () -> Unit) {
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(
-                    "🏋️ Dumbbell & bodyweight routine — no machines needed (the assisted pull-up is optional). Heavier, " +
-                        "more effective sets, with pogo hops from mid-December.",
-                    "🦵 Calf guidance: switch it on from Today for your tight calf. Four stages, a calf test, and run-day rules.",
-                    "🧘 Stretching: quad plus two calf stretches, shown honestly as optional mobility.",
-                    "❤️ Log your Garmin average heart rate. Easy runs are judged by effort and heart rate, not pace alone.",
-                    "⌚ Speed workouts as numbered steps you can put on your watch.",
-                    "📱 The widget now fits a 2 × 2 space.",
+                    "🧱 Abs block: a held curl-up and a towel roll-out now finish every strength session.",
+                    "💪 No pull-up machine? Pick the one-arm dumbbell row when you log.",
+                    "✂️ The hip thrust is gone; side-lying abduction and the pull-up moved to the end.",
                     "✅ Your logged progress, XP and badges are all kept.",
                 ).forEach { Text(it, style = MaterialTheme.typography.bodyMedium) }
             }

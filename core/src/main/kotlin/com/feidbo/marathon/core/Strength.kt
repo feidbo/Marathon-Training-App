@@ -30,8 +30,10 @@ data class Exercise(
     val retired: Boolean = false,
     /** Where the choice comes from (docs/evidence + docs/decisions.md). */
     val why: String = "",
+    /** What one side is called: "leg" for most, "arm" for the dumbbell row. */
+    val sideWord: String = "leg",
 ) {
-    fun repsText(reps: Int): String = if (perSide) "$reps/leg" else "$reps"
+    fun repsText(reps: Int): String = if (perSide) "$reps/$sideWord" else "$reps"
     val usesWeight: Boolean get() = load != LoadType.BODYWEIGHT
     /** Whether the version done is one leg at a time. */
     fun perSideFor(bodyweight: Boolean): Boolean = if (bodyweight) bodyweightPerSide ?: perSide else perSide
@@ -42,7 +44,7 @@ data class Exercise(
 data class Prescription(val exercise: Exercise, val sets: Int, val reps: Int, val repsLabel: String? = null) {
     val repsShown: String get() = repsShown(bodyweight = false)
     fun repsShown(bodyweight: Boolean): String =
-        (repsLabel ?: reps.toString()) + if (exercise.perSideFor(bodyweight)) "/leg" else ""
+        (repsLabel ?: reps.toString()) + if (exercise.perSideFor(bodyweight)) "/${exercise.sideWord}" else ""
 }
 
 data class StrengthSession(
@@ -134,6 +136,28 @@ object Exercises {
         optional = true,
         why = "Kept as an optional extra, as you asked.",
     )
+    val dumbbellRow = Exercise(
+        id = "dumbbell_row", name = "One-arm dumbbell row (no pull-up machine)", block = "2d",
+        machine = "One dumbbell and a bench, bed or chair",
+        muscles = "Lats, upper back, biceps", perSide = true, sideWord = "arm", optional = true,
+        weightLabel = "Dumbbell (lb)",
+        steps = listOf(
+            "Put one hand and the same-side knee on a bench (or bed edge); the other foot on the floor, back flat.",
+            "Hold the dumbbell in the free hand, arm hanging straight down.",
+            "Pull the dumbbell up to your lower ribs, elbow close to your side.",
+            "Lower slowly to a straight arm. All reps, then the other arm — that's one set.",
+        ),
+        cues = listOf("Back flat; don't twist your chest open.", "Pull with the elbow, not the hand.", "Slow on the way down."),
+        bodyweightName = "Inverted row (bodyweight)", bodyweightPerSide = false,
+        bodyweightSteps = listOf(
+            "Lie under a sturdy table or low bar, grip the edge, body straight from heels to head.",
+            "Pull your chest up to the edge, then lower slowly. Check the table can't tip first.",
+        ),
+        why = "For days without a pull-up machine. It works the same muscles (lats, upper back, biceps), but no study " +
+            "has tested the dumbbell row itself or whether rows improve pull-ups. The inverted row gave the highest lat " +
+            "activity of three rows in one small study (Fenwick 2009). The pullover was ruled out: it mainly works the " +
+            "chest (Di Fonza 2026).",
+    )
     val hipThrust = Exercise(
         id = "hip_thrust_db", name = "Dumbbell hip thrust", block = "—", retired = true,
         machine = "One dumbbell and a bench or bed edge",
@@ -200,6 +224,37 @@ object Exercises {
             "(Llanos-Lagos 2024). Sets and reps are an app default, not from a study. Only shown once your calf is cleared.",
     )
 
+    // ---- Abs block (docs/evidence/abs.md) ---------------------------------------------------------
+
+    val curlUp = Exercise(
+        id = "curl_up", name = "Curl-up with a hold", block = "4a",
+        machine = "Floor space",
+        muscles = "Abs (rectus abdominis)", load = LoadType.BODYWEIGHT,
+        steps = listOf(
+            "Lie on your back, knees bent, feet flat, hands behind your head or crossed on your chest.",
+            "Curl your shoulders off the floor until your shoulder blades lift.",
+            "Hold the top for 3 seconds, then lower slowly.",
+        ),
+        cues = listOf("Lower back stays on the floor.", "Don't pull on your neck.", "Slow down, not more reps, to make it harder."),
+        why = "A held curl-up reached about 80% of maximum ab activity, against 37–51% for an ordinary curl-up " +
+            "(Oliva-Lozano 2020). Sets and reps are an app default — no trial has tested the dose that grows the abs. " +
+            "Ab exercises build the muscle; seeing it depends mostly on the fat over it (Vispute 2011).",
+    )
+    val rollOut = Exercise(
+        id = "ab_rollout", name = "Towel roll-out", block = "4b",
+        machine = "A towel on a smooth floor (on carpet: walk your hands out)",
+        muscles = "Abs (rectus abdominis)", load = LoadType.BODYWEIGHT,
+        steps = listOf(
+            "Kneel with your hands on a towel on a smooth floor, arms straight, hips over knees.",
+            "Slide your hands forward, letting your hips follow, until just before your lower back wants to sag.",
+            "Pull back to the start with your abs. On carpet, walk your hands out and back instead.",
+        ),
+        cues = listOf("Ribs down, glutes tight — no sagging lower back.", "Go only as far as you can control.", "Stop if your lower back hurts."),
+        why = "Roll-outs showed the highest ab activity of the floor exercises reviewed: about 100% of maximum " +
+            "(Oliva-Lozano 2020). Those studies used a wheel or stable surface; the towel version and the sets and " +
+            "reps are app adaptations.",
+    )
+
     // ---- Daily stretches (docs/decisions.md §3) --------------------------------------------------
 
     val quadStretch = Exercise(
@@ -263,7 +318,9 @@ object Exercises {
     val abductionMachine = retired("hip_abduction", "Hip abduction (machine)", "Glute medius")
     val legCurlMachine = retired("leg_curl", "Seated leg curl (machine)", "Hamstrings")
 
-    val routine = listOf(splitSquat, calfRaiseStraight, calfRaiseBent, singleLegRdl, sideAbduction, pullUp)
+    val routine = listOf(splitSquat, calfRaiseStraight, calfRaiseBent, singleLegRdl, sideAbduction, pullUp, dumbbellRow, curlUp, rollOut)
+    /** The pulling slot: do one of these — the pull-up with a machine, the row without. */
+    val pullChoices = listOf(pullUp, dumbbellRow)
     /** Dropped from the routine but kept so logged sets still show. */
     val retiredOther = listOf(hipThrust)
     val stretches = listOf(quadStretch, calfStretchStraight, calfStretchBent)
@@ -288,7 +345,13 @@ data class SessionOptions(
 fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions()): StrengthSession? {
     val e = Exercises
     fun p(ex: Exercise, sets: Int, reps: Int, label: String? = null) = Prescription(ex, sets, reps, label)
-    fun build(items: List<Prescription>) = items.filter { !(options.skipCalfRaises && it.exercise.calf) }
+    // The dumbbell row sits beside the pull-up with the same sets (do one of the two).
+    fun withRow(items: List<Prescription>) = items.flatMap { rx ->
+        if (rx.exercise.id == e.pullUp.id) listOf(rx, p(e.dumbbellRow, rx.sets, 10, "8–10")) else listOf(rx)
+    }
+    fun build(items: List<Prescription>) = withRow(items).filter { !(options.skipCalfRaises && it.exercise.calf) }
+    // Abs finish the session (after the hops): 2 sets on working days, 1 on light days.
+    fun abs(sets: Int) = listOf(p(e.curlUp, sets, 15, "12–15"), p(e.rollOut, sets, 10, "8–10"))
     val plyo = options.plyometrics
     return when (kind) {
         StrengthKind.NONE -> null
@@ -296,7 +359,7 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
             kind, build(listOf(
                 p(e.splitSquat, 1, 10), p(e.calfRaiseStraight, 1, 12), p(e.calfRaiseBent, 1, 12),
                 p(e.singleLegRdl, 1, 10), p(e.sideAbduction, 1, 12), p(e.pullUp, 1, 8),
-            )),
+            )) + abs(1),
             effort = "Light — learn the movements and pick starting weights",
             rest = "As needed", minutes = "15–20 min", restSec = 60, targetRir = 4,
             notes = listOf("Note a comfortable starting dumbbell for each exercise."),
@@ -305,18 +368,18 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
             kind, build(listOf(
                 p(e.splitSquat, 3, 10, "8–10"), p(e.calfRaiseStraight, 2, 12), p(e.calfRaiseBent, 2, 12),
                 p(e.singleLegRdl, 3, 10, "8–10"), p(e.sideAbduction, 2, 12), p(e.pullUp, 2, 8),
-            )),
+            )) + abs(2),
             effort = "Hard, about 3 reps left in the tank",
-            rest = "60–90 s between sets", minutes = "20–25 min", restSec = 90, targetRir = 3,
+            rest = "60–90 s between sets", minutes = "25–30 min", restSec = 90, targetRir = 3,
             notes = standardNotes + "Main lifts 3 sets (was 2 × 12): more weekly sets give a bit more strength (Ralston 2017).",
         )
         StrengthKind.PHASE2 -> StrengthSession(
             kind, build(listOf(
                 p(e.splitSquat, 3, 6, "5–6"), p(e.calfRaiseStraight, 2, 12), p(e.calfRaiseBent, 2, 12),
                 p(e.singleLegRdl, 3, 6, "5–6"), p(e.sideAbduction, 2, 12), p(e.pullUp, 2, 8),
-            ) + if (plyo) listOf(p(e.pogoHops, 3, 10)) else emptyList()),
+            ) + if (plyo) listOf(p(e.pogoHops, 3, 10)) else emptyList()) + abs(2),
             effort = "Heavy, about 2 reps left in the tank",
-            rest = "90 s – 2 min between sets", minutes = "20–25 min", restSec = 120, targetRir = 2,
+            rest = "90 s – 2 min between sets", minutes = "25–30 min", restSec = 120, targetRir = 2,
             notes = standardNotes + "Heavy loads (≈ 5–6 hard reps) are what improved runners' economy and race times " +
                 "in the meta-analyses (Llanos-Lagos 2024).",
         )
@@ -324,16 +387,16 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
             kind, build(listOf(
                 p(e.splitSquat, 2, 5), p(e.calfRaiseStraight, 1, 12), p(e.calfRaiseBent, 1, 12),
                 p(e.singleLegRdl, 2, 5), p(e.sideAbduction, 1, 12), p(e.pullUp, 1, 8),
-            ) + if (plyo) listOf(p(e.pogoHops, 2, 10)) else emptyList()),
+            ) + if (plyo) listOf(p(e.pogoHops, 2, 10)) else emptyList()) + abs(2),
             effort = "Heavy, about 2 reps left in the tank — keep the loads heavy",
-            rest = "90 s – 2 min between sets", minutes = "About 15 min", restSec = 120, targetRir = 2,
+            rest = "90 s – 2 min between sets", minutes = "About 20 min", restSec = 120, targetRir = 2,
             notes = standardNotes + "One heavy session a week holds your strength (Spiering 2021).",
         )
         StrengthKind.LIGHT -> StrengthSession(
             kind, build(listOf(
                 p(e.splitSquat, 1, 5), p(e.calfRaiseStraight, 1, 12), p(e.calfRaiseBent, 1, 12),
                 p(e.singleLegRdl, 1, 5), p(e.sideAbduction, 1, 12), p(e.pullUp, 1, 8),
-            )),
+            )) + abs(1),
             effort = "Light — about 60% of your working weight",
             rest = "As needed", minutes = "About 10 min", restSec = 60, targetRir = 5,
             notes = listOf("A light session: 1 set each. Leave feeling fresh."),
@@ -345,6 +408,6 @@ private val standardNotes = listOf(
     "Lift first, then run — or run later in the day (Eddens 2018).",
     "Warm up with one light set of split squats and single-leg RDLs.",
     "Block 1: split squat, then the two calf raises. Block 2: single-leg RDL, side-lying abduction, then the " +
-        "optional pull-up. One set of each in a block, then repeat.",
+        "pull-up (or the dumbbell row without a machine). One set of each in a block, then repeat. Finish with the abs block.",
     "Add weight when every set feels easier than the target effort.",
 )

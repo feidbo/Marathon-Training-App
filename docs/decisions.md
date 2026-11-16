@@ -191,3 +191,13 @@ I re-read each decision against the evidence logs for overstatement:
   side-lying hip abduction → optional assisted pull-up (last).
 - A strength day counts as done with 3 exercises logged (was 4), since the routine is now 5 plus the
   optional pull-up, and 3 while the calf guidance holds back the calf raises.
+
+### Amendment, Nov 16 2026 (your requests; evidence in `docs/evidence/abs.md` and exercises L1–L4)
+
+- **Abs block** ends every strength session: curl-up with a 3 s hold, 2 × 12–15, and towel roll-out,
+  2 × 8–10 (1 set each on light days). Chosen for high rectus abdominis activity (abs A3). *Weak (EMG) /
+  Judgment (sets, reps, towel version).* The app says plainly that visible abs depend mostly on body fat
+  (A1, A2 disagree on spot reduction).
+- **One-arm dumbbell row** is the pull-up's no-machine version, chosen at log time, with the inverted row
+  as its bodyweight option. Same muscles; no direct evidence for the dumbbell row or for carry-over to
+  pull-ups (L1–L4). *Weak / Judgment.*

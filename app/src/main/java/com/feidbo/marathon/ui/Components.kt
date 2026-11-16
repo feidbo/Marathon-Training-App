@@ -356,13 +356,14 @@ fun XpToast(text: String?, key: Any?, onShown: () -> Unit, modifier: Modifier = 
 fun setsText(log: com.feidbo.marathon.core.ExerciseLog): String {
     val sets = log.sets.filter { it.reps > 0 }
     val ex = com.feidbo.marathon.core.Exercises.byId(log.exerciseId)
-    val per = if (log.perSide) "/leg" else ""
+    val side = ex?.sideWord ?: "leg"
+    val per = if (log.perSide) "/$side" else ""
     if (log.bodyweight || ex?.usesWeight == false || sets.all { it.weight <= 0.0 }) {
         return "bodyweight × ${sets.joinToString(", ") { it.reps.toString() }}$per"
     }
     return if (sets.map { it.weight }.distinct().size <= 1) {
         "${com.feidbo.marathon.core.formatMiles(sets.firstOrNull()?.weight ?: 0.0)} lb × ${sets.joinToString(", ") { it.reps.toString() }}$per"
     } else {
-        sets.joinToString(", ") { "${com.feidbo.marathon.core.formatMiles(it.weight)}×${it.reps}" } + " lb" + if (log.perSide) " (reps/leg)" else ""
+        sets.joinToString(", ") { "${com.feidbo.marathon.core.formatMiles(it.weight)}×${it.reps}" } + " lb" + if (log.perSide) " (reps/$side)" else ""
     }
 }
