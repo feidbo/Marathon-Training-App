@@ -130,7 +130,7 @@ fun FoodScreen(state: UiState, actions: FoodActions) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             MealSlot.entries.forEach { slot ->
-                val meal = Nutrition.scheduled(slot, day.date.dayOfWeek)
+                val meal = Nutrition.scheduled(slot, day.week)
                 val other = Nutrition.mealsFor(slot).first { it.id != meal.id }
                 MealRow(slot, meal, other, slot.name in checks) { actions.onToggleMeal(day.index, slot.name) }
             }
@@ -154,22 +154,38 @@ fun FoodScreen(state: UiState, actions: FoodActions) {
                 modifier = Modifier.padding(top = 6.dp))
         }
 
-        PrepCard()
+        TimingCard()
+        PrepCard(day.week)
 
-        // Shopping list for the plan week containing today.
-        val week = sd.original.week
+        // Shopping list: you shop and prep on the weekend for the week ahead, so Friday–Sunday it opens on next week.
+        val thisWeek = sd.original.week
+        val hasNext = state.schedule.days.any { it.original.week == thisWeek + 1 }
+        var next by rememberSaveable(thisWeek) { mutableStateOf(hasNext && day.date.dayOfWeek >= java.time.DayOfWeek.FRIDAY) }
+        val week = if (next && hasNext) thisWeek + 1 else thisWeek
         val weekDays = state.schedule.days.filter { it.original.week == week }.map { it.day }
         val shop = Nutrition.shoppingList(profile, weekDays)
         val ticked = state.data.shopChecks[week].orEmpty()
         SectionCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Shopping list · this week", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Text("Shopping list", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 Text("${shop.count { it.foodId in ticked }} / ${shop.size}", style = MaterialTheme.typography.labelLarge)
             }
-            Text("${shortDate(weekDays.first().date)} – ${shortDate(weekDays.last().date)}. Covers every meal and this week's fuel " +
+            if (hasNext) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    androidx.compose.material3.FilterChip(selected = week == thisWeek, onClick = { next = false }, label = { Text("This week") })
+                    androidx.compose.material3.FilterChip(selected = week != thisWeek, onClick = { next = true }, label = { Text("Next week") })
+                }
+            }
+            Text("For ${shortDate(weekDays.first().date)} – ${shortDate(weekDays.last().date)}: every meal plus that week's fuel " +
                 "servings. Meat, rice and pasta are cooked weights, so buy a little more raw.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            var dept: com.feidbo.marathon.core.Dept? = null
             shop.forEach { item ->
+                if (item.dept != dept) {
+                    dept = item.dept
+                    Text(item.dept.title.uppercase(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 10.dp))
+                }
                 val done = item.foodId in ticked
                 Row(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { actions.onToggleShop(week, item.foodId) }
@@ -246,22 +262,44 @@ private fun MealRow(slot: MealSlot, meal: Meal, other: Meal, done: Boolean, onTo
 }
 
 @Composable
-private fun PrepCard() {
+private fun PrepCard(week: Int) {
     var open by rememberSaveable { mutableStateOf(false) }
     SectionCard {
         Row(Modifier.fillMaxWidth().clickable { open = !open }, verticalAlignment = Alignment.CenterVertically) {
-            Text("🧑‍🍳  Prep plan · two sessions a week", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text("🧑‍🍳  Prep once a week · Sunday", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             Text(if (open) "Hide" else "Show", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         }
         if (open) {
-            fun names(first: Boolean) = MealSlot.entries.joinToString(", ") { Nutrition.mealsFor(it)[if (first) 0 else 1].name }
-            Text("Sunday (for Sun–Wed, 4 days): ${names(true)}.", style = MaterialTheme.typography.bodyMedium,
+            Text("One session covers Monday to Sunday. Next week's batch:", style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 6.dp))
-            Text("Wednesday evening (for Thu–Sat, 3 days): ${names(false)}.", style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 4.dp))
-            Text("Cooked meals keep 3–4 days in the fridge; the chili and the pasta freeze well. Tap a meal above for its steps.",
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp))
+            MealSlot.entries.forEach { slot ->
+                val m = Nutrition.scheduled(slot, week + 1)
+                Text("${slot.emoji}  ${m.name}", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 6.dp))
+                Text(m.prep, style = MaterialTheme.typography.bodySmall)
+            }
+            Text(Nutrition.PREP_STORAGE, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp))
+            Text("The menu swaps every week, so you cook one lunch and one dinner recipe per session.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun TimingCard() {
+    var open by rememberSaveable { mutableStateOf(false) }
+    SectionCard {
+        Row(Modifier.fillMaxWidth().clickable { open = !open }, verticalAlignment = Alignment.CenterVertically) {
+            Text("⏰  When to eat", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(if (open) "Hide" else "Show", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        }
+        Text("Protein in each of the four meals, 3–4 hours apart; fuel servings around your run.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (open) {
+            Nutrition.timing.forEach { (title, text) ->
+                Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+                Text(text, style = MaterialTheme.typography.bodySmall)
+            }
         }
     }
 }

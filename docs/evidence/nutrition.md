@@ -64,8 +64,34 @@ dietitian/nutritionist for a personalized nutrition plan").
 - Protein, carbohydrate, fat and calories per food come from USDA FoodData Central (SR Legacy), fetched
   through its public API; the FDC id of each food is stored with the app's food list.
 
+## When to eat (added Nov 17 2026)
+
+### T1. Helms ER, Aragon AA, Fitschen PJ. J Int Soc Sports Nutr 2014;11:20 (PMC4033492) — ABS (review)
+- Lose "approximately 0.5 to 1%/wk to maximize muscle retention". "alterations in nutrient timing and
+  frequency appear to have little effect on fat loss or lean mass retention." Three to six meals a day.
+
+### T2. Schoenfeld BJ, Aragon AA, Krieger JW. Nutr Rev 2015;73:69–82 — ABS (meta-analysis, 15 studies)
+- More frequent meals looked better for fat mass, but "the positive findings were the product of a single
+  study, casting doubt".
+
+### T3. Schoenfeld BJ, et al. J Int Soc Sports Nutr 2014;11:54 (PMC4242477) — ABS (RCT, 20 women, 4 weeks)
+- Fasted vs fed aerobic exercise on a calorie deficit: both lost fat, "no significant between-group
+  differences".
+
+### T4. Fernandes-Alves D, et al. Nutr Rev 2026;84:463–486 — ABS (meta-analysis, 30 RCTs, adults with overweight/obesity)
+- Time-restricted eating vs the same calories without a window: fat mass −1.50 kg (CI −2.77 to −0.24) but
+  also fat-free mass −0.41 kg (CI −0.79 to −0.03). Not athletes.
+
+### T5. Jäger R, et al. (N5 above) — ABS
+- Protein doses of 20–40 g "should ideally be evenly distributed, every 3–4 h, across the day".
+
+### Carbohydrate around runs: see N6 (30–60 g/h on runs over an hour; protein within 2 h after).
+
 ## Not found / not checked
 - No trial of fat loss during a first-marathon build specifically.
+- No sourced body-fat percentage at which abdominal muscles become visible; it varies between people.
+- Fridge/freezer storage times in the app are standard food-safety guidance recalled from memory, not
+  re-checked against a source in this log.
 - No evidence gathered on specific foods, supplements, meal timing beyond the above, or on whether a
   deficit slows calf-strain recovery.
 - No sourced activity factor for daily living outside training: the plan's multiplier (resting rate × 1.4)

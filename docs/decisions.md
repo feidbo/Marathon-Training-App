@@ -216,3 +216,17 @@ I re-read each decision against the evidence logs for overstatement:
   (SR Legacy); recipes, the rotation and prep notes are *Judgment*.
 - **Weekly weigh-in** corrects the estimate: over 1% of body weight lost in a week → eat more (N2).
 - Known trade-off, shown in the app: a deficit puts carbohydrate under the 5–7 g/kg endurance guideline (N6).
+
+### Amendment, Nov 17 2026 — meal plan changes (your requests)
+
+- **No fish** (and no pork): the salmon dinner became a chicken and sweet-potato tray bake; the tuna snack
+  became cottage cheese, apple and toast.
+- **One prep session a week** (Sunday, for Monday–Sunday): one menu all week, the other menu the next week.
+  Monday–Wednesday boxes in the fridge, Thursday–Sunday in the freezer.
+- **Shopping list by department** (produce, meat, dairy & eggs, frozen, bakery, pantry); from Friday it
+  opens on next week's list.
+- **When to eat** card (nutrition T1–T5): timing has little effect on fat loss; protein in each meal 3–4 h
+  apart; fuel servings around the run; fasted runs and eating windows are optional, not built in.
+- **Deficit left at 18%.** A test now checks that the menu as scheduled delivers 16–20% under maintenance
+  and at least 165 g protein a day on average. Going faster is not supported: 0.5–1% of body weight a week
+  keeps muscle (T1, N2), and the plan is already at the low-energy line on longer run days.

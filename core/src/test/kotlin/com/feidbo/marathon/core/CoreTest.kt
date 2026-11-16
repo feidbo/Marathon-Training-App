@@ -667,17 +667,45 @@ class NutritionTest {
                 assertTrue("fat share", m.fat * 9 / m.kcal >= 0.20)
             }
         assertTrue(Nutrition.fuelOptions.all { it.macros.kcal in 215.0..275.0 })
-        assertTrue(Nutrition.meals.flatMap { it.items }.none { it.food.usdaName.contains("pork", ignoreCase = true) })
     }
 
-    @Test fun shoppingListCoversTheWeek() {
+    @Test fun shoppingListCoversTheWeekByDepartment() {
         val week = Plan.weekDays(5)
+        assertEquals(7, week.size)
         val list = Nutrition.shoppingList(p, week)
         assertEquals(list.size, list.map { it.foodId }.toSet().size)
-        // Chicken lunch is scheduled Sun–Wed: 4 × 170 g.
-        assertEquals(4 * 170, list.first { it.foodId == "chicken" }.grams)
-        assertEquals(3 * 150, list.first { it.foodId == "beef" }.grams)
+        // One menu all week (one prep session): 7 portions of that week's lunch and dinner.
+        val lunch = Nutrition.scheduled(MealSlot.LUNCH, 5)
+        lunch.items.filter { it.foodId != "rice" && it.foodId != "broccoli" && it.foodId != "olive_oil" }
+            .forEach { i -> assertEquals(7 * i.grams, list.first { it.foodId == i.foodId }.grams) }
+        assertTrue(Nutrition.scheduled(MealSlot.LUNCH, 6).id != lunch.id)   // the menu swaps the next week
         assertTrue(list.any { it.foodId == "bagel" })
+        // Grouped by department, in shop order.
+        assertEquals(list.map { it.dept.ordinal }.sorted(), list.map { it.dept.ordinal })
+        assertEquals(Dept.MEAT, list.first { it.foodId == "chicken" || it.foodId == "turkey" }.dept)
+        assertEquals(Dept.DAIRY, list.first { it.foodId == "yogurt" }.dept)
+    }
+
+    @Test fun noFishOrPorkAnywhere() {
+        val names = (Nutrition.meals + Nutrition.fuelOptions).flatMap { m -> m.items.map { it.food.usdaName + " " + it.label + " " + m.name + " " + m.away } }
+        for (word in listOf("pork", "fish", "salmon", "tuna", "bacon", "ham ")) assertTrue(word, names.none { it.contains(word, ignoreCase = true) })
+    }
+
+    @Test fun theMenuActuallyDeliversTheDeficit() {
+        // Over every cutting day of the plan: what the menu provides (that week's four meals + fuel servings at 250 kcal)
+        // against maintenance. Rounding to whole fuel servings must not eat the deficit or deepen it.
+        val days = Plan.days.filter { it.date >= LocalDate.of(2026, 11, 16) && Nutrition.cuttingDay(it) }
+        var eaten = 0.0; var maintenance = 0.0; var protein = 0.0
+        for (d in days) {
+            val t = Nutrition.target(p, d)
+            val meals = MealSlot.entries.map { Nutrition.scheduled(it, d.week).macros }
+            eaten += meals.sumOf { it.kcal } + t.fuelServings * Nutrition.FUEL_KCAL
+            protein += meals.sumOf { it.protein }
+            maintenance += t.maintenanceKcal
+        }
+        val deficit = 1 - eaten / maintenance
+        assertTrue("deficit $deficit", deficit in 0.16..0.20)
+        assertTrue("protein ${protein / days.size}", protein / days.size >= 165)
     }
 
     @Test fun weighInAdvice() {
