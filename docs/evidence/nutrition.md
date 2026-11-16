@@ -55,7 +55,18 @@ dietitian/nutritionist for a personalized nutrition plan").
 - The Mifflin-St Jeor equation was the most reliable of four, within 10% of measured resting metabolic
   rate in more people than the others. It needs sex, age, height and weight.
 
+### N10. Brueckner JC, et al. Eur J Appl Physiol 1991;62:385–389 — ABS (10 amateur runners)
+- Net energy cost of running: about 171–175 ml of oxygen per kg per km, rising late in runs of 32–42 km.
+  At the standard ~5 kcal per litre of oxygen (my conversion, not in the abstract) that is about
+  0.87 kcal per kg per km above resting: roughly 117 kcal per mile at 184 lb.
+
+## Food data
+- Protein, carbohydrate, fat and calories per food come from USDA FoodData Central (SR Legacy), fetched
+  through its public API; the FDC id of each food is stored with the app's food list.
+
 ## Not found / not checked
 - No trial of fat loss during a first-marathon build specifically.
 - No evidence gathered on specific foods, supplements, meal timing beyond the above, or on whether a
   deficit slows calf-strain recovery.
+- No sourced activity factor for daily living outside training: the plan's multiplier (resting rate × 1.4)
+  is an assumption, to be corrected from the weekly weigh-in.
