@@ -7,11 +7,14 @@ import com.feidbo.marathon.core.DayLog
 import com.feidbo.marathon.core.DayStatus
 import com.feidbo.marathon.core.ExerciseLog
 import com.feidbo.marathon.core.Feel
+import com.feidbo.marathon.core.MealSlot
 import com.feidbo.marathon.core.MissReason
+import com.feidbo.marathon.core.NutritionProfile
 import com.feidbo.marathon.core.RunLog
 import com.feidbo.marathon.core.SetLog
 import com.feidbo.marathon.core.Settings
 import com.feidbo.marathon.core.Side
+import com.feidbo.marathon.core.WeighIn
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -29,7 +32,17 @@ data class AppData(
     val calfDays: Set<Int> = emptySet(),
     /** The newest "What's new" note already shown. */
     val whatsNewSeen: Int = 0,
-)
+    /** Meal plan (docs/evidence/nutrition.md). */
+    val nutrition: NutritionProfile = NutritionProfile(),
+    /** Day → what's been ticked: meal-slot names and "fuel1", "fuel2", … */
+    val mealChecks: Map<Int, Set<String>> = emptyMap(),
+    /** Plan week → shopping-list items ticked (food ids). */
+    val shopChecks: Map<Int, Set<String>> = emptyMap(),
+    val weighIns: List<WeighIn> = emptyList(),
+) {
+    /** Days with all four meals ticked. */
+    val mealDays: Set<Int> get() = mealChecks.filterValues { c -> MealSlot.entries.all { it.name in c } }.keys
+}
 
 /** A strength session in progress: everything typed and ticked so far, saved as you go. */
 data class StrengthDraft(val dayIndex: Int, val exercises: List<DraftExercise>)
@@ -124,6 +137,15 @@ class Store(context: Context) {
                 d.calf.sinceDay?.let { put("since", it) }
             })
             put("calfDays", JSONArray(d.calfDays.sorted()))
+        put("nutrition", JSONObject().apply {
+            val n = d.nutrition
+            put("enabled", n.enabled); put("weightLb", n.weightLb); put("heightIn", n.heightIn); put("age", n.age)
+            put("male", n.male); put("bodyFatPct", n.bodyFatPct); put("activityFactor", n.activityFactor); put("deficitPct", n.deficitPct)
+        })
+        fun checks(m: Map<Int, Set<String>>) = JSONObject().apply { m.forEach { (k, v) -> if (v.isNotEmpty()) put(k.toString(), JSONArray(v.sorted())) } }
+        put("mealChecks", checks(d.mealChecks))
+        put("shopChecks", checks(d.shopChecks))
+        put("weighIns", JSONArray().apply { d.weighIns.forEach { put(JSONObject().put("day", it.dayIndex).put("lb", it.lb)) } })
             put("calfTests", JSONArray().apply {
                 d.calfTests.forEach { t ->
                     put(JSONObject().apply {
@@ -263,7 +285,39 @@ class Store(context: Context) {
                     }
                 }
             } ?: emptyList()
-            return AppData(logs, stretch, settings, o.optBoolean("onboarded"), calf, calfTests, calfDays, o.optInt("whatsNewSeen"))
+            // Meal-plan data is optional too.
+        val nutrition = try {
+            o.optJSONObject("nutrition")?.let { n ->
+                val d = NutritionProfile()
+                NutritionProfile(
+                    enabled = n.optBoolean("enabled"),
+                    weightLb = n.optDouble("weightLb", d.weightLb), heightIn = n.optDouble("heightIn", d.heightIn),
+                    age = n.optInt("age", d.age), male = n.optBoolean("male", d.male),
+                    bodyFatPct = n.optDouble("bodyFatPct", d.bodyFatPct),
+                    activityFactor = n.optDouble("activityFactor", d.activityFactor), deficitPct = n.optInt("deficitPct", d.deficitPct),
+                )
+            } ?: NutritionProfile()
+        } catch (_: Exception) {
+            NutritionProfile()
+        }
+        fun checks(key: String): Map<Int, Set<String>> = try {
+            o.optJSONObject(key)?.let { m ->
+                m.keys().asSequence().mapNotNull { k ->
+                    val a = m.optJSONArray(k) ?: return@mapNotNull null
+                    (k.toIntOrNull() ?: return@mapNotNull null) to (0 until a.length()).map { a.getString(it) }.toSet()
+                }.toMap()
+            } ?: emptyMap()
+        } catch (_: Exception) {
+            emptyMap()
+        }
+        val weighIns = o.optJSONArray("weighIns")?.let { a ->
+            (0 until a.length()).mapNotNull { i ->
+                val w = a.optJSONObject(i) ?: return@mapNotNull null
+                try { WeighIn(w.getInt("day"), w.getDouble("lb")) } catch (_: Exception) { null }
+            }
+        } ?: emptyList()
+        return AppData(logs, stretch, settings, o.optBoolean("onboarded"), calf, calfTests, calfDays, o.optInt("whatsNewSeen"),
+            nutrition, checks("mealChecks"), checks("shopChecks"), weighIns)
         }
 
         private fun JSONObject.optIntOrNull(key: String): Int? = if (has(key) && !isNull(key)) getInt(key) else null

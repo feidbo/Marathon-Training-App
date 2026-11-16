@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /** Bump when there's a new "What's new" note to show once after updating. */
-const val WHATS_NEW_VERSION = 3
+const val WHATS_NEW_VERSION = 4
 
 /** One change from the original plan document, with what it rests on (docs/decisions.md, docs/evidence/). */
 private class Amendment(val title: String, val was: String, val now: String, val evidence: String, val strength: String)
@@ -85,6 +85,19 @@ private val amendments = listOf(
             "on body fat — six weeks of ab exercises alone changed no fat measure (Vispute 2011), though one small trial " +
             "found more trunk fat lost with long ab sessions (Brobakken 2023).",
         "Weak",
+    ),
+    Amendment(
+        "Meal plan (new, optional)",
+        "—",
+        "Food tab: four prep-ahead meals a day plus carbohydrate \"fuel servings\" that scale with the day's miles. About " +
+            "18% under maintenance (roughly 1 lb a week) and about 2 g of protein per kg; no deficit in the taper or on " +
+            "race days. Shows a warning when a day falls under the low-energy line.",
+        "Slow loss kept muscle better than fast loss in athletes (Garthe 2011); 1.6–2.4 g/kg protein while losing " +
+            "weight (Hector 2018); low energy availability harms hormones and bone in male endurance athletes (IOC 2023; " +
+            "Cupka 2023). Resting energy by Mifflin-St Jeor (Frankenfield 2005); running cost from Brueckner 1991. The 1.4 " +
+            "activity factor is an assumption. A deficit puts carbohydrate below the 5–7 g/kg endurance guideline. Food " +
+            "values: USDA FoodData Central. An estimate, not a dietitian's plan.",
+        "Moderate (principles) / Judgment (menu)",
     ),
     Amendment(
         "Stretching",
@@ -191,6 +204,8 @@ fun WhatsNewDialog(onDismiss: () -> Unit, onOpenAmendments: () -> Unit) {
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(
+                    "🥗 New Food tab: prep-ahead meals to tick off, a weekly shopping list, daily calorie and protein " +
+                        "targets that follow your mileage, and a weekly weigh-in. Turn it on from the Food tab.",
                     "🧱 Abs block: a held curl-up and a towel roll-out now finish every strength session.",
                     "💪 No pull-up machine? Pick the one-arm dumbbell row when you log.",
                     "✂️ The hip thrust is gone; side-lying abduction and the pull-up moved to the end.",

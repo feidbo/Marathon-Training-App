@@ -201,3 +201,18 @@ I re-read each decision against the evidence logs for overstatement:
 - **One-arm dumbbell row** is the pull-up's no-machine version, chosen at log time, with the inverted row
   as its bodyweight option. Same muscles; no direct evidence for the dumbbell row or for carry-over to
   pull-ups (L1–L4). *Weak / Judgment.*
+
+### Amendment, Nov 16 2026 — meal plan (your request; evidence in `docs/evidence/nutrition.md`)
+
+- **Optional Food tab**, off until you turn it on. Inputs you gave: 6'0", 184 lb, male, 33, about 21% body fat.
+- **Energy:** resting energy by Mifflin-St Jeor (N9) × 1.4 for daily living (*assumption, no source*) plus
+  running at 0.87 kcal/kg/km (N10). **Deficit 18%** — about 1 lb a week, **your choice after seeing that it
+  sits at the low-energy warning line** (N7, N8); the app shows each day's energy availability and warns
+  under 30 kcal/kg lean mass. No deficit in the taper or on the half-marathon and race days. *Moderate
+  (direction) / Judgment (numbers).*
+- **Protein** about 2 g/kg (165 g), the middle of 1.6–2.4 g/kg (N3). *Moderate.*
+- **Menu:** eight prep-ahead meals (two per slot, two cooking sessions a week), no pork, plus "fuel
+  servings" of carbohydrate that scale with the day's miles. Food values from USDA FoodData Central
+  (SR Legacy); recipes, the rotation and prep notes are *Judgment*.
+- **Weekly weigh-in** corrects the estimate: over 1% of body weight lost in a week → eat more (N2).
+- Known trade-off, shown in the app: a deficit puts carbohydrate under the 5–7 g/kg endurance guideline (N6).

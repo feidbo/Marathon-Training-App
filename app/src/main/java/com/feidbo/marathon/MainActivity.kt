@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.Icon
@@ -45,6 +46,8 @@ import com.feidbo.marathon.ui.WhatsNewDialog
 import com.feidbo.marathon.ui.CatchUpDialog
 import com.feidbo.marathon.ui.CelebrationOverlay
 import com.feidbo.marathon.ui.ExerciseScreen
+import com.feidbo.marathon.ui.FoodActions
+import com.feidbo.marathon.ui.FoodScreen
 import com.feidbo.marathon.ui.LogScreen
 import com.feidbo.marathon.ui.MissedDialog
 import com.feidbo.marathon.ui.OnboardingScreen
@@ -69,6 +72,7 @@ sealed interface Screen {
 enum class Tab(val label: String, val icon: ImageVector) {
     TODAY("Today", Icons.Filled.Today),
     PROGRESS("Progress", Icons.Filled.Insights),
+    FOOD("Food", Icons.Filled.Restaurant),
     SETTINGS("Settings", Icons.Filled.Settings),
 }
 
@@ -122,6 +126,7 @@ private fun App(vm: AppViewModel) {
     var catchUp by remember { mutableStateOf(false) }
     var whatsNew by rememberSaveable { mutableStateOf(state.data.whatsNewSeen < WHATS_NEW_VERSION) }
     val calfActions = remember(vm) { CalfActions(vm::setCalf, vm::addCalfTest, vm::toggleCalfDay) }
+    val foodActions = remember(vm) { FoodActions(vm::setNutrition, vm::toggleMeal, vm::toggleShopItem, vm::addWeighIn) }
     fun push(s: Screen) = stack.add(s)
     fun pop() { if (stack.isNotEmpty()) stack.removeAt(stack.lastIndex) }
 
@@ -191,6 +196,7 @@ private fun App(vm: AppViewModel) {
                         onOpenDay = { date = it; tab = Tab.TODAY },
                         onOpenExercise = { push(Screen.Exercise(it, -1)) },
                     )
+                    Tab.FOOD -> FoodScreen(state, foodActions)
                     Tab.SETTINGS -> SettingsScreen(
                         state,
                         onSaved = { tab = Tab.TODAY },

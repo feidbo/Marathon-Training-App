@@ -142,7 +142,24 @@ class ScreenshotTest {
         }
     }
 
-    // ---- Widget -------------------------------------------------------------------------------
+@Test fun foodTab() {
+        val d = runAndLift
+        val data = base().copy(
+            nutrition = com.feidbo.marathon.core.NutritionProfile(enabled = true),
+            mealChecks = mapOf(d.index to setOf("BREAKFAST", "fuel1")),
+            weighIns = listOf(com.feidbo.marathon.core.WeighIn(d.index - 7, 184.0), com.feidbo.marathon.core.WeighIn(d.index, 183.0)),
+        )
+        paparazzi.unsafeUpdateConfig(DeviceConfig.PIXEL_5.copy(screenHeight = 6400, softButtons = false))
+        paparazzi.snapshot {
+            MarathonTheme {
+                Box(Modifier.background(androidx.compose.material3.MaterialTheme.colorScheme.background)) {
+                    com.feidbo.marathon.ui.FoodScreen(state(d.date, data), com.feidbo.marathon.ui.FoodActions({}, { _, _ -> }, { _, _ -> }, { _, _ -> }))
+                }
+            }
+        }
+    }
+
+        // ---- Widget -------------------------------------------------------------------------------
 
     private fun widget(name: String, size: TodayWidget.Size, wDp: Int, hDp: Int, day: com.feidbo.marathon.core.PlannedDay) {
         paparazzi.unsafeUpdateConfig(DeviceConfig.PIXEL_5.copy(screenHeight = 900, screenWidth = 1080, softButtons = false))

@@ -35,6 +35,9 @@ object Game {
     /** XP for doing the day's calf-guidance exercises. */
     const val CALF_XP = 5
 
+    /** XP for ticking off all four meals of the day's meal plan. */
+    const val MEALS_XP = 5
+
     /** XP for a day's log. Honest "couldn't do it" logs still earn a little: listening to your body counts. */
     fun xpFor(day: PlannedDay, log: DayLog): Int {
         if (log.status == DayStatus.MISSED) return 2
@@ -95,6 +98,7 @@ object Game {
         Badge("bib_ready", "🎽", "Bib Ready", "Every race-week workout done"),
         Badge("marathoner", "🏅", "Marathoner", "Finish the Eugene Marathon"),
         Badge("calf_10", "🩹", "Calf Care", "Do your calf exercises on 10 days"),
+        Badge("meals_14", "🥗", "Meal Prepper", "Tick off every meal on 14 days"),
         Badge("calf_cleared", "🦿", "Calf Cleared", "Pass the calf test: 30+ raises each leg, within 10%"),
     )
 
@@ -129,6 +133,7 @@ fun computeProgress(
     calfDays: Set<Int> = emptySet(),
     calfTests: List<CalfTest> = emptyList(),
     easyHrCap: Int? = null,
+    mealDays: Set<Int> = emptySet(),
 ): Progress {
     val days = schedule.days
     var xp = 0
@@ -157,6 +162,7 @@ fun computeProgress(
         val log = logs[d.index]
         if (d.isTrainingDay && d.date <= today) plannedSoFar++
         if (d.index in calfDays) xp += Game.CALF_XP
+        if (d.index in mealDays) xp += Game.MEALS_XP
         if (d.index in stretchDays) {
             xp += Game.stretchXp(d)
             if (!d.isTrainingDay) restStretches++
@@ -246,6 +252,7 @@ fun computeProgress(
     val level = Game.level(xp)
     if (miles >= 26.2) earned += "miles_26"
     if (calfDays.size >= 10) earned += "calf_10"
+    if (mealDays.size >= 14) earned += "meals_14"
     if (calfTests.any { CalfGuide.raisesPassed(it) }) earned += "calf_cleared"
     if (mpLocked >= 5) earned += "mp_5"
     if (easyInZone >= 50) earned += "easy_50"
@@ -298,6 +305,7 @@ fun computeProgress(
         "level_5" to (level.level.toDouble() to 5.0),
         "level_10" to (level.level.toDouble() to 10.0),
         "calf_10" to (calfDays.size.toDouble() to 10.0),
+        "meals_14" to (mealDays.size.toDouble() to 14.0),
     )
     return Progress(xp, level, streak, best, miles, longest, done, plannedSoFar, lifts, earned, perfect, fullWeeks, badgeProgress)
 }

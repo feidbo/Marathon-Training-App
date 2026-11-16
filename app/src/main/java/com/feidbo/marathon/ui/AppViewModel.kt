@@ -270,6 +270,41 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         return Unit
     }
 
+    // ---- Meal plan (docs/evidence/nutrition.md) ------------------------------------------------
+
+    fun setNutrition(profile: com.feidbo.marathon.core.NutritionProfile) {
+        update { it.copy(nutrition = profile) }
+    }
+
+    fun toggleMeal(dayIndex: Int, key: String) {
+        val (before, after) = update { d ->
+            val cur = d.mealChecks[dayIndex].orEmpty()
+            d.copy(mealChecks = d.mealChecks + (dayIndex to if (key in cur) cur - key else cur + key))
+        }
+        if (dayIndex in after.data.mealDays && dayIndex !in before.data.mealDays) {
+            celebrateBadges(before, after, "Meal Prepper! 🥗") ?: run {
+                _toast.value = Toast("🥗 All meals ticked · +${after.progress.xp - before.progress.xp} XP")
+            }
+        }
+    }
+
+    fun toggleShopItem(week: Int, foodId: String) {
+        update { d ->
+            val cur = d.shopChecks[week].orEmpty()
+            d.copy(shopChecks = d.shopChecks + (week to if (foodId in cur) cur - foodId else cur + foodId))
+        }
+    }
+
+    /** Saves the weigh-in and uses it as the weight the targets are worked out from. */
+    fun addWeighIn(dayIndex: Int, lb: Double) {
+        update { d ->
+            d.copy(
+                weighIns = d.weighIns.filter { it.dayIndex != dayIndex } + com.feidbo.marathon.core.WeighIn(dayIndex, lb),
+                nutrition = d.nutrition.copy(weightLb = lb),
+            )
+        }
+    }
+
     fun markWhatsNewSeen() {
         if (_state.value.data.whatsNewSeen < WHATS_NEW_VERSION) update { it.copy(whatsNewSeen = WHATS_NEW_VERSION) }
     }
@@ -315,6 +350,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         fun progressFor(data: AppData, schedule: Schedule, today: LocalDate): Progress = computeProgress(
             schedule, data.logs, data.stretchDays, today, data.settings.marathonPaceSec,
             calfDays = data.calfDays, calfTests = data.calfTests, easyHrCap = data.settings.easyHrCap,
+            mealDays = data.mealDays,
         )
     }
 }

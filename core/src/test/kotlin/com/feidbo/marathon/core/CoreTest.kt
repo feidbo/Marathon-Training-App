@@ -628,3 +628,61 @@ class RecentEasyPaceTest {
         assertEquals((622 + 624 + 626 + 628 + 630) / 5, recentEasyPace(logs, easy.last().index + 1))
     }
 }
+
+class NutritionTest {
+    private val p = NutritionProfile(enabled = true)   // 184 lb, 6'0", 33, male, 21% body fat
+    private val restDay = Plan.days.first { !it.isTrainingDay && it.date >= LocalDate.of(2026, 11, 16) }
+    private val easy4 = Plan.days.first { it.run == RunKind.EASY && it.miles == 4.0 }
+
+    @Test fun restingEnergyIsMifflinStJeor() {
+        // 10 × 83.46 kg + 6.25 × 182.88 cm − 5 × 33 + 5
+        assertEquals(1817.6, Nutrition.restingKcal(p), 1.0)
+        assertEquals(117.0, Nutrition.runKcal(p, 1.0), 1.0)
+        assertEquals(165, Nutrition.proteinTarget(p))
+    }
+
+    @Test fun targetsFollowMileageAndPauseInTheTaper() {
+        val rest = Nutrition.target(p, restDay)
+        assertTrue(rest.deficit)
+        assertEquals((1817.6 * 1.4 * 0.82).toInt().toDouble(), rest.kcal.toDouble(), 3.0)
+        val run = Nutrition.target(p, easy4)
+        assertEquals(rest.kcal + (4 * 117 * 0.82), run.kcal.toDouble(), 6.0)
+        assertTrue(run.fuelServings > rest.fuelServings)
+        val race = Plan.days.last()
+        assertFalse(Nutrition.target(p, race).deficit)
+        val taper = Plan.days.first { it.phase == Phase.TAPER }
+        assertFalse(Nutrition.target(p, taper).deficit)
+        assertFalse(Nutrition.target(p, Plan.dayOn(LocalDate.of(2027, 3, 7))!!).deficit)
+        // Energy availability: (eaten − running) ÷ lean mass.
+        assertEquals((run.kcal - 4 * 117) / (83.46 * 0.79), run.energyAvailability, 0.3)
+    }
+
+    @Test fun baseMealsHitProteinAndSitNearTheRestDayTarget() {
+        // Every combination of the two options per slot.
+        for (b in Nutrition.mealsFor(MealSlot.BREAKFAST)) for (l in Nutrition.mealsFor(MealSlot.LUNCH))
+            for (d in Nutrition.mealsFor(MealSlot.DINNER)) for (s in Nutrition.mealsFor(MealSlot.SNACK)) {
+                val m = b.macros + l.macros + d.macros + s.macros
+                assertTrue("protein ${m.protein}", m.protein >= 155)
+                assertTrue("kcal ${m.kcal}", m.kcal in 1950.0..2200.0)
+                assertTrue("fat share", m.fat * 9 / m.kcal >= 0.20)
+            }
+        assertTrue(Nutrition.fuelOptions.all { it.macros.kcal in 215.0..275.0 })
+        assertTrue(Nutrition.meals.flatMap { it.items }.none { it.food.usdaName.contains("pork", ignoreCase = true) })
+    }
+
+    @Test fun shoppingListCoversTheWeek() {
+        val week = Plan.weekDays(5)
+        val list = Nutrition.shoppingList(p, week)
+        assertEquals(list.size, list.map { it.foodId }.toSet().size)
+        // Chicken lunch is scheduled Sun–Wed: 4 × 170 g.
+        assertEquals(4 * 170, list.first { it.foodId == "chicken" }.grams)
+        assertEquals(3 * 150, list.first { it.foodId == "beef" }.grams)
+        assertTrue(list.any { it.foodId == "bagel" })
+    }
+
+    @Test fun weighInAdvice() {
+        assertNull(Nutrition.weighInAdvice(listOf(WeighIn(30, 184.0))))
+        assertTrue(Nutrition.weighInAdvice(listOf(WeighIn(30, 184.0), WeighIn(37, 183.0)))!!.contains("on track"))
+        assertTrue(Nutrition.weighInAdvice(listOf(WeighIn(30, 184.0), WeighIn(37, 181.0)))!!.contains("Add a fuel serving"))
+    }
+}

@@ -1,0 +1,226 @@
+{
+ "chicken": {
+  "fdc": 171534,
+  "desc": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, cooked, grilled",
+  "p": 30.54,
+  "f": 3.17,
+  "c": 0.0,
+  "kcal": 151.0
+ },
+ "turkey": {
+  "fdc": 172851,
+  "desc": "Turkey, ground, 93% lean, 7% fat, pan-broiled crumbles",
+  "f": 11.6,
+  "p": 27.1,
+  "c": 0.0,
+  "kcal": 213.0
+ },
+ "egg": {
+  "fdc": 173424,
+  "desc": "Egg, whole, cooked, hard-boiled",
+  "kcal": 155.0,
+  "p": 12.58,
+  "f": 10.61,
+  "c": 1.12
+ },
+ "yogurt": {
+  "fdc": 171312,
+  "desc": "Yogurt, Greek, nonfat, plain, CHOBANI",
+  "p": 9.53,
+  "f": 0.24,
+  "c": 3.43,
+  "kcal": 54.0
+ },
+ "rice": {
+  "fdc": 168878,
+  "desc": "Rice, white, long-grain, regular, enriched, cooked",
+  "p": 2.69,
+  "f": 0.28,
+  "c": 28.17,
+  "kcal": 130.0
+ },
+ "potato": {
+  "fdc": 170093,
+  "desc": "Potatoes, baked, flesh and skin, without salt",
+  "p": 2.5,
+  "f": 0.13,
+  "c": 21.15,
+  "kcal": 93.0
+ },
+ "bagel": {
+  "fdc": 174899,
+  "desc": "Bagels, plain, enriched, with calcium propionate (includes onion, poppy, sesame)",
+  "p": 10.56,
+  "f": 1.32,
+  "c": 52.38,
+  "kcal": 264.0
+ },
+ "banana": {
+  "fdc": 173944,
+  "desc": "Bananas, raw",
+  "c": 22.84,
+  "kcal": 89.0,
+  "p": 1.09,
+  "f": 0.33
+ },
+ "blueberries": {
+  "fdc": 171711,
+  "desc": "Blueberries, raw",
+  "c": 14.49,
+  "kcal": 57.0,
+  "f": 0.33,
+  "p": 0.74
+ },
+ "spinach": {
+  "fdc": 168462,
+  "desc": "Spinach, raw",
+  "p": 2.86,
+  "f": 0.39,
+  "c": 3.63,
+  "kcal": 23.0
+ },
+ "olive_oil": {
+  "fdc": 171413,
+  "desc": "Oil, olive, salad or cooking",
+  "f": 100.0,
+  "c": 0.0,
+  "kcal": 884.0,
+  "p": 0.0
+ },
+ "peanut_butter": {
+  "fdc": 172470,
+  "desc": "Peanut butter, smooth style, without salt",
+  "p": 22.21,
+  "f": 51.36,
+  "c": 22.31,
+  "kcal": 598.0
+ },
+ "salmon": {
+  "fdc": 175168,
+  "desc": "Fish, salmon, Atlantic, farmed, cooked, dry heat",
+  "f": 12.35,
+  "c": 0.0,
+  "p": 22.1,
+  "kcal": 206.0
+ },
+ "oats": {
+  "fdc": 173904,
+  "desc": "Cereals, oats, regular and quick, not fortified, dry",
+  "f": 6.52,
+  "c": 67.7,
+  "kcal": 379.0,
+  "p": 13.15
+ },
+ "broccoli": {
+  "fdc": 169967,
+  "desc": "Broccoli, cooked, boiled, drained, without salt",
+  "f": 0.41,
+  "p": 2.38,
+  "c": 7.18,
+  "kcal": 35.0
+ },
+ "black_beans": {
+  "fdc": 175238,
+  "desc": "Beans, black, mature seeds, canned, low sodium",
+  "p": 6.03,
+  "f": 0.29,
+  "c": 16.55,
+  "kcal": 91.0
+ },
+ "bread": {
+  "fdc": 172688,
+  "desc": "Bread, whole-wheat, commercially prepared",
+  "f": 3.5,
+  "c": 42.71,
+  "kcal": 252.0,
+  "p": 12.45
+ },
+ "pasta": {
+  "fdc": 169737,
+  "desc": "Pasta, cooked, enriched, without added salt",
+  "f": 0.93,
+  "p": 5.8,
+  "c": 30.86,
+  "kcal": 158.0
+ },
+ "milk": {
+  "fdc": 170872,
+  "desc": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",
+  "p": 3.37,
+  "f": 0.97,
+  "c": 4.99,
+  "kcal": 42.0
+ },
+ "sweet_potato": {
+  "fdc": 168483,
+  "desc": "Sweet potato, cooked, baked in skin, flesh, without salt",
+  "c": 20.71,
+  "kcal": 90.0,
+  "f": 0.15,
+  "p": 2.01
+ },
+ "cottage": {
+  "fdc": 172182,
+  "desc": "Cheese, cottage, lowfat, 2% milkfat",
+  "f": 2.27,
+  "c": 4.76,
+  "kcal": 81.0,
+  "p": 10.45
+ },
+ "apple": {
+  "fdc": 171688,
+  "desc": "Apples, raw, with skin (Includes foods for USDA's Food Distribution Program)",
+  "c": 13.81,
+  "kcal": 52.0,
+  "f": 0.17,
+  "p": 0.26
+ },
+ "honey": {
+  "fdc": 169640,
+  "desc": "Honey",
+  "p": 0.3,
+  "f": 0.0,
+  "c": 82.4,
+  "kcal": 304.0
+ },
+ "tomatoes": {
+  "fdc": 170051,
+  "desc": "Tomatoes, red, ripe, canned, packed in tomato juice",
+  "f": 0.25,
+  "c": 3.47,
+  "kcal": 16.0,
+  "p": 0.79
+ },
+ "marinara": {
+  "fdc": 171192,
+  "desc": "Sauce, pasta, spaghetti/marinara, ready-to-serve",
+  "f": 1.61,
+  "c": 7.43,
+  "kcal": 50.0,
+  "p": 1.39
+ },
+ "beef": {
+  "fdc": 174755,
+  "desc": "Beef, ground, 93% lean meat / 7% fat, crumbles, cooked, pan-browned",
+  "f": 9.51,
+  "c": 0.0,
+  "p": 28.88,
+  "kcal": 209.0
+ },
+ "almonds": {
+  "fdc": 170567,
+  "desc": "Nuts, almonds",
+  "p": 21.15,
+  "f": 49.93,
+  "c": 21.55,
+  "kcal": 579.0
+ },
+ "tuna": {
+  "fdc": 173709,
+  "desc": "Fish, tuna, light, canned in water, drained solids",
+  "f": 0.96,
+  "kcal": 86.0,
+  "p": 19.44,
+  "c": 0.0
+ }
+}

@@ -57,6 +57,8 @@ class OldDataTest {
         assertEquals(CalfStatus(), d.calf)
         assertTrue(d.calfTests.isEmpty() && d.calfDays.isEmpty())
         assertEquals(0, d.whatsNewSeen)
+        assertFalse(d.nutrition.enabled)
+        assertTrue(d.mealChecks.isEmpty() && d.shopChecks.isEmpty() && d.weighIns.isEmpty())
 
         val day0 = d.logs.getValue(0)
         assertEquals(DayStatus.DONE, day0.status)
@@ -90,6 +92,10 @@ class OldDataTest {
             calfTests = listOf(com.feidbo.marathon.core.CalfTest(21, soreReps = 18, otherReps = 31, hops = null)),
             calfDays = setOf(20, 21),
             whatsNewSeen = 2,
+            nutrition = com.feidbo.marathon.core.NutritionProfile(enabled = true, weightLb = 182.5, age = 33, bodyFatPct = 20.5, deficitPct = 15),
+            mealChecks = mapOf(20 to setOf("BREAKFAST", "LUNCH", "DINNER", "SNACK", "fuel1"), 21 to setOf("LUNCH")),
+            shopChecks = mapOf(5 to setOf("chicken", "rice")),
+            weighIns = listOf(com.feidbo.marathon.core.WeighIn(20, 184.0), com.feidbo.marathon.core.WeighIn(27, 182.5)),
             logs = d.logs + (5 to d.logs.getValue(0).copy(
                 dayIndex = 5,
                 run = d.logs.getValue(0).run!!.copy(avgHr = 148),
