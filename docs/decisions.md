@@ -261,3 +261,15 @@ I re-read each decision against the evidence logs for overstatement:
 - **Strength order by equipment:** dumbbells (split squat, both calf raises, single-leg RDL, and the
   dumbbell row when chosen), then bodyweight (side-lying abduction, hops, curl-ups, Russian twists), then
   the machine — the assisted pull-up, always last.
+
+### Amendment, Nov 18 2026 — three meals, lighter breakfast (your request)
+
+- **No snacks; three meals.** Breakfast both weeks: 2 Food Hero Veggie Quiche Muffins with 200 g Greek
+  yogurt and a scoop of protein powder (≈ 440 kcal, ≈ 48 g protein). Breakfast burritos removed.
+- **Bigger lunches and dinners:** Chicken Pepper Bake 2½ cups; Chicken & Black Bean Salsa Burritos 1½;
+  Sweet and Sour Chicken 2½ cups over 1 cup rice; **Chicken Cabbage Stir-Fry** (Food Hero) 3½ cups over
+  1½ cups rice. The stir-fry replaces Beef and Broccoli, whose label (13 g protein per cup) could not reach
+  the protein target without a snack.
+- Menus: week A ≈ 1,820 kcal and 178 g protein; week B ≈ 1,870 kcal and 170 g protein, before fuel servings.
+- With three meals, protein per meal (≈ 50–80 g) is above the 20–40 g per meal in the ISSN stand (T5); the app
+  says so and notes timing has little effect on fat loss (T1).

@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /** Bump when there's a new "What's new" note to show once after updating. */
-const val WHATS_NEW_VERSION = 6
+const val WHATS_NEW_VERSION = 7
 
 /** One change from the original plan document, with what it rests on (docs/decisions.md, docs/evidence/). */
 private class Amendment(val title: String, val was: String, val now: String, val evidence: String, val strength: String)
@@ -92,7 +92,7 @@ private val amendments = listOf(
     Amendment(
         "Meal plan (new, optional)",
         "—",
-        "Food tab: four meals a day from kitchen-tested Food Hero recipes (Oregon State University Extension), cooked once " +
+        "Food tab: three meals a day (no snacks, light breakfast) from kitchen-tested Food Hero recipes (Oregon State University Extension), cooked once " +
             "a week, plus carbohydrate \"fuel servings\" that scale with the day's miles. About " +
             "18% under maintenance (roughly 1 lb a week) and about 2 g of protein per kg; no deficit in the taper or on " +
             "race days. Shows a warning when a day falls under the low-energy line.",
@@ -208,6 +208,8 @@ fun WhatsNewDialog(onDismiss: () -> Unit, onOpenAmendments: () -> Unit) {
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(
+                    "🥣 Three meals, no snacks: a light breakfast (2 veggie quiche muffins + protein yogurt) and bigger " +
+                        "lunches and dinners. The chicken cabbage stir-fry replaces beef and broccoli to keep protein up.",
                     "🍳 New recipes: all six meals are now kitchen-tested Food Hero recipes (Oregon State University), " +
                         "shown exactly as published, with their own nutrition labels. One cook on Sunday covers the week.",
                     "🌀 Russian twists replace the towel roll-out.",

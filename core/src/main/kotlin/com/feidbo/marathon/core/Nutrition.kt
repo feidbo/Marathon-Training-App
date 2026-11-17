@@ -46,8 +46,9 @@ data class Ingredient(
     val macros: Macros get() = Macros(food.kcal * grams / 100, food.protein * grams / 100, food.carbs * grams / 100, food.fat * grams / 100)
 }
 
+/** Three meals a day, no snacks (user request, Nov 2026). Fuel servings are extras, not a slot. */
 enum class MealSlot(val title: String, val emoji: String) {
-    BREAKFAST("Breakfast", "🥣"), LUNCH("Lunch", "🍱"), DINNER("Dinner", "🍽️"), SNACK("Snack", "🥤")
+    BREAKFAST("Breakfast", "🥣"), LUNCH("Lunch", "🍱"), DINNER("Dinner", "🍽️")
 }
 
 /** One line of a published recipe, plus what it means for the shopping list ([dept] null = not bought, e.g. water). */
@@ -71,7 +72,8 @@ data class Recipe(
 
 data class Meal(
     val id: String,
-    val slot: MealSlot,
+    /** Null for a fuel serving, which isn't one of the day's meals. */
+    val slot: MealSlot?,
     val name: String,
     /** Plain foods eaten with it (or the whole meal, when there's no recipe). */
     val items: List<Ingredient>,
@@ -112,7 +114,7 @@ data class DayTarget(
     val kcal: Int,
     val deficit: Boolean,
     val proteinG: Int,
-    /** Extra carbohydrate servings (about 250 kcal each) on top of the four base meals. */
+    /** Extra carbohydrate servings (about 250 kcal each) on top of the three meals. */
     val fuelServings: Int,
     /** (Energy eaten − running energy) ÷ fat-free mass, kcal per kg. Below 30 is the research warning line. */
     val energyAvailability: Double,
@@ -153,65 +155,55 @@ object Nutrition {
 
     /**
      * Two weekly menus of Food Hero recipes (Oregon State University Extension: recipes tested in a test kitchen
-     * and analysed for nutrition), in the styles you picked: Tex-Mex, Asian-style, and simple roasted. Portions
-     * are multiples of each recipe's own serving; the only additions are plain foods (Greek yogurt, a protein
-     * shake scoop, a banana, plain rice) to reach the protein target.
+     * and analysed for nutrition), in the styles you picked: Tex-Mex, Asian-style, and simple roasted. Three meals,
+     * no snacks, and a light breakfast (user request, Nov 2026); lunch and dinner carry most of the food. Portions
+     * are multiples of each recipe's own serving; the only additions are plain foods (Greek yogurt, a scoop of
+     * protein powder, plain rice) to reach the protein target.
      */
     val meals: List<Meal> = listOf(
-        Meal("b_burrito", MealSlot.BREAKFAST, "Breakfast burrito", emptyList(),
-            "1 whole burrito (the recipe's 2 half-burrito servings).",
-            "Hotel: scrambled eggs, beans or potatoes, and toast or a tortilla.",
-            recipeId = "breakfast-burritos", recipeServings = 2.0),
-        Meal("b_quiche", MealSlot.BREAKFAST, "Veggie quiche muffins + Greek yogurt", listOf(
-            ing("yogurt", 200, "Plain nonfat Greek yogurt"),
-        ), "4 muffins with a tub of Greek yogurt.",
-            "Hotel: eggs or an omelette, plus a Greek yogurt.",
-            recipeId = "veggie-quiche-muffins", recipeServings = 4.0),
+        breakfast("b_quiche_a"),
+        breakfast("b_quiche_b"),
         Meal("l_pepper_bake", MealSlot.LUNCH, "Chicken pepper bake", emptyList(),
-            "2 cups.",
+            "2½ cups.",
             "Restaurant: grilled chicken with roasted potatoes and vegetables.",
-            recipeId = "chicken-pepper-bake", recipeServings = 2.0),
-        Meal("l_bean_burrito", MealSlot.LUNCH, "Chicken & black bean salsa burrito", emptyList(),
-            "1 whole burrito (the recipe's 2 half-burrito servings).",
+            recipeId = "chicken-pepper-bake", recipeServings = 2.5),
+        Meal("l_bean_burrito", MealSlot.LUNCH, "Chicken & black bean salsa burritos", emptyList(),
+            "1½ burritos (the recipe's 3 half-burrito servings).",
             "Restaurant: a chicken burrito or burrito bowl with black beans; go easy on cheese and sour cream.",
-            recipeId = "chicken-and-black-bean-salsa-burritos", recipeServings = 2.0),
+            recipeId = "chicken-and-black-bean-salsa-burritos", recipeServings = 3.0),
         Meal("d_sweet_sour", MealSlot.DINNER, "Sweet and sour chicken over rice", listOf(
             ing("rice", 158, "White rice (cooked)", "1 cup cooked", unitGrams = 158, unitName = "cups cooked"),
-        ), "2 cups over 1 cup of cooked rice (the recipe's note: serve over rice).",
+        ), "2½ cups over 1 cup of cooked rice (the recipe's note: serve over rice).",
             "Restaurant: a chicken stir-fry with steamed rice.",
-            recipeId = "sweet-and-sour-chicken", recipeServings = 2.0),
-        Meal("d_beef_broccoli", MealSlot.DINNER, "Beef and broccoli", emptyList(),
-            "2½ cups (the bulgur is already in the recipe).",
-            "Restaurant: beef and broccoli with steamed rice.",
-            recipeId = "beef-and-broccoli", recipeServings = 2.5),
-        Meal("s_protein_yogurt", MealSlot.SNACK, "Protein yogurt & banana", listOf(
-            ing("yogurt", 300, "Plain nonfat Greek yogurt"),
-            ing("whey", 30, "Whey protein isolate powder", "1 scoop (30 g); app uses USDA's 17 g protein — your tub's label may say more",
-                unitGrams = 30, unitName = "scoops"),
-            ing("banana", 118, "Banana", "1 medium", unitGrams = 118, unitName = "bananas"),
-        ), "Stir the scoop of protein powder into the yogurt; banana on the side. Nothing to cook.",
-            "Any shop: two Greek yogurt cups and a banana, or a protein shake and a banana."),
-        Meal("s_protein_yogurt_b", MealSlot.SNACK, "Protein yogurt & banana", listOf(
-            ing("yogurt", 300, "Plain nonfat Greek yogurt"),
-            ing("whey", 30, "Whey protein isolate powder", "1 scoop (30 g); app uses USDA's 17 g protein — your tub's label may say more",
-                unitGrams = 30, unitName = "scoops"),
-            ing("banana", 118, "Banana", "1 medium", unitGrams = 118, unitName = "bananas"),
-        ), "Stir the scoop of protein powder into the yogurt; banana on the side. Nothing to cook.",
-            "Any shop: two Greek yogurt cups and a banana, or a protein shake and a banana."),
+            recipeId = "sweet-and-sour-chicken", recipeServings = 2.5),
+        Meal("d_cabbage_stir_fry", MealSlot.DINNER, "Chicken cabbage stir-fry over rice", listOf(
+            ing("rice", 237, "White rice (cooked)", "1½ cups cooked", unitGrams = 158, unitName = "cups cooked"),
+        ), "3½ cups over 1½ cups of cooked rice.",
+            "Restaurant: a chicken and vegetable stir-fry with steamed rice.",
+            recipeId = "chicken-cabbage-stir-fry", recipeServings = 3.5),
     )
+
+    /** The light breakfast, the same both weeks: 2 quiche muffins and Greek yogurt with a scoop of protein powder. */
+    private fun breakfast(id: String) = Meal(id, MealSlot.BREAKFAST, "Veggie quiche muffins + protein yogurt", listOf(
+        ing("yogurt", 200, "Plain nonfat Greek yogurt"),
+        ing("whey", 30, "Whey protein isolate powder", "1 scoop (30 g); app uses USDA's 17 g protein — your tub's label may say more",
+            unitGrams = 30, unitName = "scoops"),
+    ), "2 muffins, and a tub of Greek yogurt with the scoop of protein powder stirred in.",
+        "Hotel: an omelette or two eggs, plus a Greek yogurt.",
+        recipeId = "veggie-quiche-muffins", recipeServings = 2.0)
 
     /** One "fuel serving" is any one of these: about 250 kcal, almost all carbohydrate. */
     val fuelOptions: List<Meal> = listOf(
-        Meal("f_bagel", MealSlot.SNACK, "1 plain bagel", listOf(ing("bagel", 99, "Plain bagels", "1 bagel", unitGrams = 99, unitName = "bagels")), "", ""),
-        Meal("f_rice", MealSlot.SNACK, "1¼ cups cooked rice (add to lunch or dinner)", listOf(ing("rice", 198, "White rice (cooked)", unitGrams = 158, unitName = "cups cooked")), "", ""),
-        Meal("f_banana", MealSlot.SNACK, "2 bananas with a little honey", listOf(ing("banana", 236, "Banana", "2 medium", unitGrams = 118, unitName = "bananas"), ing("honey", 14, "Honey", "2 tsp", unitGrams = 7, unitName = "tsp")), "", ""),
-        Meal("f_toast", MealSlot.SNACK, "2 slices of toast with honey", listOf(ing("bread", 64, "Whole-wheat bread", "2 slices", unitGrams = 32, unitName = "slices"), ing("honey", 21, "Honey", "1 tbsp", unitGrams = 7, unitName = "tsp")), "", ""),
+        Meal("f_bagel", null, "1 plain bagel", listOf(ing("bagel", 99, "Plain bagels", "1 bagel", unitGrams = 99, unitName = "bagels")), "", ""),
+        Meal("f_rice", null, "1¼ cups cooked rice (add to lunch or dinner)", listOf(ing("rice", 198, "White rice (cooked)", unitGrams = 158, unitName = "cups cooked")), "", ""),
+        Meal("f_banana", null, "2 bananas with a little honey", listOf(ing("banana", 236, "Banana", "2 medium", unitGrams = 118, unitName = "bananas"), ing("honey", 14, "Honey", "2 tsp", unitGrams = 7, unitName = "tsp")), "", ""),
+        Meal("f_toast", null, "2 slices of toast with honey", listOf(ing("bread", 64, "Whole-wheat bread", "2 slices", unitGrams = 32, unitName = "slices"), ing("honey", 21, "Honey", "1 tbsp", unitGrams = 7, unitName = "tsp")), "", ""),
     )
 
     fun mealsFor(slot: MealSlot): List<Meal> = meals.filter { it.slot == slot }
 
     /**
-     * One prep session a week (Sunday, for the Monday–Sunday plan week that follows): the same four meals
+     * One prep session a week (Sunday, for the Monday–Sunday plan week that follows): the same three meals
      * all week, and the other set the week after, so there is one batch of each to cook.
      */
     fun scheduled(slot: MealSlot, week: Int): Meal = mealsFor(slot)[Math.floorMod(week, 2)]
@@ -233,8 +225,9 @@ object Nutrition {
         "The clock matters far less than the total" to "Meal timing and frequency \"appear to have little effect on fat loss or " +
             "lean mass retention\" (Helms 2014); a meta-analysis found no reliable benefit from more frequent meals " +
             "(Schoenfeld 2015). Hitting the day's calories and protein is what does the cutting.",
-        "Protein in every meal, 3–4 hours apart" to "20–40 g per meal, spread evenly across the day (Jäger 2017). Your four " +
-            "meals each carry 27–60 g, so: breakfast, lunch, the snack mid-afternoon, dinner.",
+        "Protein in every meal" to "The position stand suggests 20–40 g per meal, every 3–4 hours (Jäger 2017). With three " +
+            "meals and no snacks yours are bigger (about 50–80 g) and further apart; that's fine for fat loss, since " +
+            "timing and frequency appear to have little effect on it (Helms 2014).",
         "Carbs around your run" to "Eat your fuel servings in the hours before the run and straight after it. On runs over " +
             "an hour take 30–60 g of carbohydrate per hour, and have a protein meal within 2 hours of finishing (Vitale 2019).",
         "Fasted morning runs don't burn more fat" to "Fat loss was the same fasted or fed in a 4-week trial on a calorie " +
@@ -244,7 +237,7 @@ object Nutrition {
             "overweight non-athletes. Not built into this plan.",
     )
 
-    /** Calories in a week's four base meals. */
+    /** Calories in a week's three meals. */
     fun baseKcal(week: Int): Int = MealSlot.entries.sumOf { scheduled(it, week).macros.kcal }.roundToInt()
 
     fun target(p: NutritionProfile, day: PlannedDay): DayTarget {
@@ -304,7 +297,7 @@ object Nutrition {
             }
         }
         // Things bought whole (a count, cloves, cans) round up: you can't buy half an onion.
-        fun whole(unit: String) = unit.isEmpty() || unit == "clove" || unit.startsWith("can")
+        fun whole(unit: String) = unit.isEmpty() || unit == "clove" || unit == "head" || unit.startsWith("can")
         val fromRecipes = recipeAmounts.map { (k, amt) ->
             val a = amt?.let { if (whole(k.unit)) kotlin.math.ceil(it - 1e-9) else it }
             ShopItem("r:${k.item}:${k.unit}", k.item, if (a == null) "to taste" else unitAmount(a, k.unit), k.dept)
@@ -363,6 +356,7 @@ fun unitAmount(x: Double, unit: String): String {
         unit == "cup" && x > 1.0 -> "cups"
         unit == "cups" && x <= 1.0 -> "cup"
         unit == "clove" && x > 1.0 -> "cloves"
+        unit == "head" && x > 1.0 -> "heads"
         unit.startsWith("can") && x > 1.0 -> unit.replaceFirst("can", "cans")
         else -> unit
     }

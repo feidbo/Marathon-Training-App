@@ -678,7 +678,7 @@ class NutritionTest {
         for (week in 0..1) {
             val m = MealSlot.entries.map { Nutrition.scheduled(it, week).macros }.reduce { a, b -> a + b }
             assertTrue("protein ${m.protein}", m.protein >= 165)
-            assertTrue("kcal ${m.kcal}", m.kcal in 1850.0..2100.0)
+            assertTrue("kcal ${m.kcal}", m.kcal in 1750.0..2100.0)
             assertTrue("fat share", m.fat * 9 / m.kcal >= 0.15)
         }
         assertTrue(Nutrition.fuelOptions.all { it.macros.kcal in 215.0..275.0 })
@@ -686,7 +686,7 @@ class NutritionTest {
 
     @Test fun recipesAreFoodHerosAsPublished() {
         val recipes = Nutrition.meals.mapNotNull { it.recipe }
-        assertEquals(6, recipes.toSet().size)
+        assertEquals(5, recipes.toSet().size)   // quiche muffins (both weeks) + 2 lunches + 2 dinners
         for (r in recipes) {
             assertTrue(r.url, r.url.startsWith("https://foodhero.org/recipes/"))
             assertTrue(r.ingredients.isNotEmpty() && r.steps.isNotEmpty())
@@ -694,8 +694,11 @@ class NutritionTest {
             val m = r.perServing
             assertEquals(r.title, m.kcal, 4 * m.protein + 4 * m.carbs + 9 * m.fat, 0.15 * m.kcal + 10)
         }
-        // Beef and broccoli as published: ¾ pound lean ground beef per batch.
-        assertEquals("¾ pound lean ground beef", foodHeroRecipes.getValue("beef-and-broccoli").ingredients.first().line)
+        // As published: the stir-fry starts with 3 chicken breast halves.
+        assertEquals("3 chicken breast halves, cut into strips", foodHeroRecipes.getValue("chicken-cabbage-stir-fry").ingredients.first().line)
+        // Three meals, no snack; a light breakfast.
+        assertEquals(3, MealSlot.entries.size)
+        for (w in 0..1) assertTrue(Nutrition.scheduled(MealSlot.BREAKFAST, w).macros.kcal < 500)
     }
 
     @Test fun shoppingListScalesTheRecipesForOneCookPerWeek() {

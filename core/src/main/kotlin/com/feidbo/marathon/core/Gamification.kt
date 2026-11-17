@@ -35,7 +35,7 @@ object Game {
     /** XP for doing the day's calf-guidance exercises. */
     const val CALF_XP = 5
 
-    /** XP for ticking off all four meals of the day's meal plan. */
+    /** XP for ticking off all of the day's meals. */
     const val MEALS_XP = 5
 
     /** XP for a day's log. Honest "couldn't do it" logs still earn a little: listening to your body counts. */

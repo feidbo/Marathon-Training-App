@@ -125,7 +125,7 @@ fun FoodScreen(state: UiState, actions: FoodActions) {
         SectionCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Today's meals", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                Text("all four: +${Game.MEALS_XP} XP", style = MaterialTheme.typography.labelMedium,
+                Text("all three: +${Game.MEALS_XP} XP", style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             MealSlot.entries.forEach { slot ->
@@ -294,7 +294,7 @@ private fun PrepCard(week: Int) {
                 modifier = Modifier.padding(top = 6.dp))
             Nutrition.prepBatches(week + 1).forEach { b ->
                 val made = b.batches * b.recipe.servings
-                Text("${b.forMeal.slot.emoji}  ${b.recipe.title} × ${com.feidbo.marathon.core.amountText(b.batches)}",
+                Text("${b.forMeal.slot?.emoji ?: ""}  ${b.recipe.title} × ${com.feidbo.marathon.core.amountText(b.batches)}",
                     style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 6.dp))
                 Text("${com.feidbo.marathon.core.amountText(b.batches)} times the recipe (${com.feidbo.marathon.core.amountText(made)} " +
                     "label servings) for 7 × ${b.forMeal.prep.removeSuffix(".")}",
@@ -317,7 +317,7 @@ private fun TimingCard() {
             Text("⏰  When to eat", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             Text(if (open) "Hide" else "Show", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         }
-        Text("Protein in each of the four meals, 3–4 hours apart; fuel servings around your run.",
+        Text("Protein in each of your three meals; fuel servings around your run.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (open) {
             Nutrition.timing.forEach { (title, text) ->
