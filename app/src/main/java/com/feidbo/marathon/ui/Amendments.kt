@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /** Bump when there's a new "What's new" note to show once after updating. */
-const val WHATS_NEW_VERSION = 4
+const val WHATS_NEW_VERSION = 5
 
 /** One change from the original plan document, with what it rests on (docs/decisions.md, docs/evidence/). */
 private class Amendment(val title: String, val was: String, val now: String, val evidence: String, val strength: String)
@@ -56,7 +56,8 @@ private val amendments = listOf(
     Amendment(
         "Dumbbell / bodyweight routine",
         "Leg press, leg-press calf raise, hip thrust machine, hip abductor, seated leg curl, assisted pull-up.",
-        "Bulgarian split squat · single-leg calf raise, knee straight · single-leg calf raise, knee bent (new) · " +
+        "Bulgarian split squat · single-leg calf raise, 2 × 20 fast then 2 × 20 slow (your change; the bent-knee raise " +
+            "now appears only in the calf guidance) · " +
             "single-leg RDL (or sliding leg curl) · side-lying hip abduction (then side plank) · assisted pull-up last, " +
             "only when there's a machine. The hip thrust was dropped at your request. Each has a bodyweight version. Your machine history is kept; " +
             "the new exercises start fresh benchmarks.",
@@ -204,6 +205,8 @@ fun WhatsNewDialog(onDismiss: () -> Unit, onOpenAmendments: () -> Unit) {
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(
+                    "🦵 Calf raises are now 2 × 20 fast, then 2 × 20 slow (the bent-knee raise is out). Expect a lighter " +
+                        "dumbbell suggestion for 20 reps.",
                     "🥗 New Food tab: prep-ahead meals to tick off, a weekly shopping list, daily calorie and protein " +
                         "targets that follow your mileage, and a weekly weigh-in. Turn it on from the Food tab.",
                     "🧱 Abs block: a held curl-up and a towel roll-out now finish every strength session.",

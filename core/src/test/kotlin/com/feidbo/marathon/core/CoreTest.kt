@@ -289,10 +289,10 @@ class ProgressionTest {
 
     @Test fun phase1PrescriptionMatchesDecisions() {
         assertEquals(3, squat.sets); assertEquals(10, squat.reps); assertEquals("8–10/leg", squat.repsShown)
-        assertEquals(2, calf.sets); assertEquals(12, calf.reps)
+        assertEquals(2, calf.sets); assertEquals(20, calf.reps)   // 2 × 20 fast, then 2 × 20 slow (user request)
         // Hip thrust removed; abduction second to last, pull-up last (user request, Nov 2026).
         // Then the dumbbell row beside the pull-up (do one), and the abs block to finish.
-        assertEquals(listOf("split_squat", "calf_raise_straight", "calf_raise_bent", "single_leg_rdl", "side_abduction",
+        assertEquals(listOf("split_squat", "calf_raise_straight", "calf_raise_slow", "single_leg_rdl", "side_abduction",
             "assisted_pull_up", "dumbbell_row", "curl_up", "ab_rollout"), p1.items.map { it.exercise.id })
         val row = p1.items.first { it.exercise.id == "dumbbell_row" }
         assertEquals(p1.items.first { it.exercise.id == "assisted_pull_up" }.sets, row.sets)
@@ -320,8 +320,17 @@ class ProgressionTest {
         val a = loadAdvice(squat, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "split_squat", 40.0, listOf(10, 10, 10), rir = 6)))!!
         assertEquals(LoadChange.BIG_UP, a.change)
         assertEquals(50.0, a.weight, 0.0)
-        val small = loadAdvice(calf, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "calf_raise_straight", 20.0, listOf(12, 12), rir = 6)))!!
+        val small = loadAdvice(calf, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "calf_raise_straight", 20.0, listOf(20, 20), rir = 6)))!!
         assertEquals(25.0, small.weight, 0.0)
+    }
+
+    @Test fun calfRaisesMovingFrom12To20RepsGetALighterDumbbellNotAMissedSet() {
+        // Logged under the old 2 × 12 prescription: 90 lb × 12 with plenty left. Today's target is 20 reps.
+        val a = loadAdvice(calf, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "calf_raise_straight", 90.0, listOf(12, 12), rir = 5)))!!
+        assertEquals(LoadChange.NEW_TARGET, a.change)
+        // Estimated max 90 × (1 + 17/30) = 141 lb → 20 reps with 3 left ≈ 80 lb → the 5-lb step below.
+        assertEquals(75.0, a.weight, 0.0)
+        assertTrue(a.reason.contains("New target"))
     }
 
     @Test fun onTargetHoldsAndMissedRepsBacksOff() {

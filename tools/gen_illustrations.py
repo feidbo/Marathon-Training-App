@@ -491,6 +491,7 @@ EXERCISES = {
     "split_squat": split_squat,
     "calf_raise_straight": calf_raise_straight,
     "calf_raise_bent": calf_raise_bent,
+    "calf_raise_slow": calf_raise_straight,
     "hip_thrust_db": hip_thrust_db,
     "side_abduction": side_abduction,
     "single_leg_rdl": single_leg_rdl,

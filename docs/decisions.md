@@ -230,3 +230,15 @@ I re-read each decision against the evidence logs for overstatement:
 - **Deficit left at 18%.** A test now checks that the menu as scheduled delivers 16–20% under maintenance
   and at least 165 g protein a day on average. Going faster is not supported: 0.5–1% of body weight a week
   keeps muscle (T1, N2), and the plan is already at the low-energy line on longer run days.
+
+### Amendment, Nov 17 2026 — calf raises (your request)
+
+- **Single-leg calf raise, 2 × 20 fast, then 2 × 20 slow** (about 3 s up, 3 s down), both knee straight;
+  1 set of each in Phase 3 and on light days. Reason given: 90 lb for 12 reps is limited by grip and arms,
+  not the calf. *Preference / Judgment (tempos are app defaults).*
+- **The bent-knee raise leaves the strength routine.** Trade-off noted in the app: it was the soleus
+  exercise (exercises C1, C2; calf K1) and a slow straight-knee raise does not replace that. It stays in
+  the calf guidance stages, and its logged sets stay in your history.
+- **Load suggestions:** when the last session's reps are 5 or more below today's target (as with 12 → 20),
+  the app converts through the estimated max instead of treating it as a missed set — e.g. 90 lb × 12 with
+  5 left suggests 75 lb for 20.

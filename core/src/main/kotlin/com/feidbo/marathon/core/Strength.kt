@@ -83,7 +83,7 @@ object Exercises {
             "back squats (Speirs 2016), with similar quad activity (Andersen 2014).",
     )
     val calfRaiseStraight = Exercise(
-        id = "calf_raise_straight", name = "Single-leg calf raise (knee straight)", block = "1b",
+        id = "calf_raise_straight", name = "Single-leg calf raise — fast", block = "1b",
         machine = "A step and one dumbbell",
         muscles = "Calves — mostly gastrocnemius", perSide = true, calf = true,
         weightLabel = "Dumbbell (lb)",
@@ -91,13 +91,32 @@ object Exercises {
             "Stand on one foot with the ball of the foot on a step edge, dumbbell in the same-side hand, other hand on a wall.",
             "Keep the knee straight (not locked).",
             "Lower your heel slowly below the step for a full stretch.",
-            "Rise as high as you can onto the ball of the foot, pause, then lower slowly. All reps, then the other leg.",
+            "Fast set: drive up quickly as high as you can, then lower under control — about a second each way. " +
+                "20 reps, then the other leg.",
         ),
-        cues = listOf("Full range: all the way down, all the way up.", "Slow on the way down."),
-        bodyweightName = "Single-leg calf raise, knee straight (bodyweight)",
+        cues = listOf("Full range every rep, even when it's quick.", "Quick up, controlled down — no bouncing off the bottom."),
+        bodyweightName = "Single-leg calf raise — fast (bodyweight)",
         bodyweightSteps = listOf("Same movement with no dumbbell."),
         why = "Knee straight shifts the work toward the gastrocnemius (Hébert-Losier 2012; Kovács 2024). " +
-            "12 per leg, as you asked.",
+            "2 × 20 fast is your choice (Nov 2026): at 12 reps the dumbbell got too heavy to hold before the calf was " +
+            "worked. The tempo is an app description, not from a study.",
+    )
+    val calfRaiseSlow = Exercise(
+        id = "calf_raise_slow", name = "Single-leg calf raise — slow", block = "1c",
+        machine = "A step and one dumbbell",
+        muscles = "Calves — mostly gastrocnemius", perSide = true, calf = true,
+        weightLabel = "Dumbbell (lb)",
+        steps = listOf(
+            "Same set-up as the fast raise: one foot on a step edge, knee straight, dumbbell in the same-side hand.",
+            "Slow set: take about 3 seconds up, pause at the top, and about 3 seconds down to a full stretch.",
+            "20 reps, then the other leg. Use less weight than the fast set if you need to.",
+        ),
+        cues = listOf("Count it: 3 up, pause, 3 down.", "Full range; no resting at the bottom."),
+        bodyweightName = "Single-leg calf raise — slow (bodyweight)",
+        bodyweightSteps = listOf("Same movement with no dumbbell."),
+        why = "Replaces the bent-knee raise at your request (Nov 2026). Note: the bent-knee raise was there to load the " +
+            "soleus (Kovács 2024; Green 2022); a slow straight-knee raise does not do that. The 3-second tempo is an " +
+            "app default, not from a study.",
     )
     val calfRaiseBent = Exercise(
         id = "calf_raise_bent", name = "Single-leg calf raise (knee bent)", block = "1c",
@@ -318,14 +337,16 @@ object Exercises {
     val abductionMachine = retired("hip_abduction", "Hip abduction (machine)", "Glute medius")
     val legCurlMachine = retired("leg_curl", "Seated leg curl (machine)", "Hamstrings")
 
-    val routine = listOf(splitSquat, calfRaiseStraight, calfRaiseBent, singleLegRdl, sideAbduction, pullUp, dumbbellRow, curlUp, rollOut)
+    val routine = listOf(splitSquat, calfRaiseStraight, calfRaiseSlow, singleLegRdl, sideAbduction, pullUp, dumbbellRow, curlUp, rollOut)
     /** The pulling slot: do one of these — the pull-up with a machine, the row without. */
     val pullChoices = listOf(pullUp, dumbbellRow)
     /** Dropped from the routine but kept so logged sets still show. */
     val retiredOther = listOf(hipThrust)
+    /** Not in the strength routine any more, but still used by the calf guidance and kept for history. */
+    val formerRoutine = listOf(calfRaiseBent)
     val stretches = listOf(quadStretch, calfStretchStraight, calfStretchBent)
     val retiredMachines = listOf(legPress, legPressCalf, hipThrustMachine, abductionMachine, legCurlMachine)
-    val all = routine + pogoHops + stretches + calfIsometric + retiredOther + retiredMachines
+    val all = routine + calfRaiseBent + pogoHops + stretches + calfIsometric + retiredOther + retiredMachines
     fun byId(id: String): Exercise? = all.firstOrNull { it.id == id }
 }
 
@@ -357,7 +378,7 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
         StrengthKind.NONE -> null
         StrengthKind.LEARN -> StrengthSession(
             kind, build(listOf(
-                p(e.splitSquat, 1, 10), p(e.calfRaiseStraight, 1, 12), p(e.calfRaiseBent, 1, 12),
+                p(e.splitSquat, 1, 10), p(e.calfRaiseStraight, 1, 20), p(e.calfRaiseSlow, 1, 20),
                 p(e.singleLegRdl, 1, 10), p(e.sideAbduction, 1, 12), p(e.pullUp, 1, 8),
             )) + abs(1),
             effort = "Light — learn the movements and pick starting weights",
@@ -366,7 +387,7 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
         )
         StrengthKind.PHASE1 -> StrengthSession(
             kind, build(listOf(
-                p(e.splitSquat, 3, 10, "8–10"), p(e.calfRaiseStraight, 2, 12), p(e.calfRaiseBent, 2, 12),
+                p(e.splitSquat, 3, 10, "8–10"), p(e.calfRaiseStraight, 2, 20), p(e.calfRaiseSlow, 2, 20),
                 p(e.singleLegRdl, 3, 10, "8–10"), p(e.sideAbduction, 2, 12), p(e.pullUp, 2, 8),
             )) + abs(2),
             effort = "Hard, about 3 reps left in the tank",
@@ -375,7 +396,7 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
         )
         StrengthKind.PHASE2 -> StrengthSession(
             kind, build(listOf(
-                p(e.splitSquat, 3, 6, "5–6"), p(e.calfRaiseStraight, 2, 12), p(e.calfRaiseBent, 2, 12),
+                p(e.splitSquat, 3, 6, "5–6"), p(e.calfRaiseStraight, 2, 20), p(e.calfRaiseSlow, 2, 20),
                 p(e.singleLegRdl, 3, 6, "5–6"), p(e.sideAbduction, 2, 12), p(e.pullUp, 2, 8),
             ) + if (plyo) listOf(p(e.pogoHops, 3, 10)) else emptyList()) + abs(2),
             effort = "Heavy, about 2 reps left in the tank",
@@ -385,7 +406,7 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
         )
         StrengthKind.PHASE3 -> StrengthSession(
             kind, build(listOf(
-                p(e.splitSquat, 2, 5), p(e.calfRaiseStraight, 1, 12), p(e.calfRaiseBent, 1, 12),
+                p(e.splitSquat, 2, 5), p(e.calfRaiseStraight, 1, 20), p(e.calfRaiseSlow, 1, 20),
                 p(e.singleLegRdl, 2, 5), p(e.sideAbduction, 1, 12), p(e.pullUp, 1, 8),
             ) + if (plyo) listOf(p(e.pogoHops, 2, 10)) else emptyList()) + abs(2),
             effort = "Heavy, about 2 reps left in the tank — keep the loads heavy",
@@ -394,7 +415,7 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
         )
         StrengthKind.LIGHT -> StrengthSession(
             kind, build(listOf(
-                p(e.splitSquat, 1, 5), p(e.calfRaiseStraight, 1, 12), p(e.calfRaiseBent, 1, 12),
+                p(e.splitSquat, 1, 5), p(e.calfRaiseStraight, 1, 20), p(e.calfRaiseSlow, 1, 20),
                 p(e.singleLegRdl, 1, 5), p(e.sideAbduction, 1, 12), p(e.pullUp, 1, 8),
             )) + abs(1),
             effort = "Light — about 60% of your working weight",

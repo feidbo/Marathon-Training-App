@@ -198,6 +198,23 @@ internal val illustrations: Map<String, Illustration> = mapOf(
             Chain(floatArrayOf(47.57f, 27.14f, 61.27f, 30.03f, 73.99f, 32.73f), floatArrayOf(47.57f, 21.90f, 60.69f, 26.79f, 72.87f, 31.34f), far = false),
         ),
     ),
+    "calf_raise_slow" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+            Shape(ShapeKind.RECT, floatArrayOf(55.00f, 88.00f, 30.00f, 4.00f, 55.00f, 88.00f, 30.00f, 4.00f), 0.00f, ShapeStyle.PAD),
+            Shape(ShapeKind.LINE, floatArrayOf(84.00f, 8.00f, 84.00f, 92.00f, 84.00f, 8.00f, 84.00f, 92.00f), 3.00f, ShapeStyle.FRAME),
+            Shape(ShapeKind.CIRCLE, floatArrayOf(57.01f, 52.42f, 3.20f, 57.01f, 47.18f, 3.20f), 0.00f, ShapeStyle.WEIGHT),
+        ),
+        head = floatArrayOf(52.22f, 11.94f, 52.22f, 6.70f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(56.01f, 47.42f, 38.46f, 58.95f, 39.51f, 78.92f, 43.01f, 84.98f), floatArrayOf(56.01f, 42.18f, 38.46f, 53.71f, 39.51f, 73.68f, 43.01f, 79.74f), far = true),
+            Chain(floatArrayOf(55.07f, 20.44f, 54.82f, 34.44f, 54.59f, 47.44f), floatArrayOf(55.07f, 15.20f, 54.82f, 29.20f, 54.59f, 42.20f), far = true),
+            Chain(floatArrayOf(53.51f, 48.92f, 55.98f, 69.77f, 53.51f, 89.62f, 60.00f, 87.00f), floatArrayOf(53.51f, 43.68f, 55.98f, 64.53f, 53.51f, 84.38f, 60.00f, 87.00f), far = false),
+            Chain(floatArrayOf(53.51f, 48.92f, 52.57f, 21.94f), floatArrayOf(53.51f, 43.68f, 52.57f, 16.70f), far = false),
+            Chain(floatArrayOf(52.57f, 21.94f, 65.39f, 27.57f, 77.29f, 32.81f), floatArrayOf(52.57f, 16.70f, 64.41f, 24.17f, 75.41f, 31.10f), far = false),
+        ),
+    ),
     "hip_thrust_db" to Illustration(
         shapes = listOf(
             Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),

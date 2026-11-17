@@ -111,7 +111,10 @@ fun loadAdvice(rx: Prescription, kind: StrengthKind, date: LocalDate, history: L
     val repsText = sets.joinToString(", ") { it.reps.toString() }
 
     // New rep target (Phase 1 → 2 → 3, or the first working session after learning the machines).
-    if (!inv && (lastTargetReps != rx.reps || last.strength == StrengthKind.LEARN)) {
+    // ...or the last session's reps were far from today's target (the prescription itself changed, e.g. 12 → 20):
+    // convert through the estimated max instead of calling it a missed set.
+    val repsFarOff = minReps > 0 && minReps <= rx.reps - 5
+    if (!inv && (lastTargetReps != rx.reps || last.strength == StrengthKind.LEARN || repsFarOff)) {
         val r = rir ?: lastTargetRir
         val oneRm = estimatedOneRepMax(lastW, minReps, r)
         var w = loadForReps(oneRm, rx.reps, session.targetRir)

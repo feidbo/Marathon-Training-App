@@ -271,7 +271,7 @@ private fun StrengthSummary(state: UiState, onOpenExercise: (String) -> Unit) {
         Text("Lifts: ${state.progress.strengthSessions} sessions", style = MaterialTheme.typography.titleMedium)
         val nextDay = state.schedule.days.firstOrNull { it.date >= state.today && it.day.strength.isPlanned && it.index !in state.logs }?.day
         // The current routine, then anything else you've logged (pogo hops, the old machine lifts) so no history is hidden.
-        val logged = (listOf(Exercises.pogoHops) + Exercises.retiredOther + Exercises.retiredMachines).filter { exerciseHistory(it.id, state.logs).isNotEmpty() }
+        val logged = (listOf(Exercises.pogoHops) + Exercises.formerRoutine + Exercises.retiredOther + Exercises.retiredMachines).filter { exerciseHistory(it.id, state.logs).isNotEmpty() }
         val retiredShown = logged.any { it.retired }
         (Exercises.routine + logged).forEach { ex ->
             if (ex.retired && ex == logged.first { it.retired } && retiredShown) {
