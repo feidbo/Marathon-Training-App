@@ -385,7 +385,8 @@ fun LogScreen(
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                         }
                         entries.forEach { e ->
-                            if (hasPullChoice && e.ex.id == pullIds.first()) {
+                            // The pick-one switch sits at whichever pulling exercise comes first (the row, in the dumbbell block).
+                            if (hasPullChoice && e === entries.first { it.ex.id in pullIds }) {
                                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.padding(top = 16.dp))
                                 Text("Pulling exercise — pick one:", style = MaterialTheme.typography.labelLarge,
                                     modifier = Modifier.padding(top = 8.dp))
@@ -393,6 +394,8 @@ fun LogScreen(
                                     FilterChip(selected = !useRow, onClick = { useRow = false; saveDraft() }, label = { Text("Pull-up machine") })
                                     FilterChip(selected = useRow, onClick = { useRow = true; saveDraft() }, label = { Text("Dumbbell row") })
                                 }
+                                Text(if (useRow) "The row goes here, with the other dumbbell exercises." else "The pull-up comes last, after the bodyweight block.",
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             if (hasPullChoice && hiddenPull(e)) return@forEach
                             ExerciseEditor(state, dayIndex, e, onChange = ::saveDraft) { nowDone ->

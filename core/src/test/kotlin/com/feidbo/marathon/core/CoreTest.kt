@@ -292,13 +292,21 @@ class ProgressionTest {
         assertEquals(2, calf.sets); assertEquals(20, calf.reps)   // 2 × 20 fast, then 2 × 20 slow (user request)
         // Hip thrust removed; abduction second to last, pull-up last (user request, Nov 2026).
         // Then the dumbbell row beside the pull-up (do one), and the abs block to finish.
-        assertEquals(listOf("split_squat", "calf_raise_straight", "calf_raise_slow", "single_leg_rdl", "side_abduction",
-            "assisted_pull_up", "dumbbell_row", "curl_up", "ab_rollout"), p1.items.map { it.exercise.id })
+        // Dumbbells, then bodyweight, then the machine; the pull-up is always last (user request, Nov 2026).
+        assertEquals(listOf("split_squat", "calf_raise_straight", "calf_raise_slow", "single_leg_rdl", "dumbbell_row",
+            "side_abduction", "curl_up", "russian_twist", "assisted_pull_up"), p1.items.map { it.exercise.id })
+        for (k in StrengthKind.entries) strengthSession(k)?.let { s ->
+            assertEquals("assisted_pull_up", s.items.last().exercise.id)
+            val groups = s.items.map { if (it.exercise.inverted) 2 else if (it.exercise.usesWeight) 0 else 1 }
+            assertEquals(groups.sorted(), groups)
+        }
+        assertTrue(strengthSession(StrengthKind.PHASE2)!!.items.map { it.exercise.id }.let { it.indexOf("pogo_hops") in it.indexOf("side_abduction")..it.indexOf("russian_twist") })
         val row = p1.items.first { it.exercise.id == "dumbbell_row" }
         assertEquals(p1.items.first { it.exercise.id == "assisted_pull_up" }.sets, row.sets)
         assertEquals("8–10/arm", row.repsShown)
         assertEquals("12–15", p1.items.first { it.exercise.id == "curl_up" }.repsShown)
-        assertEquals(listOf("curl_up", "ab_rollout"), strengthSession(StrengthKind.PHASE2)!!.items.takeLast(2).map { it.exercise.id })
+        assertTrue(strengthSession(StrengthKind.PHASE2)!!.items.map { it.exercise.id }.containsAll(listOf("curl_up", "russian_twist")))
+        assertTrue(Exercises.byId("ab_rollout")!!.retired)   // logged roll-outs still resolve
         assertNull(loadAdviceFor(p1.items.first { it.exercise.id == "curl_up" }, mon, emptyMap()))
         for (k in StrengthKind.entries) strengthSession(k)?.let { s -> assertTrue(s.items.none { it.exercise.id == "hip_thrust_db" }) }
         assertTrue(Exercises.byId("hip_thrust_db")!!.retired)   // logged sets still resolve
@@ -666,38 +674,63 @@ class NutritionTest {
         assertEquals((run.kcal - 4 * 117) / (83.46 * 0.79), run.energyAvailability, 0.3)
     }
 
-    @Test fun baseMealsHitProteinAndSitNearTheRestDayTarget() {
-        // Every combination of the two options per slot.
-        for (b in Nutrition.mealsFor(MealSlot.BREAKFAST)) for (l in Nutrition.mealsFor(MealSlot.LUNCH))
-            for (d in Nutrition.mealsFor(MealSlot.DINNER)) for (s in Nutrition.mealsFor(MealSlot.SNACK)) {
-                val m = b.macros + l.macros + d.macros + s.macros
-                assertTrue("protein ${m.protein}", m.protein >= 155)
-                assertTrue("kcal ${m.kcal}", m.kcal in 1950.0..2200.0)
-                assertTrue("fat share", m.fat * 9 / m.kcal >= 0.20)
-            }
+    @Test fun everyWeeklyMenuHitsProteinAndSitsNearTheRestDayTarget() {
+        for (week in 0..1) {
+            val m = MealSlot.entries.map { Nutrition.scheduled(it, week).macros }.reduce { a, b -> a + b }
+            assertTrue("protein ${m.protein}", m.protein >= 165)
+            assertTrue("kcal ${m.kcal}", m.kcal in 1850.0..2100.0)
+            assertTrue("fat share", m.fat * 9 / m.kcal >= 0.15)
+        }
         assertTrue(Nutrition.fuelOptions.all { it.macros.kcal in 215.0..275.0 })
     }
 
-    @Test fun shoppingListCoversTheWeekByDepartment() {
-        val week = Plan.weekDays(5)
-        assertEquals(7, week.size)
-        val list = Nutrition.shoppingList(p, week)
-        assertEquals(list.size, list.map { it.foodId }.toSet().size)
-        // One menu all week (one prep session): 7 portions of that week's lunch and dinner.
-        val lunch = Nutrition.scheduled(MealSlot.LUNCH, 5)
-        lunch.items.filter { it.foodId != "rice" && it.foodId != "broccoli" && it.foodId != "olive_oil" }
-            .forEach { i -> assertEquals(7 * i.grams, list.first { it.foodId == i.foodId }.grams) }
-        assertTrue(Nutrition.scheduled(MealSlot.LUNCH, 6).id != lunch.id)   // the menu swaps the next week
-        assertTrue(list.any { it.foodId == "bagel" })
-        // Grouped by department, in shop order.
+    @Test fun recipesAreFoodHerosAsPublished() {
+        val recipes = Nutrition.meals.mapNotNull { it.recipe }
+        assertEquals(6, recipes.toSet().size)
+        for (r in recipes) {
+            assertTrue(r.url, r.url.startsWith("https://foodhero.org/recipes/"))
+            assertTrue(r.ingredients.isNotEmpty() && r.steps.isNotEmpty())
+            // Label energy roughly matches its own macros (4/4/9 kcal per g), so a transcription slip would show.
+            val m = r.perServing
+            assertEquals(r.title, m.kcal, 4 * m.protein + 4 * m.carbs + 9 * m.fat, 0.15 * m.kcal + 10)
+        }
+        // Beef and broccoli as published: ¾ pound lean ground beef per batch.
+        assertEquals("¾ pound lean ground beef", foodHeroRecipes.getValue("beef-and-broccoli").ingredients.first().line)
+    }
+
+    @Test fun shoppingListScalesTheRecipesForOneCookPerWeek() {
+        val weekDays = Plan.weekDays(5)
+        val list = Nutrition.shoppingList(p, weekDays)
+        assertEquals(list.size, list.map { it.key }.toSet().size)
         assertEquals(list.map { it.dept.ordinal }.sorted(), list.map { it.dept.ordinal })
-        assertEquals(Dept.MEAT, list.first { it.foodId == "chicken" || it.foodId == "turkey" }.dept)
-        assertEquals(Dept.DAIRY, list.first { it.foodId == "yogurt" }.dept)
+        // Every recipe batch covers 7 days of its meal.
+        for (b in Nutrition.prepBatches(5)) assertTrue(b.recipe.title, b.batches * b.recipe.servings >= 7 * b.forMeal.recipeServings)
+        val batches = Nutrition.prepBatches(5).associate { it.recipe.id to it.batches }
+        val week5Ids = batches.keys
+        if ("chicken-pepper-bake" in week5Ids) {
+            assertEquals(3.0, batches.getValue("chicken-pepper-bake"), 0.0)          // 14 cups needed / 5 per batch
+            assertTrue(list.any { it.label == "Boneless chicken breast" && it.amount.startsWith("3") })
+        }
+        assertEquals(listOf(4.0, 3.0), listOf(amountText(4.0), amountText(3.0)).map { it.toDouble() })
+        assertEquals("2¼ lb", unitAmount(2.25, "lb"))
+        assertEquals("1 cup", unitAmount(1.0, "cups"))
+        assertEquals("2½ cans (15 oz)", unitAmount(2.5, "can (15 oz)"))
+        // One line per item: no "Oil" in both tsp and Tbsp, and whole counts for things bought whole — both menus.
+        assertEquals(list.size, list.map { it.label }.toSet().size)
+        val other = Nutrition.shoppingList(p, Plan.weekDays(6))
+        assertEquals(other.size, other.map { it.label }.toSet().size)
+        for (n in listOf("Onion, medium", "Garlic", "Carrot, large", "Green bell pepper")) {
+            list.firstOrNull { it.label == n }?.let { assertFalse(n, it.amount.contains("½")) }
+        }
     }
 
     @Test fun noFishOrPorkAnywhere() {
-        val names = (Nutrition.meals + Nutrition.fuelOptions).flatMap { m -> m.items.map { it.food.usdaName + " " + it.label + " " + m.name + " " + m.away } }
-        for (word in listOf("pork", "fish", "salmon", "tuna", "bacon", "ham ")) assertTrue(word, names.none { it.contains(word, ignoreCase = true) })
+        val words = listOf("pork", "fish", "salmon", "tuna", "bacon", "ham ", "sausage")
+        for (m in Nutrition.meals + Nutrition.fuelOptions) {
+            val text = (m.items.map { it.food.usdaName + " " + it.label } + listOfNotNull(m.recipe?.title) +
+                m.recipe?.ingredients.orEmpty().map { it.line } + m.name).joinToString(" ")
+            for (w in words) assertFalse("$w in ${m.name}", text.contains(w, ignoreCase = true))
+        }
     }
 
     @Test fun theMenuActuallyDeliversTheDeficit() {

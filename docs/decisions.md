@@ -242,3 +242,22 @@ I re-read each decision against the evidence logs for overstatement:
 - **Load suggestions:** when the last session's reps are 5 or more below today's target (as with 12 → 20),
   the app converts through the estimated max instead of treating it as a missed set — e.g. 90 lb × 12 with
   5 left suggests 75 lb for 20.
+
+### Amendment, Nov 18 2026 — recipes, abs, exercise order (your requests)
+
+- **Recipes replaced** after the first set (written by me, untested) was rejected. All six are now Food Hero
+  recipes (Oregon State University Extension Service, foodhero.org), which the site says are tested in its
+  test kitchen and analysed for nutrition. Ingredients, directions and notes are stored exactly as
+  published (`tools/foodhero_recipes.json`); nutrition per serving is transcribed from each recipe's label.
+  Week A: Breakfast Burritos, Chicken Pepper Bake, Sweet and Sour Chicken (over rice). Week B: Veggie Quiche
+  Muffins, Chicken and Black Bean Salsa Burritos, Beef and Broccoli. Portions are multiples of the
+  recipe's own servings; Greek yogurt, a protein-powder scoop, a banana and plain rice are the only
+  additions. Each week is cooked in one session (batches rounded up to a half batch). USDA MyPlate and
+  NIH were tried first and could not be reached from the build environment.
+- Storage beyond "refrigerate leftovers within 2 hours" (the recipes' own words) is labelled as general
+  food-safety practice, not from a checked source.
+- **Russian twist replaces the towel roll-out** (your pick, for ease). No study of the Russian twist was
+  found; it is labelled as such.
+- **Strength order by equipment:** dumbbells (split squat, both calf raises, single-leg RDL, and the
+  dumbbell row when chosen), then bodyweight (side-lying abduction, hops, curl-ups, Russian twists), then
+  the machine — the assisted pull-up, always last.

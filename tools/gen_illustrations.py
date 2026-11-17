@@ -480,6 +480,30 @@ def ab_rollout():
     return props, s, e
 
 
+def russian_twist():
+    # Front view, seated, leaning back a little, knees up; hands clasped swing from one hip to the other.
+    hip_y, sh_y = 76, 52
+    def pose(side):
+        sh_x = 50 + side * 4
+        lk, rk = (40, 60), (60, 60)
+        la, ra = (38, 86), (62, 86)
+        hands = (50 + side * 22, 68)
+        lsh, rsh = (sh_x - 8, sh_y), (sh_x + 8, sh_y)
+        le, _ = ik(lsh, hands, UPPER_ARM, FOREARM, 1 if side < 0 else -1)
+        re_, _ = ik(rsh, hands, UPPER_ARM, FOREARM, 1 if side < 0 else -1)
+        chains = [
+            ([(50, hip_y), (sh_x, sh_y)], False),
+            ([(44, hip_y), (56, hip_y)], False),
+            ([lsh, rsh], False),
+            ([(44, hip_y), lk, la, (la[0] - 5, 89)], True),
+            ([(56, hip_y), rk, ra, (ra[0] + 5, 89)], True),
+            ([lsh, hands], False),
+            ([rsh, hands], False),
+        ]
+        return (sh_x + side * 2, sh_y - 11), chains
+    return [FLOOR], pose(-1), pose(1)
+
+
 EXERCISES = {
     "leg_press": leg_press,
     "calf_raise": calf_raise,
@@ -503,6 +527,7 @@ EXERCISES = {
     "dumbbell_row": dumbbell_row,
     "curl_up": curl_up,
     "ab_rollout": ab_rollout,
+    "russian_twist": russian_twist,
 }
 
 

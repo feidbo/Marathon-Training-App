@@ -222,5 +222,13 @@
   "kcal": 86.0,
   "p": 19.44,
   "c": 0.0
+ },
+ "whey": {
+  "fdc": 173177,
+  "desc": "Beverages, Whey protein powder isolate",
+  "kcal": 359.0,
+  "p": 58.14,
+  "c": 29.07,
+  "f": 1.16
  }
 }

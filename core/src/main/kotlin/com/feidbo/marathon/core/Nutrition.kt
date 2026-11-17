@@ -11,6 +11,7 @@ data class Food(val id: String, val fdcId: Int, val usdaName: String, val kcal: 
 
 data class Macros(val kcal: Double, val protein: Double, val carbs: Double, val fat: Double) {
     operator fun plus(o: Macros) = Macros(kcal + o.kcal, protein + o.protein, carbs + o.carbs, fat + o.fat)
+    operator fun times(k: Double) = Macros(kcal * k, protein * k, carbs * k, fat * k)
     companion object { val ZERO = Macros(0.0, 0.0, 0.0, 0.0) }
 }
 
@@ -25,10 +26,21 @@ private val deptOf: Map<String, Dept> = mapOf(
     "yogurt" to Dept.DAIRY, "milk" to Dept.DAIRY, "egg" to Dept.DAIRY, "cottage" to Dept.DAIRY,
     "broccoli" to Dept.FROZEN, "blueberries" to Dept.FROZEN,
     "bread" to Dept.BAKERY, "bagel" to Dept.BAKERY,
+    "whey" to Dept.PANTRY, "rice" to Dept.PANTRY, "honey" to Dept.PANTRY,
 )
 
-/** [label] is what to buy or scoop; [hint] a household measure from USDA portion data where there is one. */
-data class Ingredient(val foodId: String, val grams: Int, val label: String, val hint: String = "") {
+/**
+ * A plain food added to a meal (not part of a recipe), with USDA values. [label] is what to buy; [hint] a household
+ * measure. For the shopping list, [unitGrams]/[unitName] turn grams into countable units (e.g. 118 g = 1 banana).
+ */
+data class Ingredient(
+    val foodId: String,
+    val grams: Int,
+    val label: String,
+    val hint: String = "",
+    val unitGrams: Int? = null,
+    val unitName: String = "",
+) {
     val food: Food get() = usdaFoods.getValue(foodId)
     val dept: Dept get() = deptOf[foodId] ?: Dept.PANTRY
     val macros: Macros get() = Macros(food.kcal * grams / 100, food.protein * grams / 100, food.carbs * grams / 100, food.fat * grams / 100)
@@ -38,17 +50,43 @@ enum class MealSlot(val title: String, val emoji: String) {
     BREAKFAST("Breakfast", "🥣"), LUNCH("Lunch", "🍱"), DINNER("Dinner", "🍽️"), SNACK("Snack", "🥤")
 }
 
+/** One line of a published recipe, plus what it means for the shopping list ([dept] null = not bought, e.g. water). */
+data class RecipeIngredient(val line: String, val amount: Double?, val unit: String, val item: String, val dept: Dept?)
+
+/** A recipe exactly as published by Food Hero (Oregon State University Extension), nutrition from its label. */
+data class Recipe(
+    val id: String,
+    val title: String,
+    val url: String,
+    val makes: String,
+    val prep: String,
+    val cook: String,
+    val servings: Int,
+    val servingSize: String,
+    val perServing: Macros,
+    val ingredients: List<RecipeIngredient>,
+    val steps: List<String>,
+    val notes: List<String>,
+)
+
 data class Meal(
     val id: String,
     val slot: MealSlot,
     val name: String,
+    /** Plain foods eaten with it (or the whole meal, when there's no recipe). */
     val items: List<Ingredient>,
-    /** How to make it ahead. */
+    /** Short how-to-serve line (for a recipe meal: what goes with it). */
     val prep: String,
     /** What to order or grab when travelling. */
     val away: String,
+    val recipeId: String? = null,
+    /** How many of the recipe's label servings make one meal. */
+    val recipeServings: Double = 0.0,
 ) {
-    val macros: Macros get() = items.fold(Macros.ZERO) { acc, i -> acc + i.macros }
+    val recipe: Recipe? get() = recipeId?.let { foodHeroRecipes.getValue(it) }
+    val macros: Macros get() = items.fold(recipe?.perServing?.times(recipeServings) ?: Macros.ZERO) { acc, i -> acc + i.macros }
+    /** "2 servings (1 cup each)" — the portion of the recipe in one meal. */
+    val portion: String? get() = recipe?.let { r -> "${amountText(recipeServings)} × ${r.servingSize}" }
 }
 
 data class NutritionProfile(
@@ -81,7 +119,10 @@ data class DayTarget(
     val note: String,
 )
 
-data class ShopItem(val foodId: String, val label: String, val grams: Int, val dept: Dept)
+data class ShopItem(val key: String, val label: String, val amount: String, val dept: Dept)
+
+/** One cooking session's worth of a recipe: [batches] times the published recipe. */
+data class PrepBatch(val recipe: Recipe, val batches: Double, val forMeal: Meal)
 
 object Nutrition {
     /** Net cost of running above rest: about 0.87 kcal per kg per km (Brueckner 1991, at ~5 kcal per litre O2). */
@@ -107,58 +148,64 @@ object Nutrition {
     fun cuttingDay(day: PlannedDay): Boolean =
         day.phase != Phase.TAPER && day.run != RunKind.HALF_RACE && day.run != RunKind.RACE
 
-    private fun ing(id: String, grams: Int, label: String, hint: String = "") = Ingredient(id, grams, label, hint)
+    private fun ing(id: String, grams: Int, label: String, hint: String = "", unitGrams: Int? = null, unitName: String = "") =
+        Ingredient(id, grams, label, hint, unitGrams, unitName)
 
+    /**
+     * Two weekly menus of Food Hero recipes (Oregon State University Extension: recipes tested in a test kitchen
+     * and analysed for nutrition), in the styles you picked: Tex-Mex, Asian-style, and simple roasted. Portions
+     * are multiples of each recipe's own serving; the only additions are plain foods (Greek yogurt, a protein
+     * shake scoop, a banana, plain rice) to reach the protein target.
+     */
     val meals: List<Meal> = listOf(
-        Meal("b_oats", MealSlot.BREAKFAST, "Overnight oats", listOf(
-            ing("oats", 60, "Rolled oats (dry)", "about ¾ cup"), ing("yogurt", 200, "Plain nonfat Greek yogurt"),
-            ing("milk", 200, "1% milk", "a little under 1 cup"), ing("blueberries", 100, "Blueberries (frozen or fresh)"),
-            ing("peanut_butter", 16, "Peanut butter", "1 tbsp"),
-        ), "Prep day: make 3 jars for Mon–Wed, and measure the dry oats and peanut butter into 4 more jars. Add yogurt, milk and " +
-            "berries to one of those each evening (1 minute) for Thu–Sun.",
-            "Hotel: oatmeal plus Greek yogurt and fruit from the breakfast bar."),
-        Meal("b_eggs", MealSlot.BREAKFAST, "Egg & potato box", listOf(
-            ing("egg", 150, "Eggs, hard-boiled", "3 large"), ing("potato", 200, "Potato, baked", "1 medium-to-large"),
-            ing("spinach", 60, "Spinach"), ing("yogurt", 150, "Plain nonfat Greek yogurt"),
-        ), "Prep day: boil 21 eggs (they keep a week in the fridge, in their shells) and bake 7 potatoes. Fridge 3 potatoes, " +
-            "freeze 4. Add the spinach and yogurt on the day.",
-            "Hotel: eggs, potatoes or toast, and a yogurt."),
-        Meal("l_chicken", MealSlot.LUNCH, "Chicken & rice bowl", listOf(
-            ing("chicken", 170, "Chicken breast (cooked weight)", "6 oz cooked"), ing("rice", 160, "White rice (cooked weight)", "about 1 cup"),
-            ing("broccoli", 150, "Broccoli florets (frozen or fresh)"), ing("olive_oil", 10, "Olive oil", "2 tsp"),
-        ), "Bake the chicken, cook the rice, steam the broccoli, add the oil; portion into 7 boxes.",
-            "Restaurant: grilled chicken with rice and vegetables, sauce on the side."),
-        Meal("l_chili", MealSlot.LUNCH, "Turkey & black-bean chili", listOf(
-            ing("turkey", 150, "Ground turkey, 93% lean (cooked weight)"), ing("black_beans", 130, "Black beans, canned", "about ½ can"),
-            ing("tomatoes", 150, "Canned tomatoes"), ing("rice", 100, "White rice (cooked weight)", "about ⅔ cup"),
-        ), "Brown the turkey, add beans, tomatoes and chili spices, simmer 20 min; cook the rice. Portion into 7 boxes.",
-            "Restaurant: chili or a burrito bowl with turkey or chicken, beans and rice; skip sour cream and cheese."),
-        Meal("d_pasta", MealSlot.DINNER, "Beef pasta", listOf(
-            ing("beef", 150, "Ground beef, 93% lean (cooked weight)"), ing("pasta", 160, "Pasta (cooked weight)", "about 1 cup"),
-            ing("marinara", 125, "Marinara sauce", "about ½ cup"), ing("spinach", 60, "Spinach"),
-        ), "Brown the beef, stir in the sauce and spinach, mix with cooked pasta. Portion into 7 boxes.",
-            "Restaurant: pasta with meat sauce (ask for a normal, not large, portion) and a side salad."),
-        Meal("d_chicken_tray", MealSlot.DINNER, "Chicken & sweet potato tray bake", listOf(
-            ing("chicken", 170, "Chicken breast (cooked weight)", "6 oz cooked"), ing("sweet_potato", 220, "Sweet potato", "1 large"),
-            ing("broccoli", 150, "Broccoli florets (frozen or fresh)"), ing("olive_oil", 12, "Olive oil", "about 2½ tsp"),
-        ), "Roast chicken, cubed sweet potato and broccoli on one tray with the oil (about 25 min at 400°F). Portion into 7 boxes.",
-            "Restaurant: grilled chicken with a potato and vegetables."),
-        Meal("s_yogurt", MealSlot.SNACK, "Yogurt, banana & almonds", listOf(
-            ing("yogurt", 250, "Plain nonfat Greek yogurt"), ing("banana", 118, "Banana", "1 medium"), ing("almonds", 10, "Almonds"),
-        ), "Nothing to cook: portion the yogurt into tubs for the week.",
-            "Any shop: a Greek yogurt and a banana."),
-        Meal("s_cottage", MealSlot.SNACK, "Cottage cheese, apple & toast", listOf(
-            ing("cottage", 225, "Cottage cheese, 2%", "about 1 cup"), ing("apple", 182, "Apple", "1 medium"), ing("bread", 32, "Whole-wheat bread", "1 slice"),
-        ), "Nothing to cook: portion the cottage cheese into tubs for the week.",
-            "Any shop: a cottage cheese or Greek yogurt cup and a piece of fruit."),
+        Meal("b_burrito", MealSlot.BREAKFAST, "Breakfast burrito", emptyList(),
+            "1 whole burrito (the recipe's 2 half-burrito servings).",
+            "Hotel: scrambled eggs, beans or potatoes, and toast or a tortilla.",
+            recipeId = "breakfast-burritos", recipeServings = 2.0),
+        Meal("b_quiche", MealSlot.BREAKFAST, "Veggie quiche muffins + Greek yogurt", listOf(
+            ing("yogurt", 200, "Plain nonfat Greek yogurt"),
+        ), "4 muffins with a tub of Greek yogurt.",
+            "Hotel: eggs or an omelette, plus a Greek yogurt.",
+            recipeId = "veggie-quiche-muffins", recipeServings = 4.0),
+        Meal("l_pepper_bake", MealSlot.LUNCH, "Chicken pepper bake", emptyList(),
+            "2 cups.",
+            "Restaurant: grilled chicken with roasted potatoes and vegetables.",
+            recipeId = "chicken-pepper-bake", recipeServings = 2.0),
+        Meal("l_bean_burrito", MealSlot.LUNCH, "Chicken & black bean salsa burrito", emptyList(),
+            "1 whole burrito (the recipe's 2 half-burrito servings).",
+            "Restaurant: a chicken burrito or burrito bowl with black beans; go easy on cheese and sour cream.",
+            recipeId = "chicken-and-black-bean-salsa-burritos", recipeServings = 2.0),
+        Meal("d_sweet_sour", MealSlot.DINNER, "Sweet and sour chicken over rice", listOf(
+            ing("rice", 158, "White rice (cooked)", "1 cup cooked", unitGrams = 158, unitName = "cups cooked"),
+        ), "2 cups over 1 cup of cooked rice (the recipe's note: serve over rice).",
+            "Restaurant: a chicken stir-fry with steamed rice.",
+            recipeId = "sweet-and-sour-chicken", recipeServings = 2.0),
+        Meal("d_beef_broccoli", MealSlot.DINNER, "Beef and broccoli", emptyList(),
+            "2½ cups (the bulgur is already in the recipe).",
+            "Restaurant: beef and broccoli with steamed rice.",
+            recipeId = "beef-and-broccoli", recipeServings = 2.5),
+        Meal("s_protein_yogurt", MealSlot.SNACK, "Protein yogurt & banana", listOf(
+            ing("yogurt", 300, "Plain nonfat Greek yogurt"),
+            ing("whey", 30, "Whey protein isolate powder", "1 scoop (30 g); app uses USDA's 17 g protein — your tub's label may say more",
+                unitGrams = 30, unitName = "scoops"),
+            ing("banana", 118, "Banana", "1 medium", unitGrams = 118, unitName = "bananas"),
+        ), "Stir the scoop of protein powder into the yogurt; banana on the side. Nothing to cook.",
+            "Any shop: two Greek yogurt cups and a banana, or a protein shake and a banana."),
+        Meal("s_protein_yogurt_b", MealSlot.SNACK, "Protein yogurt & banana", listOf(
+            ing("yogurt", 300, "Plain nonfat Greek yogurt"),
+            ing("whey", 30, "Whey protein isolate powder", "1 scoop (30 g); app uses USDA's 17 g protein — your tub's label may say more",
+                unitGrams = 30, unitName = "scoops"),
+            ing("banana", 118, "Banana", "1 medium", unitGrams = 118, unitName = "bananas"),
+        ), "Stir the scoop of protein powder into the yogurt; banana on the side. Nothing to cook.",
+            "Any shop: two Greek yogurt cups and a banana, or a protein shake and a banana."),
     )
 
     /** One "fuel serving" is any one of these: about 250 kcal, almost all carbohydrate. */
     val fuelOptions: List<Meal> = listOf(
-        Meal("f_bagel", MealSlot.SNACK, "1 plain bagel", listOf(ing("bagel", 99, "Plain bagels", "1 bagel")), "", ""),
-        Meal("f_rice", MealSlot.SNACK, "1¼ cups cooked rice (add to lunch or dinner)", listOf(ing("rice", 200, "White rice (cooked weight)")), "", ""),
-        Meal("f_banana", MealSlot.SNACK, "2 bananas with a little honey", listOf(ing("banana", 236, "Banana", "2 medium"), ing("honey", 14, "Honey", "2 tsp")), "", ""),
-        Meal("f_toast", MealSlot.SNACK, "2 slices of toast with honey", listOf(ing("bread", 64, "Whole-wheat bread", "2 slices"), ing("honey", 21, "Honey", "1 tbsp")), "", ""),
+        Meal("f_bagel", MealSlot.SNACK, "1 plain bagel", listOf(ing("bagel", 99, "Plain bagels", "1 bagel", unitGrams = 99, unitName = "bagels")), "", ""),
+        Meal("f_rice", MealSlot.SNACK, "1¼ cups cooked rice (add to lunch or dinner)", listOf(ing("rice", 198, "White rice (cooked)", unitGrams = 158, unitName = "cups cooked")), "", ""),
+        Meal("f_banana", MealSlot.SNACK, "2 bananas with a little honey", listOf(ing("banana", 236, "Banana", "2 medium", unitGrams = 118, unitName = "bananas"), ing("honey", 14, "Honey", "2 tsp", unitGrams = 7, unitName = "tsp")), "", ""),
+        Meal("f_toast", MealSlot.SNACK, "2 slices of toast with honey", listOf(ing("bread", 64, "Whole-wheat bread", "2 slices", unitGrams = 32, unitName = "slices"), ing("honey", 21, "Honey", "1 tbsp", unitGrams = 7, unitName = "tsp")), "", ""),
     )
 
     fun mealsFor(slot: MealSlot): List<Meal> = meals.filter { it.slot == slot }
@@ -169,8 +216,17 @@ object Nutrition {
      */
     fun scheduled(slot: MealSlot, week: Int): Meal = mealsFor(slot)[Math.floorMod(week, 2)]
 
-    const val PREP_STORAGE = "Cooked meals: Monday–Wednesday boxes in the fridge, Thursday–Sunday boxes in the freezer " +
-        "(move one to the fridge the night before). Standard food-safety guidance is 3–4 days in the fridge for cooked leftovers."
+    const val PREP_STORAGE = "The recipes say: refrigerate leftovers within 2 hours. They don't say how long food keeps or " +
+        "give freezing steps. For a whole week from one cook, a common approach is Monday–Wednesday portions in the fridge " +
+        "and Thursday–Sunday in the freezer, thawed in the fridge the night before — that's general food-safety practice, " +
+        "not from the recipes or a source checked for this app."
+
+    /** Batches of each recipe to cook on prep day so one menu covers 7 days, rounded up to a half batch. */
+    fun prepBatches(week: Int): List<PrepBatch> = MealSlot.entries.mapNotNull { slot ->
+        val meal = scheduled(slot, week)
+        val r = meal.recipe ?: return@mapNotNull null
+        PrepBatch(r, kotlin.math.ceil(7 * meal.recipeServings / r.servings * 2) / 2, meal)
+    }
 
     /** When to eat (docs/evidence/nutrition.md, T1–T5). */
     val timing: List<Pair<String, String>> = listOf(
@@ -188,10 +244,11 @@ object Nutrition {
             "overweight non-athletes. Not built into this plan.",
     )
 
-    /** Average of the eight base-meal combinations' calories: the four base meals come to about this. */
-    val baseKcal: Int = MealSlot.entries.sumOf { s -> mealsFor(s).map { it.macros.kcal }.average() }.roundToInt()
+    /** Calories in a week's four base meals. */
+    fun baseKcal(week: Int): Int = MealSlot.entries.sumOf { scheduled(it, week).macros.kcal }.roundToInt()
 
     fun target(p: NutritionProfile, day: PlannedDay): DayTarget {
+        val baseKcal = baseKcal(day.week)
         val miles = if (day.run.isRun) day.miles else 0.0
         val maintenance = maintenanceKcal(p, miles)
         val deficit = cuttingDay(day)
@@ -210,13 +267,25 @@ object Nutrition {
 
     fun proteinTarget(p: NutritionProfile): Int = ((PROTEIN_G_PER_KG * p.weightKg) / 5).roundToInt() * 5
 
-    /** Everything for one plan week's base meals, plus that week's fuel servings as bagels, bananas, rice, bread and honey. */
+    /**
+     * Everything for one plan week: each recipe's ingredients times the batches cooked on prep day, the plain foods
+     * eaten with the meals, and that week's fuel servings. Items with the same name and unit are added together.
+     */
     fun shoppingList(p: NutritionProfile, weekDays: List<PlannedDay>): List<ShopItem> {
+        val week = weekDays.firstOrNull()?.week ?: return emptyList()
+        data class Key(val item: String, val unit: String, val dept: Dept)
+        val recipeAmounts = linkedMapOf<Key, Double?>()
+        for (b in prepBatches(week)) for (i in b.recipe.ingredients) {
+            val dept = i.dept ?: continue
+            val k = Key(i.item, if (i.unit == "cups") "cup" else i.unit, dept)
+            recipeAmounts[k] = if (i.amount == null || (k in recipeAmounts && recipeAmounts[k] == null)) null
+            else (recipeAmounts[k] ?: 0.0) + i.amount * b.batches
+        }
         val grams = linkedMapOf<String, Int>()
-        val labels = mutableMapOf<String, String>()
+        val firstOf = mutableMapOf<String, Ingredient>()
         fun add(i: Ingredient, times: Int = 1) {
             grams[i.foodId] = (grams[i.foodId] ?: 0) + i.grams * times
-            labels.putIfAbsent(i.foodId, i.label)
+            firstOf.putIfAbsent(i.foodId, i)
         }
         var fuel = 0
         for (d in weekDays) {
@@ -225,8 +294,27 @@ object Nutrition {
         }
         // Spread the fuel servings evenly over the four options.
         fuelOptions.forEachIndexed { i, m -> m.items.forEach { add(it, (fuel + fuelOptions.size - 1 - i) / fuelOptions.size) } }
-        return grams.map { (id, g) -> ShopItem(id, labels.getValue(id), g, deptOf[id] ?: Dept.PANTRY) }
-            .sortedBy { it.dept.ordinal }
+        // Teaspoons fold into tablespoons when the same item is also measured in tablespoons (3 tsp = 1 Tbsp).
+        for (k in recipeAmounts.keys.filter { it.unit == "tsp" }.toList()) {
+            val tbsp = Key(k.item, "Tbsp", k.dept)
+            val tsp = recipeAmounts[k]
+            if (tbsp in recipeAmounts && tsp != null && recipeAmounts[tbsp] != null) {
+                recipeAmounts[tbsp] = recipeAmounts.getValue(tbsp)!! + tsp / 3
+                recipeAmounts.remove(k)
+            }
+        }
+        // Things bought whole (a count, cloves, cans) round up: you can't buy half an onion.
+        fun whole(unit: String) = unit.isEmpty() || unit == "clove" || unit.startsWith("can")
+        val fromRecipes = recipeAmounts.map { (k, amt) ->
+            val a = amt?.let { if (whole(k.unit)) kotlin.math.ceil(it - 1e-9) else it }
+            ShopItem("r:${k.item}:${k.unit}", k.item, if (a == null) "to taste" else unitAmount(a, k.unit), k.dept)
+        }
+        val plain = grams.filterValues { it > 0 }.map { (id, g) ->
+            val i = firstOf.getValue(id)
+            val amount = i.unitGrams?.let { "${amountText(g.toDouble() / it)} ${i.unitName}" } ?: shopAmount(g)
+            ShopItem("f:$id", i.label, amount, i.dept)
+        }
+        return (fromRecipes + plain).sortedBy { it.dept.ordinal }
     }
 
     /** Percent of body weight lost per week between the latest weigh-in and the last one at least 6 days before it. */
@@ -258,4 +346,25 @@ fun shopAmount(grams: Int): String {
     val metric = if (grams >= 1000) fmt("%.1f kg", grams / 1000.0) else "$grams g"
     val us = if (lb >= 1) fmt("%.1f lb", lb) else fmt("%.0f oz", grams / 28.35)
     return "$metric · $us"
+}
+
+/** 2.5 → "2½", 0.25 → "¼", 1.125 → "1⅛": nearest eighth, as recipes write it. */
+fun amountText(x: Double): String {
+    val eighths = kotlin.math.round(x * 8).toInt()
+    val whole = eighths / 8
+    val frac = when (eighths % 8) { 1 -> "⅛"; 2 -> "¼"; 3 -> "⅜"; 4 -> "½"; 5 -> "⅝"; 6 -> "¾"; 7 -> "⅞"; else -> "" }
+    return if (whole == 0 && frac.isNotEmpty()) frac else "$whole$frac"
+}
+
+/** "2¼ lb", "3 cups", "1½ Tbsp", "8" (a count). */
+fun unitAmount(x: Double, unit: String): String {
+    val n = amountText(x)
+    val u = when {
+        unit == "cup" && x > 1.0 -> "cups"
+        unit == "cups" && x <= 1.0 -> "cup"
+        unit == "clove" && x > 1.0 -> "cloves"
+        unit.startsWith("can") && x > 1.0 -> unit.replaceFirst("can", "cans")
+        else -> unit
+    }
+    return if (u.isEmpty()) n else "$n $u"
 }

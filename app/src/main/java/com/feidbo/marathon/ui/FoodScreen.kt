@@ -44,7 +44,6 @@ import com.feidbo.marathon.core.NutritionProfile
 import com.feidbo.marathon.core.Plan
 import com.feidbo.marathon.core.fmt
 import com.feidbo.marathon.core.formatMiles
-import com.feidbo.marathon.core.shopAmount
 import com.feidbo.marathon.core.shortDate
 import com.feidbo.marathon.ui.theme.StatusColors
 import kotlin.math.roundToInt
@@ -149,7 +148,7 @@ fun FoodScreen(state: UiState, actions: FoodActions) {
                     }
                 }
             }
-            Text("Macros are from USDA FoodData Central. Cooked weights for meat, rice and pasta.",
+            Text("Recipes: Food Hero (Oregon State University Extension), nutrition from each recipe's label. Plain foods: USDA FoodData Central.",
                 style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 6.dp))
         }
@@ -168,7 +167,7 @@ fun FoodScreen(state: UiState, actions: FoodActions) {
         SectionCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Shopping list", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                Text("${shop.count { it.foodId in ticked }} / ${shop.size}", style = MaterialTheme.typography.labelLarge)
+                Text("${shop.count { it.key in ticked }} / ${shop.size}", style = MaterialTheme.typography.labelLarge)
             }
             if (hasNext) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -177,7 +176,7 @@ fun FoodScreen(state: UiState, actions: FoodActions) {
                 }
             }
             Text("For ${shortDate(weekDays.first().date)} – ${shortDate(weekDays.last().date)}: every meal plus that week's fuel " +
-                "servings. Meat, rice and pasta are cooked weights, so buy a little more raw.",
+                "servings. Rice is listed as the cooked amount.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             var dept: com.feidbo.marathon.core.Dept? = null
             shop.forEach { item ->
@@ -186,9 +185,9 @@ fun FoodScreen(state: UiState, actions: FoodActions) {
                     Text(item.dept.title.uppercase(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 10.dp))
                 }
-                val done = item.foodId in ticked
+                val done = item.key in ticked
                 Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { actions.onToggleShop(week, item.foodId) }
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { actions.onToggleShop(week, item.key) }
                         .padding(vertical = 5.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -197,11 +196,9 @@ fun FoodScreen(state: UiState, actions: FoodActions) {
                     Spacer(Modifier.width(10.dp))
                     Text(item.label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f),
                         color = if (done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
-                    Text(shopAmount(item.grams), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(item.amount, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            Text("Plus: chili spices, salt, and anything you like for flavour that has few calories.",
-                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         WeighInCard(state, sd.index, actions)
@@ -243,21 +240,44 @@ private fun MealRow(slot: MealSlot, meal: Meal, other: Meal, done: Boolean, onTo
             Column(Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).clickable { open = !open }) {
                 Text("${slot.emoji}  ${slot.title}: ${meal.name}", style = MaterialTheme.typography.titleSmall)
                 Text(macroLine(meal), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (open) "Hide details" else "Ingredients, prep & travel swap", style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary)
+                Text(if (open) "Hide details" else if (meal.recipe != null) "Recipe, portion & travel swap" else "Details & travel swap",
+                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             }
             CheckIcon(done, if (done) "${slot.title} eaten" else "Mark ${slot.title} eaten", onToggle)
         }
         if (open) {
+            Text("Your portion: ${meal.prep}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(top = 4.dp))
             meal.items.forEach { i ->
-                Text("•  ${i.label}: ${i.grams} g" + (if (i.hint.isNotEmpty()) " (${i.hint})" else ""),
+                Text("•  with ${i.label}: ${i.grams} g" + (if (i.hint.isNotEmpty()) " (${i.hint})" else ""),
                     style = MaterialTheme.typography.bodySmall)
             }
-            Text("Prep ahead: ${meal.prep}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
-            Text("Travelling: ${meal.away}", style = MaterialTheme.typography.bodySmall)
+            meal.recipe?.let { RecipeDetails(it) }
+            Text("Travelling: ${meal.away}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
             Text("Swap: ${other.name} (${macroLine(other)}) counts too.", style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+}
+
+/** The recipe exactly as Food Hero publishes it, with its source. */
+@Composable
+private fun RecipeDetails(r: com.feidbo.marathon.core.Recipe) {
+    Column(Modifier.padding(top = 6.dp)) {
+        Text("${r.title} — Food Hero, Oregon State University Extension", style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary)
+        Text("Makes ${r.makes} · prep ${r.prep} · cook ${r.cook} · label serving ${r.servingSize}: " +
+            "${r.perServing.kcal.roundToInt()} kcal, ${fmt("%.0f", r.perServing.protein)} g protein",
+            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("Ingredients", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
+        r.ingredients.forEach { Text("•  ${it.line}", style = MaterialTheme.typography.bodySmall) }
+        Text("Directions", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
+        r.steps.forEachIndexed { i, step -> Text("${i + 1}. $step", style = MaterialTheme.typography.bodySmall) }
+        if (r.notes.isNotEmpty()) {
+            Text("Notes", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
+            r.notes.forEach { Text("•  $it", style = MaterialTheme.typography.bodySmall) }
+        }
+        Text(r.url, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -270,16 +290,20 @@ private fun PrepCard(week: Int) {
             Text(if (open) "Hide" else "Show", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         }
         if (open) {
-            Text("One session covers Monday to Sunday. Next week's batch:", style = MaterialTheme.typography.bodyMedium,
+            Text("One session covers Monday to Sunday. Next week, cook:", style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 6.dp))
-            MealSlot.entries.forEach { slot ->
-                val m = Nutrition.scheduled(slot, week + 1)
-                Text("${slot.emoji}  ${m.name}", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 6.dp))
-                Text(m.prep, style = MaterialTheme.typography.bodySmall)
+            Nutrition.prepBatches(week + 1).forEach { b ->
+                val made = b.batches * b.recipe.servings
+                Text("${b.forMeal.slot.emoji}  ${b.recipe.title} × ${com.feidbo.marathon.core.amountText(b.batches)}",
+                    style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 6.dp))
+                Text("${com.feidbo.marathon.core.amountText(b.batches)} times the recipe (${com.feidbo.marathon.core.amountText(made)} " +
+                    "label servings) for 7 × ${b.forMeal.prep.removeSuffix(".")}",
+                    style = MaterialTheme.typography.bodySmall)
+                RecipeDetails(b.recipe)
             }
             Text(Nutrition.PREP_STORAGE, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 6.dp))
-            Text("The menu swaps every week, so you cook one lunch and one dinner recipe per session.",
+            Text("The menu swaps every week: three recipes per session, the other three the week after.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

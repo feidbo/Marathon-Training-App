@@ -135,7 +135,7 @@ object Exercises {
             "soleus capacity as central to calf-strain recovery (Green 2022).",
     )
     val pullUp = Exercise(
-        id = "assisted_pull_up", name = "Assisted pull-up (optional)", block = "2c",
+        id = "assisted_pull_up", name = "Assisted pull-up (optional)", block = "3a",
         machine = "Assisted pull-up machine — skip it when there isn't one",
         muscles = "Lats, upper back, biceps",
         steps = listOf(
@@ -156,7 +156,7 @@ object Exercises {
         why = "Kept as an optional extra, as you asked.",
     )
     val dumbbellRow = Exercise(
-        id = "dumbbell_row", name = "One-arm dumbbell row (no pull-up machine)", block = "2d",
+        id = "dumbbell_row", name = "One-arm dumbbell row (no pull-up machine)", block = "1e",
         machine = "One dumbbell and a bench, bed or chair",
         muscles = "Lats, upper back, biceps", perSide = true, sideWord = "arm", optional = true,
         weightLabel = "Dumbbell (lb)",
@@ -196,7 +196,7 @@ object Exercises {
         why = "Removed from the routine at your request (Nov 2026). Your logged sets stay in your history.",
     )
     val sideAbduction = Exercise(
-        id = "side_abduction", name = "Side-lying hip abduction", block = "2b",
+        id = "side_abduction", name = "Side-lying hip abduction", block = "2a",
         machine = "Floor space",
         muscles = "Glute medius (side of the hip)", load = LoadType.BODYWEIGHT, perSide = true,
         steps = listOf(
@@ -210,7 +210,7 @@ object Exercises {
             "(Distefano 2009); side plank with abduction was highest of 18 (Boren 2011).",
     )
     val singleLegRdl = Exercise(
-        id = "single_leg_rdl", name = "Single-leg Romanian deadlift", block = "2a",
+        id = "single_leg_rdl", name = "Single-leg Romanian deadlift", block = "1d",
         machine = "One dumbbell",
         muscles = "Hamstrings, glutes", load = LoadType.LOWER_COMPOUND, perSide = true,
         weightLabel = "Dumbbell (lb)",
@@ -230,7 +230,7 @@ object Exercises {
             "train the hamstrings; leg curls including sliding versions show high hamstring activity (Hegyi 2019).",
     )
     val pogoHops = Exercise(
-        id = "pogo_hops", name = "Pogo hops", block = "3a",
+        id = "pogo_hops", name = "Pogo hops", block = "2b",
         machine = "Floor space",
         muscles = "Calves and Achilles — springiness", load = LoadType.BODYWEIGHT,
         steps = listOf(
@@ -246,7 +246,7 @@ object Exercises {
     // ---- Abs block (docs/evidence/abs.md) ---------------------------------------------------------
 
     val curlUp = Exercise(
-        id = "curl_up", name = "Curl-up with a hold", block = "4a",
+        id = "curl_up", name = "Curl-up with a hold", block = "2c",
         machine = "Floor space",
         muscles = "Abs (rectus abdominis)", load = LoadType.BODYWEIGHT,
         steps = listOf(
@@ -260,7 +260,7 @@ object Exercises {
             "Ab exercises build the muscle; seeing it depends mostly on the fat over it (Vispute 2011).",
     )
     val rollOut = Exercise(
-        id = "ab_rollout", name = "Towel roll-out", block = "4b",
+        id = "ab_rollout", name = "Towel roll-out", block = "—", retired = true,
         machine = "A towel on a smooth floor (on carpet: walk your hands out)",
         muscles = "Abs (rectus abdominis)", load = LoadType.BODYWEIGHT,
         steps = listOf(
@@ -272,6 +272,23 @@ object Exercises {
         why = "Roll-outs showed the highest ab activity of the floor exercises reviewed: about 100% of maximum " +
             "(Oliva-Lozano 2020). Those studies used a wheel or stable surface; the towel version and the sets and " +
             "reps are app adaptations.",
+    )
+
+    val russianTwist = Exercise(
+        id = "russian_twist", name = "Russian twist", block = "2d",
+        machine = "Floor space",
+        muscles = "Abs — side abs (obliques) and the front", load = LoadType.BODYWEIGHT,
+        steps = listOf(
+            "Sit on the floor, knees bent, heels on the floor.",
+            "Lean back until you feel your abs working. Keep your back straight, chest up.",
+            "Hold your hands together in front of your chest.",
+            "Turn your shoulders to one side, then to the other. Each turn counts as one rep.",
+            "Harder: lift your feet off the floor, or hold a light dumbbell with both hands.",
+        ),
+        cues = listOf("Turn your shoulders, not just your arms.", "Back stays straight — don't round.", "Breathe out as you turn."),
+        why = "Your pick, for being easy to learn (Nov 2026); it replaces the towel roll-out. Twisting is the job of the " +
+            "side abs: the review of ab exercises calls the external oblique a trunk-rotation muscle (Oliva-Lozano 2020). " +
+            "My search found no study measuring the Russian twist itself. Sets and reps are an app default.",
     )
 
     // ---- Daily stretches (docs/decisions.md §3) --------------------------------------------------
@@ -337,16 +354,17 @@ object Exercises {
     val abductionMachine = retired("hip_abduction", "Hip abduction (machine)", "Glute medius")
     val legCurlMachine = retired("leg_curl", "Seated leg curl (machine)", "Hamstrings")
 
-    val routine = listOf(splitSquat, calfRaiseStraight, calfRaiseSlow, singleLegRdl, sideAbduction, pullUp, dumbbellRow, curlUp, rollOut)
+    /** Grouped by equipment: dumbbells (block 1), then bodyweight (block 2), then the machine (block 3, always last). */
+    val routine = listOf(splitSquat, calfRaiseStraight, calfRaiseSlow, singleLegRdl, dumbbellRow, sideAbduction, curlUp, russianTwist, pullUp)
     /** The pulling slot: do one of these — the pull-up with a machine, the row without. */
     val pullChoices = listOf(pullUp, dumbbellRow)
     /** Dropped from the routine but kept so logged sets still show. */
     val retiredOther = listOf(hipThrust)
     /** Not in the strength routine any more, but still used by the calf guidance and kept for history. */
-    val formerRoutine = listOf(calfRaiseBent)
+    val formerRoutine = listOf(calfRaiseBent, rollOut)
     val stretches = listOf(quadStretch, calfStretchStraight, calfStretchBent)
     val retiredMachines = listOf(legPress, legPressCalf, hipThrustMachine, abductionMachine, legCurlMachine)
-    val all = routine + calfRaiseBent + pogoHops + stretches + calfIsometric + retiredOther + retiredMachines
+    val all = routine + calfRaiseBent + rollOut + pogoHops + stretches + calfIsometric + retiredOther + retiredMachines
     fun byId(id: String): Exercise? = all.firstOrNull { it.id == id }
 }
 
@@ -360,8 +378,9 @@ data class SessionOptions(
 
 /**
  * The dumbbell/bodyweight routine for a strength day (docs/decisions.md §1–2).
- * Main lifts: split squat and single-leg RDL. Smaller lifts: the two calf raises, side-lying abduction and,
- * last, the optional assisted pull-up. (The dumbbell hip thrust was removed at the user's request.)
+ * Main lifts: split squat and single-leg RDL. Smaller lifts: the two calf raises, side-lying abduction, the abs
+ * and the optional assisted pull-up. Ordered by equipment (user request, Nov 2026): every dumbbell exercise,
+ * then every bodyweight exercise, then the machine — the pull-up is always last.
  */
 fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions()): StrengthSession? {
     val e = Exercises
@@ -372,9 +391,9 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
     }
     fun build(items: List<Prescription>) = withRow(items).filter { !(options.skipCalfRaises && it.exercise.calf) }
     // Abs finish the session (after the hops): 2 sets on working days, 1 on light days.
-    fun abs(sets: Int) = listOf(p(e.curlUp, sets, 15, "12–15"), p(e.rollOut, sets, 10, "8–10"))
+    fun abs(sets: Int) = listOf(p(e.curlUp, sets, 15, "12–15"), p(e.russianTwist, sets, 20, "20 (10 each side)"))
     val plyo = options.plyometrics
-    return when (kind) {
+    val session = when (kind) {
         StrengthKind.NONE -> null
         StrengthKind.LEARN -> StrengthSession(
             kind, build(listOf(
@@ -423,12 +442,15 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
             notes = listOf("A light session: 1 set each. Leave feeling fresh."),
         )
     }
+    // Ordered by equipment block: dumbbells, bodyweight, then the machine (the pull-up is always last).
+    return session?.let { it.copy(items = it.items.sortedBy { rx -> rx.exercise.block }) }
 }
 
 private val standardNotes = listOf(
     "Lift first, then run — or run later in the day (Eddens 2018).",
     "Warm up with one light set of split squats and single-leg RDLs.",
-    "Block 1: split squat, then the two calf raises. Block 2: single-leg RDL, side-lying abduction, then the " +
-        "pull-up (or the dumbbell row without a machine). One set of each in a block, then repeat. Finish with the abs block.",
+    "Block 1, dumbbells: split squat, the two calf raises, single-leg RDL (and the dumbbell row on days without a " +
+        "pull-up machine). Block 2, bodyweight: side-lying abduction, hops, curl-ups, Russian twists. Block 3, machine: " +
+        "the assisted pull-up, always last. One set of each in a block, then repeat the block.",
     "Add weight when every set feels easier than the target effort.",
 )

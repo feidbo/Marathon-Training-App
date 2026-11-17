@@ -379,4 +379,20 @@ internal val illustrations: Map<String, Illustration> = mapOf(
             Chain(floatArrayOf(62.08f, 60.01f, 66.18f, 73.40f, 63.00f, 86.00f), floatArrayOf(72.90f, 69.65f, 85.09f, 76.53f, 94.00f, 86.00f), far = false),
         ),
     ),
+    "russian_twist" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+        ),
+        head = floatArrayOf(44.00f, 41.00f, 56.00f, 41.00f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(50.00f, 76.00f, 46.00f, 52.00f), floatArrayOf(50.00f, 76.00f, 54.00f, 52.00f), far = false),
+            Chain(floatArrayOf(44.00f, 76.00f, 56.00f, 76.00f), floatArrayOf(44.00f, 76.00f, 56.00f, 76.00f), far = false),
+            Chain(floatArrayOf(38.00f, 52.00f, 54.00f, 52.00f), floatArrayOf(46.00f, 52.00f, 62.00f, 52.00f), far = false),
+            Chain(floatArrayOf(44.00f, 76.00f, 40.00f, 60.00f, 38.00f, 86.00f, 33.00f, 89.00f), floatArrayOf(44.00f, 76.00f, 40.00f, 60.00f, 38.00f, 86.00f, 33.00f, 89.00f), far = true),
+            Chain(floatArrayOf(56.00f, 76.00f, 60.00f, 60.00f, 62.00f, 86.00f, 67.00f, 89.00f), floatArrayOf(56.00f, 76.00f, 60.00f, 60.00f, 62.00f, 86.00f, 67.00f, 89.00f), far = true),
+            Chain(floatArrayOf(38.00f, 52.00f, 28.00f, 68.00f), floatArrayOf(46.00f, 52.00f, 72.00f, 68.00f), far = false),
+            Chain(floatArrayOf(54.00f, 52.00f, 28.00f, 68.00f), floatArrayOf(62.00f, 52.00f, 72.00f, 68.00f), far = false),
+        ),
+    ),
 )

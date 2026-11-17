@@ -26,6 +26,8 @@ jobs:
         run: |
           python3 tools/gen_plan.py
           python3 tools/gen_illustrations.py
+          python3 tools/gen_foods.py
+          python3 tools/gen_recipes.py
           git diff --exit-code
 
       - name: Unit tests

@@ -1,0 +1,621 @@
+{
+ "breakfast-burritos": {
+  "title": "Breakfast Burritos",
+  "url": "https://foodhero.org/recipes/breakfast-burritos",
+  "makes": "4 Burritos",
+  "prep": "10 minutes",
+  "cook": "15 minutes",
+  "label": {
+   "servings": 8,
+   "size": "½ burrito (121 g)",
+   "kcal": 210,
+   "fat": 8,
+   "carbs": 23,
+   "protein": 9
+  },
+  "label_image": "https://foodhero.org/sites/foodhero-prod/files/labels/BreakfastBurritosNF20.png",
+  "ingredients": [
+   {
+    "line": "4 eggs",
+    "amount": 4,
+    "unit": "",
+    "item": "Eggs",
+    "dept": "DAIRY"
+   },
+   {
+    "line": "¼ cup nonfat or 1% milk",
+    "amount": 0.25,
+    "unit": "cup",
+    "item": "Nonfat or 1% milk",
+    "dept": "DAIRY"
+   },
+   {
+    "line": "salt, black pepper and chili powder to taste",
+    "amount": null,
+    "unit": "",
+    "item": "Salt, black pepper, chili powder",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "1 teaspoon oil",
+    "amount": 1,
+    "unit": "tsp",
+    "item": "Oil",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "4 (10-inch) flour tortillas",
+    "amount": 4,
+    "unit": "",
+    "item": "Flour tortillas, 10-inch",
+    "dept": "BAKERY"
+   },
+   {
+    "line": "1 cup fat-free refried beans",
+    "amount": 1,
+    "unit": "cup",
+    "item": "Fat-free refried beans",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "½ cup (2 ounces) grated cheddar cheese",
+    "amount": 2,
+    "unit": "oz",
+    "item": "Cheddar cheese",
+    "dept": "DAIRY"
+   },
+   {
+    "line": "1 tomato, chopped",
+    "amount": 1,
+    "unit": "",
+    "item": "Tomato",
+    "dept": "PRODUCE"
+   }
+  ],
+  "steps": [
+   "Wash hands with soap and water.",
+   "Rinse fresh vegetables under running water before preparing.",
+   "Mix eggs, milk and seasonings in a bowl.",
+   "Heat oil in skillet over medium-high heat (350 degrees F in an electric skillet).",
+   "Pour eggs into skillet. Stir and cook until firm.",
+   "Warm the tortillas on a griddle, or wrap in foil and heat in the oven.",
+   "Warm the refried beans in a separate pan.",
+   "On each tortilla, layer ¼ of refried beans, eggs, cheese and tomato.",
+   "Roll the burrito, cut in half, and enjoy!",
+   "Refrigerate leftovers within 2 hours."
+  ],
+  "notes": [
+   "Try your favorite salsa in place of the tomato.",
+   "Use other vegetables that you have on hand, such as bell peppers or corn.",
+   "Serve with guacamole, light sour cream, plain yogurt or salsa. Try using Food Hero salsa recipes from the Latin Heritage workgroup: Salsa Roja and Salsa Verde",
+   "Add chopped cilantro for more flavor."
+  ]
+ },
+ "chicken-pepper-bake": {
+  "title": "Chicken Pepper Bake",
+  "url": "https://foodhero.org/recipes/chicken-pepper-bake",
+  "makes": "5 Cups",
+  "prep": "15 minutes",
+  "cook": "45 minutes",
+  "label": {
+   "servings": 5,
+   "size": "1 cup (253 g)",
+   "kcal": 280,
+   "fat": 9,
+   "carbs": 20,
+   "protein": 31
+  },
+  "label_image": "https://foodhero.org/sites/foodhero-prod/files/labels/ChickenPepperBakeNF20.png",
+  "ingredients": [
+   {
+    "line": "1 pound boneless chicken breast",
+    "amount": 1,
+    "unit": "lb",
+    "item": "Boneless chicken breast",
+    "dept": "MEAT"
+   },
+   {
+    "line": "2 bell peppers (any color)",
+    "amount": 2,
+    "unit": "",
+    "item": "Bell peppers",
+    "dept": "PRODUCE"
+   },
+   {
+    "line": "3 cups small potatoes",
+    "amount": 3,
+    "unit": "cups",
+    "item": "Small potatoes",
+    "dept": "PRODUCE"
+   },
+   {
+    "line": "2 Tablespoons oil",
+    "amount": 2,
+    "unit": "Tbsp",
+    "item": "Oil",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "1 teaspoon Cajun seasoning (see Notes)",
+    "amount": 1,
+    "unit": "tsp",
+    "item": "Cajun seasoning",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "1 teaspoon dry Italian herbs",
+    "amount": 1,
+    "unit": "tsp",
+    "item": "Dry Italian herbs",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "⅛ teaspoon salt",
+    "amount": 0.125,
+    "unit": "tsp",
+    "item": "Salt",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "¼ teaspoon black pepper",
+    "amount": 0.25,
+    "unit": "tsp",
+    "item": "Black pepper",
+    "dept": "PANTRY"
+   }
+  ],
+  "steps": [
+   "Wash hands with soap and water.",
+   "Rinse or scrub fresh vegetables under running water before preparing.",
+   "Preheat oven to 425 degrees F. Lightly grease a baking sheet.",
+   "Cut the chicken, peppers and potatoes into bite-sized pieces. Put into a large bowl. Wash hands, cutting board and knife after touching and cutting raw chicken.",
+   "Sprinkle chicken and vegetables with the rest of the ingredients. Stir to coat evenly.",
+   "Place the chicken and vegetables on the baking sheet. Roast for 35 to 45 minutes or until potatoes are soft and chicken is no longer pink. A food thermometer will read 165 degrees F when the chicken is done. Toss a couple times while roasting.",
+   "Refrigerate leftovers within 2 hours. Recipe adapted from Nutrition Matters."
+  ],
+  "notes": [
+   "Try with tofu, pork or beef instead of chicken.",
+   "Try Food Hero Creole or Soulful or Southern Seasonings",
+   "Roasting time will vary depending on size of pieces; smaller pieces will cook through sooner."
+  ]
+ },
+ "sweet-and-sour-chicken": {
+  "title": "Sweet and Sour Chicken",
+  "url": "https://foodhero.org/recipes/sweet-and-sour-chicken",
+  "makes": "6 Cups",
+  "prep": "20 minutes",
+  "cook": "30 minutes",
+  "label": {
+   "servings": 6,
+   "size": "1 cup (258 g)",
+   "kcal": 190,
+   "fat": 2.5,
+   "carbs": 23,
+   "protein": 19
+  },
+  "label_image": "https://foodhero.org/sites/foodhero-prod/files/labels/SweetAndSourChickenNF20.png",
+  "ingredients": [
+   {
+    "line": "1 can (8 ounces) unsweetened pineapple chunks",
+    "amount": 1,
+    "unit": "can (8 oz)",
+    "item": "Pineapple chunks, unsweetened",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "1 pound skinless, boneless chicken breast, cut into 1-inch pieces",
+    "amount": 1,
+    "unit": "lb",
+    "item": "Boneless chicken breast",
+    "dept": "MEAT"
+   },
+   {
+    "line": "1 cup chicken broth (see Notes)",
+    "amount": 1,
+    "unit": "cup",
+    "item": "Chicken broth",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "¼ cup rice wine vinegar",
+    "amount": 0.25,
+    "unit": "cup",
+    "item": "Rice wine vinegar",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "¼ cup packed brown sugar",
+    "amount": 0.25,
+    "unit": "cup",
+    "item": "Brown sugar",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "2 Tablespoons low-sodium soy sauce",
+    "amount": 2,
+    "unit": "Tbsp",
+    "item": "Low-sodium soy sauce",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "1 clove garlic, minced, or ¼ teaspoon garlic powder",
+    "amount": 1,
+    "unit": "clove",
+    "item": "Garlic",
+    "dept": "PRODUCE"
+   },
+   {
+    "line": "1 cup celery",
+    "amount": 1,
+    "unit": "cup",
+    "item": "Celery",
+    "dept": "PRODUCE"
+   },
+   {
+    "line": "1 medium onion, cut in eighths",
+    "amount": 1,
+    "unit": "",
+    "item": "Onion, medium",
+    "dept": "PRODUCE"
+   },
+   {
+    "line": "1 green bell pepper, sliced into strips",
+    "amount": 1,
+    "unit": "",
+    "item": "Green bell pepper",
+    "dept": "PRODUCE"
+   },
+   {
+    "line": "1 large carrot, sliced diagonally ¼\" thick",
+    "amount": 1,
+    "unit": "",
+    "item": "Carrot, large",
+    "dept": "PRODUCE"
+   },
+   {
+    "line": "3 Tablespoons cornstarch",
+    "amount": 3,
+    "unit": "Tbsp",
+    "item": "Cornstarch",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "¼ cup cold water",
+    "amount": null,
+    "unit": "",
+    "item": "(water)",
+    "dept": null
+   }
+  ],
+  "steps": [
+   "Wash hands with soap and water.",
+   "Rinse fresh vegetables under running water before preparing.",
+   "Drain pineapple and reserve juice.",
+   "Place chicken in a large skillet on low heat (250 degrees F in an electric skillet).",
+   "Add reserved pineapple juice, chicken broth, vinegar, brown sugar, soy sauce and garlic. Cover and simmer for 10 minutes or until chicken is no longer pink when cut.",
+   "Add vegetables and pineapple. Cook until vegetables are crisp-tender, about 5 minutes.",
+   "In a small bowl, combine cornstarch with water and stir until smooth. Slowly pour into hot mixture, stirring constantly until thickened, about 1 minute.",
+   "Refrigerate leftovers within 2 hours."
+  ],
+  "notes": [
+   "Serve over cooked rice or pasta.",
+   "Broth can be homemade, canned or made using bouillon. For each cup of broth use 1 cup very hot water and 1 teaspoon or 1 cube bouillon."
+  ]
+ },
+ "veggie-quiche-muffins": {
+  "title": "Veggie Quiche Muffins",
+  "url": "https://foodhero.org/recipes/veggie-quiche-muffins",
+  "makes": "12 muffins",
+  "prep": "10 minutes",
+  "cook": "45 minutes",
+  "label": {
+   "servings": 12,
+   "size": "1 muffin (104 g)",
+   "kcal": 110,
+   "fat": 4.5,
+   "carbs": 11,
+   "protein": 6
+  },
+  "label_image": "https://foodhero.org/sites/foodhero-prod/files/labels/VeggieQuicheMuffinNF20.png",
+  "ingredients": [
+   {
+    "line": "¾ cup shredded cheddar cheese",
+    "amount": 0.75,
+    "unit": "cup",
+    "item": "Shredded cheddar cheese",
+    "dept": "DAIRY"
+   },
+   {
+    "line": "1 cup chopped onion (any type)",
+    "amount": 1,
+    "unit": "cup",
+    "item": "Onion, chopped",
+    "dept": "PRODUCE"
+   },
+   {
+    "line": "1 cup chopped broccoli",
+    "amount": 1,
+    "unit": "cup",
+    "item": "Broccoli, chopped",
+    "dept": "PRODUCE"
+   },
+   {
+    "line": "1 cup diced tomato (fresh)",
+    "amount": 1,
+    "unit": "cup",
+    "item": "Tomato, diced",
+    "dept": "PRODUCE"
+   },
+   {
+    "line": "2 cups nonfat or 1% milk",
+    "amount": 2,
+    "unit": "cups",
+    "item": "Nonfat or 1% milk",
+    "dept": "DAIRY"
+   },
+   {
+    "line": "4 eggs",
+    "amount": 4,
+    "unit": "",
+    "item": "Eggs",
+    "dept": "DAIRY"
+   },
+   {
+    "line": "1 cup baking mix (for biscuits or pancakes)",
+    "amount": 1,
+    "unit": "cup",
+    "item": "Baking mix (biscuit or pancake)",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "1 teaspoon Italian seasoning (or basil and oregano)",
+    "amount": 1,
+    "unit": "tsp",
+    "item": "Italian seasoning",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "½ teaspoon salt",
+    "amount": 0.5,
+    "unit": "tsp",
+    "item": "Salt",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "½ teaspoon pepper",
+    "amount": 0.5,
+    "unit": "tsp",
+    "item": "Black pepper",
+    "dept": "PANTRY"
+   }
+  ],
+  "steps": [
+   "Wash hands with soap and water.",
+   "Rinse fresh vegetables under running water before preparing.",
+   "Preheat oven to 375 degrees F. Lightly grease 12 muffin cups.",
+   "Sprinkle the cheese, onion, broccoli and tomato into the muffin cups.",
+   "Place remaining ingredients in a bowl and mix until smooth. Pour mixture over ingredients in the muffin cups.",
+   "Bake until golden brown or until a knife inserted into the center comes out clean, 35 to 40 minutes. Cool 5 minutes.",
+   "Refrigerate leftovers within 2 hours."
+  ],
+  "notes": [
+   "Try chopped zucchini or mushrooms as part of the vegetables.",
+   "Use any variety of cheese your family likes.",
+   "Bake in a pie pan instead of muffin cups (baking time will be longer)."
+  ]
+ },
+ "chicken-and-black-bean-salsa-burritos": {
+  "title": "Chicken and Black Bean Salsa Burritos",
+  "url": "https://foodhero.org/recipes/chicken-and-black-bean-salsa-burritos",
+  "makes": "4 Burritos",
+  "prep": "20 minutes",
+  "cook": "30 minutes",
+  "label": {
+   "servings": 8,
+   "size": "½ burrito (161 g)",
+   "kcal": 260,
+   "fat": 8,
+   "carbs": 24,
+   "protein": 22
+  },
+  "label_image": "https://foodhero.org/sites/foodhero-prod/files/labels/Chicken%26BlackBeanSalsaBurritoNF20.png",
+  "ingredients": [
+   {
+    "line": "1 can (15 ounces) black beans, drained and rinsed",
+    "amount": 1,
+    "unit": "can (15 oz)",
+    "item": "Black beans",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "2 green onions, chopped",
+    "amount": 2,
+    "unit": "",
+    "item": "Green onions",
+    "dept": "PRODUCE"
+   },
+   {
+    "line": "1 Tablespoon lemon juice",
+    "amount": 1,
+    "unit": "Tbsp",
+    "item": "Lemon juice",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "¼ teaspoon ground cumin",
+    "amount": 0.25,
+    "unit": "tsp",
+    "item": "Ground cumin",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "½ teaspoon salt, divided",
+    "amount": 0.5,
+    "unit": "tsp",
+    "item": "Salt",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "4 boneless, skinless chicken breasts",
+    "amount": 4,
+    "unit": "",
+    "item": "Boneless, skinless chicken breasts",
+    "dept": "MEAT"
+   },
+   {
+    "line": "¼ teaspoon chili powder",
+    "amount": 0.25,
+    "unit": "tsp",
+    "item": "Chili powder",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "¼ teaspoon black pepper",
+    "amount": 0.25,
+    "unit": "tsp",
+    "item": "Black pepper",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "1 cup shredded cheese (try cheddar, pepper jack, or Mexican blend)",
+    "amount": 1,
+    "unit": "cup",
+    "item": "Shredded cheese (cheddar, pepper jack or Mexican blend)",
+    "dept": "DAIRY"
+   },
+   {
+    "line": "4 (9-inch) flour tortillas",
+    "amount": 4,
+    "unit": "",
+    "item": "Flour tortillas, 9-inch",
+    "dept": "BAKERY"
+   }
+  ],
+  "steps": [
+   "Wash hands with soap and water.",
+   "Rinse fresh vegetables under running water before preparing.",
+   "Preheat oven to 350 degrees F.",
+   "In a small bowl, combine the beans, green onions, lemon juice, cumin, and ¼ teaspoon salt.",
+   "Rub the chicken breasts with the chili powder, pepper and the remaining ¼ teaspoon salt.",
+   "Cook the chicken in a skillet over medium-high heat (350 degrees F in an electric skillet) for 5 to 7 minutes. Turn it over and cook until the internal temperature of the thickest part reaches 165 degrees F using a food thermometer, about 5 to 7 minutes longer.",
+   "Let chicken cool; slice into strips or chunks.",
+   "Divide cheese evenly between tortillas. Top the cheese with equal amounts of chicken and black bean salsa mixture.",
+   "Roll up the burritos and wrap each one in foil.",
+   "Bake burritos until the cheese melts, about 15 minutes.",
+   "Refrigerate leftovers within 2 hours."
+  ],
+  "notes": [
+   "Freeze extra lemon juice to use later.",
+   "Cook your own dry beans. One can (15 ounces) is about 1½ to 1¾ cups drained beans.",
+   "Try adding cilantro on top for more flavor."
+  ]
+ },
+ "beef-and-broccoli": {
+  "title": "Beef and Broccoli",
+  "url": "https://foodhero.org/recipes/beef-and-broccoli",
+  "makes": "7 Cups",
+  "prep": "15 minutes",
+  "cook": "30 minutes",
+  "label": {
+   "servings": 7,
+   "size": "1 cup (178 g)",
+   "kcal": 210,
+   "fat": 7,
+   "carbs": 23,
+   "protein": 13
+  },
+  "label_image": "https://foodhero.org/sites/foodhero-prod/files/labels/BeefandBroccoliNF20.png",
+  "ingredients": [
+   {
+    "line": "¾ pound lean ground beef",
+    "amount": 0.75,
+    "unit": "lb",
+    "item": "Lean ground beef",
+    "dept": "MEAT"
+   },
+   {
+    "line": "¼ teaspoon ground ginger",
+    "amount": 0.25,
+    "unit": "tsp",
+    "item": "Ground ginger",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "¾ teaspoon garlic powder",
+    "amount": 0.75,
+    "unit": "tsp",
+    "item": "Garlic powder",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "2 Tablespoons packed brown sugar",
+    "amount": 2,
+    "unit": "Tbsp",
+    "item": "Brown sugar",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "¼ cup low-sodium soy sauce",
+    "amount": 0.25,
+    "unit": "cup",
+    "item": "Low-sodium soy sauce",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "2 teaspoons cornstarch",
+    "amount": 2,
+    "unit": "tsp",
+    "item": "Cornstarch",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "1 Tablespoon sesame oil",
+    "amount": 1,
+    "unit": "Tbsp",
+    "item": "Sesame oil",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "¼ teaspoon red pepper flakes",
+    "amount": 0.25,
+    "unit": "tsp",
+    "item": "Red pepper flakes",
+    "dept": "PANTRY"
+   },
+   {
+    "line": "½ cup water",
+    "amount": null,
+    "unit": "",
+    "item": "(water)",
+    "dept": null
+   },
+   {
+    "line": "4 cups chopped broccoli (fresh or frozen)",
+    "amount": 4,
+    "unit": "cups",
+    "item": "Broccoli, chopped (fresh or frozen)",
+    "dept": "FROZEN"
+   },
+   {
+    "line": "3 cups cooked bulgur",
+    "amount": 3,
+    "unit": "cups",
+    "item": "Bulgur, cooked",
+    "dept": "PANTRY"
+   }
+  ],
+  "steps": [
+   "Wash hands with soap and water.",
+   "Rinse fresh vegetables under running water before preparing.",
+   "Cook beef, ginger and garlic powder in a skillet over medium-high heat (325 degrees F in an electric skillet) until meat is browned.",
+   "In a medium bowl, mix sugar, soy sauce, cornstarch, sesame oil, pepper flakes and water.",
+   "Add sauce to beef and cook for 5 minutes. Add broccoli and cook until tender.",
+   "Serve over cooked bulgur.",
+   "Refrigerate leftovers within 2 hours."
+  ],
+  "notes": [
+   "Try Food Hero Baked Tofu instead of beef.",
+   "No bulgur? Use brown rice or another whole grain."
+  ]
+ }
+}

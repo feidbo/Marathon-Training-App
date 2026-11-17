@@ -30,5 +30,6 @@ internal val usdaFoods: Map<String, Food> = mapOf(
     "tomatoes" to Food("tomatoes", 170051, "Tomatoes, red, ripe, canned, packed in tomato juice", 16.0, 0.79, 3.47, 0.25),
     "tuna" to Food("tuna", 173709, "Fish, tuna, light, canned in water, drained solids", 86.0, 19.44, 0.0, 0.96),
     "turkey" to Food("turkey", 172851, "Turkey, ground, 93% lean, 7% fat, pan-broiled crumbles", 213.0, 27.1, 0.0, 11.6),
+    "whey" to Food("whey", 173177, "Beverages, Whey protein powder isolate", 359.0, 58.14, 29.07, 1.16),
     "yogurt" to Food("yogurt", 171312, "Yogurt, Greek, nonfat, plain, CHOBANI", 54.0, 9.53, 3.43, 0.24),
 )
