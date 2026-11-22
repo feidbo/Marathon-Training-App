@@ -305,6 +305,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // ---- Sharing (Settings → Share my progress) -------------------------------------------------
+
+    /** A readable report of everything logged so far, for a plan check-in. */
+    fun progressReport(appVersion: String): String {
+        val s = _state.value
+        return com.feidbo.marathon.data.progressReport(s.data, s.schedule, s.progress, s.today, appVersion)
+    }
+
+    /** The complete save file, exactly as stored on the phone. */
+    fun rawData(): String = Store.encode(_state.value.data).toString(1)
+
     fun markWhatsNewSeen() {
         if (_state.value.data.whatsNewSeen < WHATS_NEW_VERSION) update { it.copy(whatsNewSeen = WHATS_NEW_VERSION) }
     }

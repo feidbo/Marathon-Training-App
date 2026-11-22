@@ -126,6 +126,7 @@ private fun App(vm: AppViewModel) {
     var catchUp by remember { mutableStateOf(false) }
     var whatsNew by rememberSaveable { mutableStateOf(state.data.whatsNewSeen < WHATS_NEW_VERSION) }
     val calfActions = remember(vm) { CalfActions(vm::setCalf, vm::addCalfTest, vm::toggleCalfDay) }
+    val context = androidx.compose.ui.platform.LocalContext.current
     val foodActions = remember(vm) { FoodActions(vm::setNutrition, vm::toggleMeal, vm::toggleShopItem, vm::addWeighIn) }
     fun push(s: Screen) = stack.add(s)
     fun pop() { if (stack.isNotEmpty()) stack.removeAt(stack.lastIndex) }
@@ -204,6 +205,8 @@ private fun App(vm: AppViewModel) {
                         onReset = { vm.resetAll(); tab = Tab.TODAY },
                         onOpenAmendments = { push(Screen.Amendments) },
                         onOpenWhatsNew = { whatsNew = true },
+                        onShareReport = { shareText(context, "Marathon progress report", vm.progressReport(appVersion(context))) },
+                        onShareData = { shareText(context, "Marathon app data", vm.rawData()) },
                     )
                 }
             }
@@ -233,6 +236,22 @@ private fun App(vm: AppViewModel) {
         )
     }
     celebration?.let { CelebrationOverlay(it, onDismiss = vm::dismissCelebration) }
+}
+
+/** Opens the system share sheet with [text] (copy, email, messages, notes…). */
+private fun shareText(context: android.content.Context, subject: String, text: String) {
+    val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(android.content.Intent.EXTRA_SUBJECT, subject)
+        putExtra(android.content.Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(android.content.Intent.createChooser(send, subject))
+}
+
+private fun appVersion(context: android.content.Context): String = try {
+    context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "?"
+} catch (_: Exception) {
+    "?"
 }
 
 private fun clampToPlan(d: LocalDate): LocalDate = d.coerceIn(Plan.start, Plan.raceDay)

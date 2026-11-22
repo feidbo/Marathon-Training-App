@@ -231,6 +231,8 @@ fun SettingsScreen(
     onReset: () -> Unit,
     onOpenAmendments: () -> Unit,
     onOpenWhatsNew: () -> Unit,
+    onShareReport: () -> Unit,
+    onShareData: () -> Unit,
 ) {
     val s = state.settings
     var mpMin by remember { mutableStateOf((s.marathonPaceSec / 60).toString()) }
@@ -329,6 +331,18 @@ fun SettingsScreen(
                         "(Frandsen 2025). The half-marathon week and the taper are never restructured.",
                     style = MaterialTheme.typography.bodySmall,
                 )
+            }
+            SectionCard {
+                Text("Share my progress", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Opens your phone's share menu with a text report of everything logged so far: each day's plan and " +
+                        "what you did, lifts, calf, weigh-ins and the next two weeks. Copy it, or send it to yourself, and " +
+                        "paste it into a chat for a plan check-in.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                Button(onClick = onShareReport, modifier = Modifier.fillMaxWidth()) { Text("Share progress report") }
+                TextButton(onClick = onShareData, modifier = Modifier.fillMaxWidth()) { Text("Share the full data file (for a backup)") }
             }
             OutlinedButton(onClick = onOpenAmendments, modifier = Modifier.fillMaxWidth()) {
                 Text("Changes from the original plan, with sources")

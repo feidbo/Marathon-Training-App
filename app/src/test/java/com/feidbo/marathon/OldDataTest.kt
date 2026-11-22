@@ -24,6 +24,8 @@ import java.time.LocalDate
  */
 class OldDataTest {
     // Exactly the fields the previous release wrote (Store.encode before this update).
+    fun oldFileText() = oldFile
+
     private val oldFile = """
     {"version":1,"onboarded":true,
      "settings":{"marathonPaceSec":618,"preplanLongestMiles":4},
@@ -124,4 +126,27 @@ class OldDataTest {
         assertEquals(listOf(90, 90), segs.map { it.seconds })
         assertTrue(segs.all { it.exercise.id == "quad_stretch" })
     }
+}
+
+class ReportTest {
+    @Test fun reportCoversWhatWasLogged() {
+        val file = javaClass.getResource("/old_save.json")?.readText()
+        val data = if (file != null) Store.decode(JSONObject(file)) else OldDataTestFixture.data()
+        val today = LocalDate.of(2026, 10, 20)
+        val schedule = Schedule(data.logs, data.settings, today)
+        val text = com.feidbo.marathon.data.progressReport(data, schedule, AppViewModel.progressFor(data, schedule, today), today, "1.18")
+        java.io.File("build/sample-progress-report.txt").writeText(text)   // for eyeballing the format
+        assertTrue(text.contains("PROGRESS REPORT"))
+        assertTrue(text.contains("Fri Oct 16"))                     // plan day 1
+        assertTrue(text.contains("2 mi, 10:30/mi, effort 4/10"))     // day 0's run
+        assertTrue(text.contains("Leg press (machine): 140 lb × 12, 140 lb × 12"))
+        assertTrue(text.contains("MISSED (No time / life got in the way)"))
+        assertTrue(text.contains("PAIN"))
+        assertTrue(text.contains("NEXT 14 DAYS"))
+    }
+}
+
+/** The previous release's save file, shared by the tests. */
+object OldDataTestFixture {
+    fun data(): AppData = Store.decode(JSONObject(OldDataTest().oldFileText()))
 }

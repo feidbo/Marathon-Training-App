@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /** Bump when there's a new "What's new" note to show once after updating. */
-const val WHATS_NEW_VERSION = 7
+const val WHATS_NEW_VERSION = 8
 
 /** One change from the original plan document, with what it rests on (docs/decisions.md, docs/evidence/). */
 private class Amendment(val title: String, val was: String, val now: String, val evidence: String, val strength: String)
@@ -208,6 +208,7 @@ fun WhatsNewDialog(onDismiss: () -> Unit, onOpenAmendments: () -> Unit) {
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(
+                    "📤 Settings → Share my progress: a text report of everything you've logged, ready to paste into a chat.",
                     "🥣 Three meals, no snacks: a light breakfast (2 veggie quiche muffins + protein yogurt) and bigger " +
                         "lunches and dinners. The chicken cabbage stir-fry replaces beef and broccoli to keep protein up.",
                     "🍳 New recipes: all six meals are now kitchen-tested Food Hero recipes (Oregon State University), " +
