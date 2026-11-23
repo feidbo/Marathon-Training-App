@@ -115,6 +115,7 @@ fun TodayScreen(
     onCatchUp: () -> Unit,
     onStretchDone: (Int) -> Unit,
     calfActions: CalfActions,
+    onMoveStrength: (Int, Boolean) -> Unit = { _, _ -> },
 ) {
     val sd = state.schedule.on(date)
     val today = state.today
@@ -168,7 +169,7 @@ fun TodayScreen(
                 Text("🏅 Eugene is done!", style = MaterialTheme.typography.headlineSmall)
                 Text("Check Progress for everything you accomplished.")
             }
-            else -> DayContent(state, sd, onLog, onMissed, onOpenExercise, onToggleStretch, onUndo, onStretchDone, calfActions)
+            else -> DayContent(state, sd, onLog, onMissed, onOpenExercise, onToggleStretch, onUndo, onStretchDone, calfActions, onMoveStrength)
         }
 
         WeekStrip(state, date, onDateChange)
@@ -267,6 +268,7 @@ private fun DayContent(
     onUndo: (Int) -> Unit,
     onStretchDone: (Int) -> Unit,
     calfActions: CalfActions,
+    onMoveStrength: (Int, Boolean) -> Unit = { _, _ -> },
 ) {
     val day = sd.day
     val log = state.logs[day.index]
@@ -330,6 +332,18 @@ private fun DayContent(
                     "Dumbbells or bodyweight — choose when you log. Tap an exercise to see how.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            val moves = state.data.strengthMoves
+            val movedFrom = moves.entries.firstOrNull { it.value == day.index }?.key
+            val lifted = log?.strength?.any { e -> e.sets.any { it.reps > 0 } } == true
+            if (movedFrom != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Moved here from ${day.date.minusDays(1).dayOfWeek.name.lowercase().replaceFirstChar { it.uppercase() }}.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
+                    if (!lifted) TextButton(onClick = { onMoveStrength(movedFrom, true) }) { Text("Move back") }
+                }
+            } else if (!lifted && day.date >= state.today.minusDays(1) && Plan.canMoveStrength(day.index, moves)) {
+                TextButton(onClick = { onMoveStrength(day.index, false) }) { Text("Can't lift today? Do it tomorrow") }
+            }
             Spacer(Modifier.height(8.dp))
             session.items.forEachIndexed { i, rx ->
                 if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)

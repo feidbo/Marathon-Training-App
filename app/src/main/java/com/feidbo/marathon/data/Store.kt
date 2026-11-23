@@ -39,6 +39,8 @@ data class AppData(
     /** Plan week → shopping-list items ticked (food ids). */
     val shopChecks: Map<Int, Set<String>> = emptyMap(),
     val weighIns: List<WeighIn> = emptyList(),
+    /** Strength sessions moved to the next day: from-day index → to-day index. */
+    val strengthMoves: Map<Int, Int> = emptyMap(),
 ) {
     /** Days with all four meals ticked. */
     val mealDays: Set<Int> get() = mealChecks.filterValues { c -> MealSlot.entries.all { it.name in c } }.keys
@@ -145,6 +147,7 @@ class Store(context: Context) {
         fun checks(m: Map<Int, Set<String>>) = JSONObject().apply { m.forEach { (k, v) -> if (v.isNotEmpty()) put(k.toString(), JSONArray(v.sorted())) } }
         put("mealChecks", checks(d.mealChecks))
         put("shopChecks", checks(d.shopChecks))
+        put("strengthMoves", JSONObject().apply { d.strengthMoves.forEach { (k, v) -> put(k.toString(), v) } })
         put("weighIns", JSONArray().apply { d.weighIns.forEach { put(JSONObject().put("day", it.dayIndex).put("lb", it.lb)) } })
             put("calfTests", JSONArray().apply {
                 d.calfTests.forEach { t ->
@@ -316,8 +319,15 @@ class Store(context: Context) {
                 try { WeighIn(w.getInt("day"), w.getDouble("lb")) } catch (_: Exception) { null }
             }
         } ?: emptyList()
+        val moves = try {
+            o.optJSONObject("strengthMoves")?.let { m ->
+                m.keys().asSequence().mapNotNull { k -> k.toIntOrNull()?.let { it to m.getInt(k) } }.toMap()
+            } ?: emptyMap()
+        } catch (_: Exception) {
+            emptyMap()
+        }
         return AppData(logs, stretch, settings, o.optBoolean("onboarded"), calf, calfTests, calfDays, o.optInt("whatsNewSeen"),
-            nutrition, checks("mealChecks"), checks("shopChecks"), weighIns)
+            nutrition, checks("mealChecks"), checks("shopChecks"), weighIns, moves)
         }
 
         private fun JSONObject.optIntOrNull(key: String): Int? = if (has(key) && !isNull(key)) getInt(key) else null

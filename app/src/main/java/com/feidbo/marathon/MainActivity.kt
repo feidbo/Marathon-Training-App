@@ -191,6 +191,7 @@ private fun App(vm: AppViewModel) {
                         onCatchUp = { catchUp = true },
                         onStretchDone = vm::markStretchDone,
                         calfActions = calfActions,
+                        onMoveStrength = vm::moveStrength,
                     )
                     Tab.PROGRESS -> ProgressScreen(
                         state = state,

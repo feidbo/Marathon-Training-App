@@ -108,6 +108,11 @@ class ScreenshotTest {
         paparazzi.snapshot { Today(state(d.date, data), d.date) }
     }
 
+    @Test fun strengthDayNotLiftedYet() {
+        paparazzi.unsafeUpdateConfig(DeviceConfig.PIXEL_5.copy(screenHeight = 7000, softButtons = false))
+        paparazzi.snapshot { Today(state(runAndLift.date, base()), runAndLift.date) }
+    }
+
     @Test fun tempoSteps() {
         paparazzi.snapshot { Today(state(tempo.date, base()), tempo.date) }
     }

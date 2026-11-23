@@ -137,7 +137,7 @@ class TodayWidget : AppWidgetProvider() {
         }
 
         internal fun content(data: AppData, today: LocalDate): Content {
-            val schedule = Schedule(data.logs, data.settings, today)
+            val schedule = Schedule(data.logs, data.settings, today, Plan.withStrengthMoves(data.strengthMoves))
             val progress = com.feidbo.marathon.ui.AppViewModel.progressFor(data, schedule, today)
             val toRace = ChronoUnit.DAYS.between(today, Plan.raceDay)
             val streak = "🔥 ${progress.streak} · Lv ${progress.level.level}"

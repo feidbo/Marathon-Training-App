@@ -759,3 +759,28 @@ class NutritionTest {
         assertTrue(Nutrition.weighInAdvice(listOf(WeighIn(30, 184.0), WeighIn(37, 181.0)))!!.contains("Add a fuel serving"))
     }
 }
+
+class StrengthMoveTest {
+    private val mon = Plan.dayOn(LocalDate.of(2026, 11, 23))!!   // 3 mi easy + strength
+    private val tue = Plan.dayOn(LocalDate.of(2026, 11, 24))!!   // rest
+
+    @Test fun movingMondayStrengthToTuesday() {
+        assertTrue(mon.strength.isPlanned && !tue.strength.isPlanned)
+        assertTrue(Plan.canMoveStrength(mon.index, emptyMap()))
+        val plan = Plan.withStrengthMoves(mapOf(mon.index to tue.index))
+        assertFalse(plan[mon.index].strength.isPlanned)
+        assertEquals(mon.strength, plan[tue.index].strength)
+        assertEquals(mon.miles, plan[mon.index].miles, 0.0)          // the run stays on Monday
+        assertTrue(plan[tue.index].isTrainingDay)
+        // Monday with just the run logged now counts as done, not partial.
+        assertEquals(DayStatus.DONE, completionStatus(plan[mon.index], RunLog(3.0), emptyList()))
+        // Can't move it twice, and can't move onto a day that already has strength.
+        assertFalse(Plan.canMoveStrength(mon.index, mapOf(mon.index to tue.index)))
+        val wed = Plan.dayOn(LocalDate.of(2026, 11, 25))!!
+        val thu = Plan.dayOn(LocalDate.of(2026, 11, 26))!!
+        assertFalse(Plan.canMoveStrength(wed.index, emptyMap()))        // Wednesday has no strength
+        assertTrue(thu.strength.isPlanned)
+        val schedule = Schedule(emptyMap(), Settings(), mon.date, plan)
+        assertEquals(mon.strength, schedule[tue.index]!!.day.strength)
+    }
+}

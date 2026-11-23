@@ -34,6 +34,31 @@ object Plan {
     fun indexOf(date: LocalDate): Int = ChronoUnit.DAYS.between(start, date).toInt()
     fun dayOn(date: LocalDate): PlannedDay? = days.getOrNull(indexOf(date))
     fun weekDays(week: Int): List<PlannedDay> = days.filter { it.week == week }
+
+    /**
+     * The plan with strength sessions moved to the next day ([moves]: from-day index → to-day index), as asked
+     * for when a strength day slips. A move only applies when the target day has no strength of its own.
+     */
+    fun withStrengthMoves(moves: Map<Int, Int>): List<PlannedDay> {
+        if (moves.isEmpty()) return days
+        val out = days.toMutableList()
+        for ((from, to) in moves) {
+            val a = out.getOrNull(from) ?: continue
+            val b = out.getOrNull(to) ?: continue
+            if (!a.strength.isPlanned || b.strength.isPlanned) continue
+            out[to] = b.copy(strength = a.strength)
+            out[from] = a.copy(strength = StrengthKind.NONE)
+        }
+        return out
+    }
+
+    /** Whether [from]'s strength can move to the next day: it has strength, and tomorrow doesn't. */
+    fun canMoveStrength(from: Int, moves: Map<Int, Int>): Boolean {
+        val plan = withStrengthMoves(moves)
+        val a = plan.getOrNull(from) ?: return false
+        val b = plan.getOrNull(from + 1) ?: return false
+        return a.strength.isPlanned && !b.strength.isPlanned && from !in moves
+    }
 }
 
 /**

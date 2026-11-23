@@ -26,10 +26,10 @@ enum class RunKind(val title: String, val isKey: Boolean = false) {
 enum class StrengthKind(val title: String) {
     NONE(""),
     LEARN("Strength · learn the movements"),
-    PHASE1("Strength · 15–20 min"),
-    PHASE2("Strength · 20–25 min"),
-    PHASE3("Strength · 15 min, heavy"),
-    LIGHT("Strength · light, 10 min");
+    PHASE1("Strength · build"),
+    PHASE2("Strength · heavy"),
+    PHASE3("Strength · heavy, once a week"),
+    LIGHT("Strength · light");
 
     val isPlanned: Boolean get() = this != NONE
 }

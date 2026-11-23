@@ -83,7 +83,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun build(data: AppData, today: LocalDate): UiState {
-        val schedule = Schedule(data.logs, data.settings, today)
+        val schedule = Schedule(data.logs, data.settings, today, Plan.withStrengthMoves(data.strengthMoves))
         return UiState(data, today, schedule, progressFor(data, schedule, today))
     }
 
@@ -200,6 +200,24 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             advice = missAdvice(reason),
             planChanges = planChanges(before, after).ifEmpty { listOf("No change to your plan needed — pick up with today's workout.") },
         )
+    }
+
+    /** Moves a day's strength session to tomorrow (or back), and re-scores any day already logged. */
+    fun moveStrength(from: Int, back: Boolean = false) {
+        update { d ->
+            val moves = if (back) d.strengthMoves - from else d.strengthMoves + (from to from + 1)
+            val plan = Plan.withStrengthMoves(moves)
+            val logs = d.logs.toMutableMap()
+            for (i in listOf(from, from + 1)) {
+                val log = logs[i] ?: continue
+                if (log.status == DayStatus.MISSED) continue
+                val day = plan[i]
+                val status = completionStatus(day, log.run, log.strength)
+                val rescored = log.copy(status = status)
+                logs[i] = rescored.copy(xp = Game.xpFor(day, rescored))
+            }
+            d.copy(strengthMoves = moves, logs = logs)
+        }
     }
 
     fun clearLog(dayIndex: Int) {
