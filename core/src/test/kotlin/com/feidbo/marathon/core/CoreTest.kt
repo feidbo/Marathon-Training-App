@@ -784,3 +784,25 @@ class StrengthMoveTest {
         assertEquals(mon.strength, schedule[tue.index]!!.day.strength)
     }
 }
+
+class DaySwapTest {
+    @Test fun thanksgivingWorkoutSwapsWithFridayRest() {
+        val thu = Plan.dayOn(LocalDate.of(2026, 11, 26))!!   // 3 mi easy + strength
+        val fri = Plan.dayOn(LocalDate.of(2026, 11, 27))!!   // rest
+        assertTrue(thu.isTrainingDay && !fri.isTrainingDay)
+        assertTrue(Plan.canSwapDay(thu.index, emptySet(), emptyMap()))
+        val plan = Plan.withStrengthMoves(emptyMap(), setOf(thu.index))
+        assertFalse(plan[thu.index].isTrainingDay)
+        assertEquals(thu.miles, plan[fri.index].miles, 0.0)
+        assertEquals(thu.strength, plan[fri.index].strength)
+        assertEquals(thu.text, plan[fri.index].text)
+        assertEquals(fri.date, plan[fri.index].date)               // dates don't move
+        assertFalse(Plan.canSwapDay(thu.index, setOf(thu.index), emptyMap()))
+        assertFalse(Plan.canSwapDay(fri.index, setOf(thu.index), emptyMap()))
+        // Can't swap onto a training day.
+        val wed = Plan.dayOn(LocalDate.of(2026, 11, 25))!!
+        assertFalse(Plan.canSwapDay(wed.index, emptySet(), emptyMap()))
+        val s = Schedule(emptyMap(), Settings(), thu.date, plan)
+        assertEquals(thu.run, s[fri.index]!!.day.run)
+    }
+}

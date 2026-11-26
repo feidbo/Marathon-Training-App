@@ -116,6 +116,7 @@ fun TodayScreen(
     onStretchDone: (Int) -> Unit,
     calfActions: CalfActions,
     onMoveStrength: (Int, Boolean) -> Unit = { _, _ -> },
+    onSwapDay: (Int, Boolean) -> Unit = { _, _ -> },
 ) {
     val sd = state.schedule.on(date)
     val today = state.today
@@ -169,7 +170,7 @@ fun TodayScreen(
                 Text("🏅 Eugene is done!", style = MaterialTheme.typography.headlineSmall)
                 Text("Check Progress for everything you accomplished.")
             }
-            else -> DayContent(state, sd, onLog, onMissed, onOpenExercise, onToggleStretch, onUndo, onStretchDone, calfActions, onMoveStrength)
+            else -> DayContent(state, sd, onLog, onMissed, onOpenExercise, onToggleStretch, onUndo, onStretchDone, calfActions, onMoveStrength, onSwapDay)
         }
 
         WeekStrip(state, date, onDateChange)
@@ -269,6 +270,7 @@ private fun DayContent(
     onStretchDone: (Int) -> Unit,
     calfActions: CalfActions,
     onMoveStrength: (Int, Boolean) -> Unit = { _, _ -> },
+    onSwapDay: (Int, Boolean) -> Unit = { _, _ -> },
 ) {
     val day = sd.day
     val log = state.logs[day.index]
@@ -278,6 +280,25 @@ private fun DayContent(
     if (log != null) LoggedCard(state, sd, onLog, onUndo)
 
     WorkoutHero(state, sd)
+
+    // Whole-day swap with a rest day (e.g. train tomorrow instead of today).
+    val swaps = state.data.daySwaps
+    val swappedHere = (day.index - 1) in swaps
+    val swappedAway = day.index in swaps
+    if (swappedHere || swappedAway) {
+        SectionCard(container = MaterialTheme.colorScheme.secondaryContainer) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    if (swappedAway) "Rest today — this day's workout moved to tomorrow." else "Workout moved here from yesterday.",
+                    style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f),
+                )
+                val from = if (swappedAway) day.index else day.index - 1
+                if (state.logs[from] == null && state.logs[from + 1] == null) {
+                    TextButton(onClick = { onSwapDay(from, true) }) { Text("Swap back") }
+                }
+            }
+        }
+    }
 
     WorkoutStepsCard(state, sd)
 
@@ -316,6 +337,11 @@ private fun DayContent(
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(16.dp),
             ) { Text("I couldn't do it today") }
+            if (day.date == state.today && Plan.canSwapDay(day.index, state.data.daySwaps, state.data.strengthMoves)) {
+                TextButton(onClick = { onSwapDay(day.index, false) }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Rest today, do this workout tomorrow (swap with the rest day)")
+                }
+            }
         }
     }
 
@@ -341,7 +367,7 @@ private fun DayContent(
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
                     if (!lifted) TextButton(onClick = { onMoveStrength(movedFrom, true) }) { Text("Move back") }
                 }
-            } else if (!lifted && day.date >= state.today.minusDays(1) && Plan.canMoveStrength(day.index, moves)) {
+            } else if (!lifted && day.date >= state.today.minusDays(1) && Plan.canMoveStrength(day.index, moves, state.data.daySwaps)) {
                 TextButton(onClick = { onMoveStrength(day.index, false) }) { Text("Can't lift today? Do it tomorrow") }
             }
             Spacer(Modifier.height(8.dp))

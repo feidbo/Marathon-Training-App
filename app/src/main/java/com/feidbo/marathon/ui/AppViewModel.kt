@@ -83,7 +83,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun build(data: AppData, today: LocalDate): UiState {
-        val schedule = Schedule(data.logs, data.settings, today, Plan.withStrengthMoves(data.strengthMoves))
+        val schedule = Schedule(data.logs, data.settings, today, data.planDays)
         return UiState(data, today, schedule, progressFor(data, schedule, today))
     }
 
@@ -206,7 +206,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun moveStrength(from: Int, back: Boolean = false) {
         update { d ->
             val moves = if (back) d.strengthMoves - from else d.strengthMoves + (from to from + 1)
-            val plan = Plan.withStrengthMoves(moves)
+            val plan = Plan.withStrengthMoves(moves, d.daySwaps)
             val logs = d.logs.toMutableMap()
             for (i in listOf(from, from + 1)) {
                 val log = logs[i] ?: continue
@@ -217,6 +217,22 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 logs[i] = rescored.copy(xp = Game.xpFor(day, rescored))
             }
             d.copy(strengthMoves = moves, logs = logs)
+        }
+    }
+
+    /** Swaps a day's whole workout with the rest day after it (or back). */
+    fun swapDay(from: Int, back: Boolean = false) {
+        update { d ->
+            val swaps = if (back) d.daySwaps - from else d.daySwaps + from
+            val plan = Plan.withStrengthMoves(d.strengthMoves, swaps)
+            val logs = d.logs.toMutableMap()
+            for (i in listOf(from, from + 1)) {
+                val log = logs[i] ?: continue
+                if (log.status == DayStatus.MISSED) continue
+                val rescored = log.copy(status = completionStatus(plan[i], log.run, log.strength))
+                logs[i] = rescored.copy(xp = Game.xpFor(plan[i], rescored))
+            }
+            d.copy(daySwaps = swaps, logs = logs)
         }
     }
 

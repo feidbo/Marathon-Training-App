@@ -39,9 +39,17 @@ object Plan {
      * The plan with strength sessions moved to the next day ([moves]: from-day index → to-day index), as asked
      * for when a strength day slips. A move only applies when the target day has no strength of its own.
      */
-    fun withStrengthMoves(moves: Map<Int, Int>): List<PlannedDay> {
-        if (moves.isEmpty()) return days
+    fun withStrengthMoves(moves: Map<Int, Int>, swaps: Set<Int> = emptySet()): List<PlannedDay> {
+        if (moves.isEmpty() && swaps.isEmpty()) return days
         val out = days.toMutableList()
+        // Whole-day swaps first: day i's workout and the rest day after it trade places (dates stay put).
+        for (i in swaps.sorted()) {
+            val a = out.getOrNull(i) ?: continue
+            val b = out.getOrNull(i + 1) ?: continue
+            if (!a.isTrainingDay || b.isTrainingDay) continue
+            out[i] = a.copy(text = b.text, miles = b.miles, run = b.run, strength = b.strength, mpMiles = b.mpMiles)
+            out[i + 1] = b.copy(text = a.text, miles = a.miles, run = a.run, strength = a.strength, mpMiles = a.mpMiles)
+        }
         for ((from, to) in moves) {
             val a = out.getOrNull(from) ?: continue
             val b = out.getOrNull(to) ?: continue
@@ -52,9 +60,19 @@ object Plan {
         return out
     }
 
+    /** Whether day [from]'s whole workout can swap with the next day: that day is a rest day, and nothing's moved yet. */
+    fun canSwapDay(from: Int, swaps: Set<Int>, moves: Map<Int, Int>): Boolean {
+        if (from in swaps || from - 1 in swaps || from + 1 in swaps) return false
+        if (from in moves || moves.values.any { it == from || it == from + 1 }) return false
+        val plan = withStrengthMoves(moves, swaps)
+        val a = plan.getOrNull(from) ?: return false
+        val b = plan.getOrNull(from + 1) ?: return false
+        return a.isTrainingDay && !b.isTrainingDay
+    }
+
     /** Whether [from]'s strength can move to the next day: it has strength, and tomorrow doesn't. */
-    fun canMoveStrength(from: Int, moves: Map<Int, Int>): Boolean {
-        val plan = withStrengthMoves(moves)
+    fun canMoveStrength(from: Int, moves: Map<Int, Int>, swaps: Set<Int> = emptySet()): Boolean {
+        val plan = withStrengthMoves(moves, swaps)
         val a = plan.getOrNull(from) ?: return false
         val b = plan.getOrNull(from + 1) ?: return false
         return a.strength.isPlanned && !b.strength.isPlanned && from !in moves

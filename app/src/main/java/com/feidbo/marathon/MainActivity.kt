@@ -192,6 +192,7 @@ private fun App(vm: AppViewModel) {
                         onStretchDone = vm::markStretchDone,
                         calfActions = calfActions,
                         onMoveStrength = vm::moveStrength,
+                        onSwapDay = vm::swapDay,
                     )
                     Tab.PROGRESS -> ProgressScreen(
                         state = state,

@@ -96,6 +96,7 @@ class OldDataTest {
             calfDays = setOf(20, 21),
             whatsNewSeen = 2,
             strengthMoves = mapOf(37 to 38),
+            daySwaps = setOf(41),
             nutrition = com.feidbo.marathon.core.NutritionProfile(enabled = true, weightLb = 182.5, age = 33, bodyFatPct = 20.5, deficitPct = 15),
             mealChecks = mapOf(20 to setOf("BREAKFAST", "LUNCH", "DINNER", "SNACK", "fuel1"), 21 to setOf("LUNCH")),
             shopChecks = mapOf(5 to setOf("chicken", "rice")),

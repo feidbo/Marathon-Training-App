@@ -41,7 +41,12 @@ data class AppData(
     val weighIns: List<WeighIn> = emptyList(),
     /** Strength sessions moved to the next day: from-day index → to-day index. */
     val strengthMoves: Map<Int, Int> = emptyMap(),
+    /** Days whose whole workout swapped with the rest day after them. */
+    val daySwaps: Set<Int> = emptySet(),
 ) {
+    /** The plan as the runner will actually do it, with swaps and moved strength sessions. */
+    val planDays: List<com.feidbo.marathon.core.PlannedDay>
+        get() = com.feidbo.marathon.core.Plan.withStrengthMoves(strengthMoves, daySwaps)
     /** Days with all four meals ticked. */
     val mealDays: Set<Int> get() = mealChecks.filterValues { c -> MealSlot.entries.all { it.name in c } }.keys
 }
@@ -147,6 +152,7 @@ class Store(context: Context) {
         fun checks(m: Map<Int, Set<String>>) = JSONObject().apply { m.forEach { (k, v) -> if (v.isNotEmpty()) put(k.toString(), JSONArray(v.sorted())) } }
         put("mealChecks", checks(d.mealChecks))
         put("shopChecks", checks(d.shopChecks))
+        put("daySwaps", JSONArray(d.daySwaps.sorted()))
         put("strengthMoves", JSONObject().apply { d.strengthMoves.forEach { (k, v) -> put(k.toString(), v) } })
         put("weighIns", JSONArray().apply { d.weighIns.forEach { put(JSONObject().put("day", it.dayIndex).put("lb", it.lb)) } })
             put("calfTests", JSONArray().apply {
@@ -327,7 +333,8 @@ class Store(context: Context) {
             emptyMap()
         }
         return AppData(logs, stretch, settings, o.optBoolean("onboarded"), calf, calfTests, calfDays, o.optInt("whatsNewSeen"),
-            nutrition, checks("mealChecks"), checks("shopChecks"), weighIns, moves)
+            nutrition, checks("mealChecks"), checks("shopChecks"), weighIns, moves,
+            o.optJSONArray("daySwaps")?.let { a -> (0 until a.length()).mapNotNull { a.optInt(it, -1).takeIf { d -> d >= 0 } }.toSet() } ?: emptySet())
         }
 
         private fun JSONObject.optIntOrNull(key: String): Int? = if (has(key) && !isNull(key)) getInt(key) else null
