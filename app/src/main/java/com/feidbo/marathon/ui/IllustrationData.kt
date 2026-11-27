@@ -215,6 +215,25 @@ internal val illustrations: Map<String, Illustration> = mapOf(
             Chain(floatArrayOf(52.57f, 21.94f, 65.39f, 27.57f, 77.29f, 32.81f), floatArrayOf(52.57f, 16.70f, 64.41f, 24.17f, 75.41f, 31.10f), far = false),
         ),
     ),
+    "calf_raise_seated" to Illustration(
+        shapes = listOf(
+            Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),
+            Shape(ShapeKind.RECT, floatArrayOf(16.00f, 61.00f, 26.00f, 5.00f, 16.00f, 61.00f, 26.00f, 5.00f), 0.00f, ShapeStyle.PAD),
+            Shape(ShapeKind.LINE, floatArrayOf(20.00f, 66.00f, 20.00f, 92.00f, 20.00f, 66.00f, 20.00f, 92.00f), 3.00f, ShapeStyle.FRAME),
+            Shape(ShapeKind.LINE, floatArrayOf(38.00f, 66.00f, 38.00f, 92.00f, 38.00f, 66.00f, 38.00f, 92.00f), 3.00f, ShapeStyle.FRAME),
+            Shape(ShapeKind.RECT, floatArrayOf(56.00f, 85.00f, 14.00f, 7.00f, 56.00f, 85.00f, 14.00f, 7.00f), 0.00f, ShapeStyle.PAD),
+            Shape(ShapeKind.CIRCLE, floatArrayOf(55.81f, 61.96f, 4.50f, 56.93f, 56.67f, 4.50f), 0.00f, ShapeStyle.WEIGHT),
+        ),
+        head = floatArrayOf(32.78f, 23.14f, 32.78f, 23.14f),
+        headRadius = 6.00f,
+        chains = listOf(
+            Chain(floatArrayOf(38.50f, 58.50f, 56.98f, 68.47f, 52.66f, 88.00f, 59.66f, 88.00f), floatArrayOf(38.50f, 58.50f, 56.95f, 68.52f, 52.42f, 88.00f, 59.42f, 88.00f), far = true),
+            Chain(floatArrayOf(36.15f, 31.60f, 44.77f, 42.63f, 52.77f, 52.87f), floatArrayOf(36.15f, 31.60f, 44.77f, 42.63f, 52.77f, 52.87f), far = true),
+            Chain(floatArrayOf(36.00f, 60.00f, 55.81f, 66.96f, 55.66f, 86.96f, 62.00f, 84.00f), floatArrayOf(36.00f, 60.00f, 56.93f, 61.67f, 55.42f, 81.61f, 62.00f, 84.00f), far = false),
+            Chain(floatArrayOf(36.00f, 60.00f, 33.65f, 33.10f), floatArrayOf(36.00f, 60.00f, 33.65f, 33.10f), far = false),
+            Chain(floatArrayOf(33.65f, 33.10f, 42.51f, 43.94f, 50.74f, 54.01f), floatArrayOf(33.65f, 33.10f, 42.51f, 43.94f, 50.74f, 54.01f), far = false),
+        ),
+    ),
     "hip_thrust_db" to Illustration(
         shapes = listOf(
             Shape(ShapeKind.LINE, floatArrayOf(4.00f, 92.00f, 96.00f, 92.00f, 4.00f, 92.00f, 96.00f, 92.00f), 2.00f, ShapeStyle.FLOOR),

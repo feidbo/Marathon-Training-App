@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /** Bump when there's a new "What's new" note to show once after updating. */
-const val WHATS_NEW_VERSION = 11
+const val WHATS_NEW_VERSION = 12
 
 /** One change from the original plan document, with what it rests on (docs/decisions.md, docs/evidence/). */
 private class Amendment(val title: String, val was: String, val now: String, val evidence: String, val strength: String)
@@ -56,14 +56,14 @@ private val amendments = listOf(
     Amendment(
         "Dumbbell / bodyweight routine",
         "Leg press, leg-press calf raise, hip thrust machine, hip abductor, seated leg curl, assisted pull-up.",
-        "Bulgarian split squat · single-leg calf raise, 2 × 20 fast then 2 × 20 slow (your change; the bent-knee raise " +
-            "now appears only in the calf guidance) · " +
-            "single-leg RDL (or sliding leg curl) · side-lying hip abduction (then side plank) · assisted pull-up last, " +
-            "only when there's a machine. The hip thrust was dropped at your request. Each has a bodyweight version. Your machine history is kept; " +
+        "Bulgarian split squat · fast single-leg calf raise, 20–30 reps with a weight that's easy to grip (progress by " +
+            "reps, then pauses) · seated single-leg calf raise with the dumbbells resting on the knee (no grip needed) · " +
+            "single-leg RDL (or sliding leg curl) · dumbbell row · weighted curl-ups and Russian twists · assisted " +
+            "pull-up last, only when there's a machine. The hip thrust and side-lying abduction were dropped at your request. Each has a bodyweight version. Your machine history is kept; " +
             "the new exercises start fresh benchmarks.",
         "Matched by muscle. Split squats built strength as well as back squats (Speirs 2016). Knee straight vs bent " +
-            "shifts calf work between gastrocnemius and soleus (Hébert-Losier 2012; Kovács 2024). Side-lying abduction " +
-            "and side plank ranked highest for the side of the hip (Distefano 2009; Boren 2011). Muscle-activity studies " +
+            "shifts calf work between gastrocnemius and soleus (Hébert-Losier 2012; Kovács 2024). Muscle grows across a " +
+            "wide range of loads when sets end near failure (Schoenfeld 2021; Refalo 2023). Muscle-activity studies " +
             "show what an exercise works, not which builds the most strength (Vigotsky 2017).",
         "Weak to moderate",
     ),
@@ -208,10 +208,13 @@ fun WhatsNewDialog(onDismiss: () -> Unit, onOpenAmendments: () -> Unit) {
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(
+                    "🦵 Calf raises without straps: the fast raise uses a weight that's easy to grip and grows by reps " +
+                        "(20–30, about 2 left), then pauses. The slow set is now a seated raise with the dumbbells resting " +
+                        "on your knee, so your fingers aren't the limit, and it works the soleus.",
+                    "🔆 The screen stays on while you're logging a strength session.",
                     "🧘 Your yoga video replaces the stretch routine (change the link in Settings).",
                     "🏋️ Abs are weighted now: hold a dumbbell for curl-ups and Russian twists, aiming for about 2 reps left.",
                     "✂️ Side-lying hip abduction is out.",
-                    "🦵 Calf raises: log the total weight you hold. Grip giving out first? Try lifting straps or a weighted backpack.",
                     "🔁 Need a rest today? When tomorrow is a rest day, \"Rest today, do this workout tomorrow\" swaps the two days.",
                     "📅 Can't lift today? On a strength day, tap \"Do it tomorrow\" to move the session to the next day " +
                         "(when that day has no strength of its own). The run stays put, and the day counts as done.",
@@ -222,8 +225,6 @@ fun WhatsNewDialog(onDismiss: () -> Unit, onOpenAmendments: () -> Unit) {
                         "shown exactly as published, with their own nutrition labels. One cook on Sunday covers the week.",
                     "🌀 Russian twists replace the towel roll-out.",
                     "📋 Strength order: every dumbbell exercise, then bodyweight, then the pull-up machine last.",
-                    "🦵 Calf raises are now 2 × 20 fast, then 2 × 20 slow (the bent-knee raise is out). Expect a lighter " +
-                        "dumbbell suggestion for 20 reps.",
                     "🥗 New Food tab: prep-ahead meals to tick off, a weekly shopping list, daily calorie and protein " +
                         "targets that follow your mileage, and a weekly weigh-in. Turn it on from the Food tab.",
                     "💪 No pull-up machine? Pick the one-arm dumbbell row when you log.",

@@ -504,6 +504,27 @@ def russian_twist():
     return [FLOOR], pose(-1), pose(1)
 
 
+def calf_raise_seated():
+    # Facing right, seated on a bench: knee bent ~90°, ball of the foot on a block, dumbbell resting on the knee.
+    hip = (36, 60)
+    toe = (62, 84)
+    def pose(foot_deg):
+        r = math.radians(foot_deg)
+        ankle = pt(toe[0] - FOOT * math.cos(r), toe[1] + FOOT * math.sin(r))
+        head, chains = figure(hip, 95, (54, 58), -1, ankle, 1, foot_deg,
+                              far_hand=(56, 57), far_ankle=(ankle[0] - 3, 88), far_foot_deg=0)
+        knee = chains[-3][0][1]
+        return (head, chains), knee
+    (s, s_knee), (e, e_knee) = pose(25), pose(-20)
+    props = [
+        FLOOR,
+        rect(16, 61, 26, 5, "PAD"), line((20, 66), (20, 92), 3), line((38, 66), (38, 92), 3),
+        rect(56, 85, 14, 7, "PAD"),
+        circle(s_knee[0], s_knee[1] - 5, 4.5, "WEIGHT", (e_knee[0], e_knee[1] - 5, 4.5)),
+    ]
+    return props, s, e
+
+
 EXERCISES = {
     "leg_press": leg_press,
     "calf_raise": calf_raise,
@@ -516,6 +537,7 @@ EXERCISES = {
     "calf_raise_straight": calf_raise_straight,
     "calf_raise_bent": calf_raise_bent,
     "calf_raise_slow": calf_raise_straight,
+    "calf_raise_seated": calf_raise_seated,
     "hip_thrust_db": hip_thrust_db,
     "side_abduction": side_abduction,
     "single_leg_rdl": single_leg_rdl,

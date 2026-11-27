@@ -216,6 +216,18 @@ fun LogScreen(
         }
     }
 
+    // Keep the screen awake while logging a strength session, so it doesn't lock between sets.
+    val activity = LocalContext.current.let { c ->
+        var x: android.content.Context? = c
+        while (x is android.content.ContextWrapper && x !is android.app.Activity) x = x.baseContext
+        x as? android.app.Activity
+    }
+    DisposableEffect(activity, session != null) {
+        val window = activity?.window
+        if (session != null) window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose { window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
+    }
+
     // Save what's been entered: on every tick, when leaving, and when the app goes to the background.
     var committed by remember { mutableStateOf(false) }
     fun saveDraft() {
@@ -476,7 +488,9 @@ private fun ExerciseEditor(
                 )
                 Text(
                     last?.let { "Last: ${setsText(it.log)}" }
-                        ?: if (e.weighted) "First time — pick a weight that's hard by the last rep" else "Reps only — no weight to log",
+                        ?: if (!e.weighted) "Reps only — no weight to log"
+                        else if (ex.progressByReps) "First time — a weight you can grip easily, or none"
+                        else "First time — pick a weight that's hard by the last rep",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -506,6 +520,12 @@ private fun ExerciseEditor(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(vertical = 4.dp),
             )
+        }
+        if (ex.progressByReps && !e.skipped && e.weighted) {
+            Text("Grip-friendly: keep a weight you can hold easily and go to about 2 reps short of failure. Add reps up to 30, " +
+                "then a 2-second hold at the top — not more weight.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(vertical = 4.dp))
         }
         if (perSide && !e.skipped) {
             Text("One ${ex.sideWord} at a time: do the reps on each ${ex.sideWord} — that's one set. Log the reps per ${ex.sideWord}.",

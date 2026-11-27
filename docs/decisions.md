@@ -287,3 +287,19 @@ I re-read each decision against the evidence logs for overstatement:
 - **Yoga replaces the stretch routine:** the daily card opens your chosen video (changeable in Settings) and
   keeps the same XP and badges. The video itself could not be viewed from the build environment. In calf
   stages 1–2 the card reminds you to ease off calf-stretching poses.
+
+### Amendment, Nov 27 2026 (later) — grip-free calves, screen stays on (your requests)
+
+- **No straps or backpack.** Replaces the straps/backpack cue above.
+- **Fast single-leg calf raise (1b):** hold a weight that is easy to grip (or none), 20–30 reps per leg to about
+  2 reps short of failure; when 30 comes with reps to spare, add a 2-second hold at the top. It progresses by
+  reps, so the app gives no weight suggestion for it. Basis: muscle grows across a wide range of loads
+  (≥ ~30% 1RM) when sets end near failure (Schoenfeld 2021; Refalo 2023 — abs A8, A9). The 20–30 range and
+  the pause progression are app defaults, not from a study.
+- **Seated single-leg calf raise (1c)** replaces the slow standing raise, 15–20 reps, 3 s up, pause, 3 s down.
+  Dumbbells rest on the thigh just above the knee, so grip is not a limit. Knee bent: 15–28% more soleus
+  activity in the first half of slow contractions and 31% less torque (Kovács 2024, exercises C2); Hébert-
+  Losier 2012 found only ~4% (C1). Experts load the soleus knee-straight and knee-bent in calf-strain rehab
+  (Green 2022, calf K1). The slow raise is retired; its logged sets stay in history.
+- **Screen stays on** while the strength logging screen is open (Android `FLAG_KEEP_SCREEN_ON`, cleared when
+  you leave the screen).

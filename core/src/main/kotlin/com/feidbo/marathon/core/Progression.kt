@@ -77,7 +77,7 @@ fun loadAdvice(rx: Prescription, kind: StrengthKind, date: LocalDate, history: L
     val working = history.lastOrNull { it.strength != StrengthKind.LIGHT && it.strength != StrengthKind.LEARN }
     val last = working ?: history.last()
     val lastDate = Plan.days[last.dayIndex].date
-    if (!ex.usesWeight || last.log.bodyweight) return null  // bodyweight: no load to suggest
+    if (!ex.usesWeight || ex.progressByReps || last.log.bodyweight) return null  // bodyweight or rep-progressed: no load to suggest
     val inv = ex.inverted
     val lastW = workingWeight(last.log, inv)
     if (lastW <= 0.0 && !inv) return null
