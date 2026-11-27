@@ -135,6 +135,7 @@ class Store(context: Context) {
                 put("preplanLongestMiles", d.settings.preplanLongestMiles)
                 d.settings.halfTimeSec?.let { put("halfTimeSec", it) }
                 d.settings.easyHrCap?.let { put("easyHrCap", it) }
+            put("yogaUrl", d.settings.yogaUrl)
             })
             if (d.whatsNewSeen > 0) put("whatsNewSeen", d.whatsNewSeen)
             put("calf", JSONObject().apply {
@@ -212,6 +213,7 @@ class Store(context: Context) {
                 preplanLongestMiles = s.optDouble("preplanLongestMiles", 3.5),
                 halfTimeSec = s.optIntOrNull("halfTimeSec"),
                 easyHrCap = s.optIntOrNull("easyHrCap"),
+            yogaUrl = s.optString("yogaUrl").takeIf { it.startsWith("http") } ?: com.feidbo.marathon.core.DEFAULT_YOGA_URL,
             )
             val stretch = o.optJSONArray("stretch")?.let { a -> (0 until a.length()).map { a.getInt(it) }.toSet() } ?: emptySet()
             val logs = mutableMapOf<Int, DayLog>()

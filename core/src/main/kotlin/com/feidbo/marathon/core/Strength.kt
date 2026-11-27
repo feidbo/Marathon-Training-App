@@ -86,7 +86,7 @@ object Exercises {
         id = "calf_raise_straight", name = "Single-leg calf raise — fast", block = "1b",
         machine = "A step and one dumbbell",
         muscles = "Calves — mostly gastrocnemius", perSide = true, calf = true,
-        weightLabel = "Dumbbell (lb)",
+        weightLabel = "Total weight held (lb)",
         steps = listOf(
             "Stand on one foot with the ball of the foot on a step edge, dumbbell in the same-side hand, other hand on a wall.",
             "Keep the knee straight (not locked).",
@@ -94,7 +94,10 @@ object Exercises {
             "Fast set: drive up quickly as high as you can, then lower under control — about a second each way. " +
                 "20 reps, then the other leg.",
         ),
-        cues = listOf("Full range every rep, even when it's quick.", "Quick up, controlled down — no bouncing off the bottom."),
+        cues = listOf(
+            "Full range every rep, even when it's quick.", "Quick up, controlled down — no bouncing off the bottom.",
+            "Grip giving out before your calf? Use lifting straps, or carry the weight in a backpack, so your hands aren't the limit.",
+        ),
         bodyweightName = "Single-leg calf raise — fast (bodyweight)",
         bodyweightSteps = listOf("Same movement with no dumbbell."),
         why = "Knee straight shifts the work toward the gastrocnemius (Hébert-Losier 2012; Kovács 2024). " +
@@ -105,13 +108,16 @@ object Exercises {
         id = "calf_raise_slow", name = "Single-leg calf raise — slow", block = "1c",
         machine = "A step and one dumbbell",
         muscles = "Calves — mostly gastrocnemius", perSide = true, calf = true,
-        weightLabel = "Dumbbell (lb)",
+        weightLabel = "Total weight held (lb)",
         steps = listOf(
             "Same set-up as the fast raise: one foot on a step edge, knee straight, dumbbell in the same-side hand.",
             "Slow set: take about 3 seconds up, pause at the top, and about 3 seconds down to a full stretch.",
             "20 reps, then the other leg. Use less weight than the fast set if you need to.",
         ),
-        cues = listOf("Count it: 3 up, pause, 3 down.", "Full range; no resting at the bottom."),
+        cues = listOf(
+            "Count it: 3 up, pause, 3 down.", "Full range; no resting at the bottom.",
+            "Grip giving out before your calf? Use lifting straps, or a weighted backpack.",
+        ),
         bodyweightName = "Single-leg calf raise — slow (bodyweight)",
         bodyweightSteps = listOf("Same movement with no dumbbell."),
         why = "Replaces the bent-knee raise at your request (Nov 2026). Note: the bent-knee raise was there to load the " +
@@ -196,7 +202,7 @@ object Exercises {
         why = "Removed from the routine at your request (Nov 2026). Your logged sets stay in your history.",
     )
     val sideAbduction = Exercise(
-        id = "side_abduction", name = "Side-lying hip abduction", block = "2a",
+        id = "side_abduction", name = "Side-lying hip abduction", block = "—", retired = true,
         machine = "Floor space",
         muscles = "Glute medius (side of the hip)", load = LoadType.BODYWEIGHT, perSide = true,
         steps = listOf(
@@ -246,18 +252,24 @@ object Exercises {
     // ---- Abs block (docs/evidence/abs.md) ---------------------------------------------------------
 
     val curlUp = Exercise(
-        id = "curl_up", name = "Curl-up with a hold", block = "2c",
-        machine = "Floor space",
-        muscles = "Abs (rectus abdominis)", load = LoadType.BODYWEIGHT,
+        id = "curl_up", name = "Weighted curl-up with a hold", block = "1f",
+        machine = "One dumbbell (or a plate) and floor space",
+        muscles = "Abs (rectus abdominis)", load = LoadType.LOWER_SMALL,
+        weightLabel = "Dumbbell on chest (lb)",
         steps = listOf(
-            "Lie on your back, knees bent, feet flat, hands behind your head or crossed on your chest.",
+            "Lie on your back, knees bent, feet flat. Hold a dumbbell flat on your chest with both hands.",
             "Curl your shoulders off the floor until your shoulder blades lift.",
             "Hold the top for 3 seconds, then lower slowly.",
+            "Pick a weight where the last rep is hard — about 2 reps left in the tank. Add weight when it gets easier.",
         ),
-        cues = listOf("Lower back stays on the floor.", "Don't pull on your neck.", "Slow down, not more reps, to make it harder."),
+        cues = listOf("Lower back stays on the floor.", "Keep the dumbbell pressed to your chest, not on your neck.", "Slow on the way down."),
+        bodyweightName = "Curl-up with a hold (bodyweight)",
+        bodyweightSteps = listOf("Same movement with your hands crossed on your chest."),
         why = "A held curl-up reached about 80% of maximum ab activity, against 37–51% for an ordinary curl-up " +
-            "(Oliva-Lozano 2020). Sets and reps are an app default — no trial has tested the dose that grows the abs. " +
-            "Ab exercises build the muscle; seeing it depends mostly on the fat over it (Vispute 2011).",
+            "(Oliva-Lozano 2020). Weight added (Nov 2026) because bodyweight sets were stopping with 5 reps in reserve: " +
+            "muscles grow across a wide range of loads (Schoenfeld 2021), but sets are best ended close to failure " +
+            "(Refalo 2023). No trial has tested the dose that grows the abs specifically. Seeing them depends mostly on " +
+            "the fat over them (Vispute 2011).",
     )
     val rollOut = Exercise(
         id = "ab_rollout", name = "Towel roll-out", block = "—", retired = true,
@@ -275,20 +287,23 @@ object Exercises {
     )
 
     val russianTwist = Exercise(
-        id = "russian_twist", name = "Russian twist", block = "2d",
-        machine = "Floor space",
-        muscles = "Abs — side abs (obliques) and the front", load = LoadType.BODYWEIGHT,
+        id = "russian_twist", name = "Weighted Russian twist", block = "1g",
+        machine = "One dumbbell (or a plate) and floor space",
+        muscles = "Abs — side abs (obliques) and the front", load = LoadType.LOWER_SMALL,
+        weightLabel = "Dumbbell held (lb)",
         steps = listOf(
             "Sit on the floor, knees bent, heels on the floor.",
             "Lean back until you feel your abs working. Keep your back straight, chest up.",
-            "Hold your hands together in front of your chest.",
+            "Hold a dumbbell with both hands in front of your chest.",
             "Turn your shoulders to one side, then to the other. Each turn counts as one rep.",
-            "Harder: lift your feet off the floor, or hold a light dumbbell with both hands.",
+            "Harder: a heavier dumbbell, or lift your feet off the floor. Aim for about 2 reps left in the tank.",
         ),
+        bodyweightName = "Russian twist (bodyweight)",
+        bodyweightSteps = listOf("Same movement with your hands together and no dumbbell."),
         cues = listOf("Turn your shoulders, not just your arms.", "Back stays straight — don't round.", "Breathe out as you turn."),
         why = "Your pick, for being easy to learn (Nov 2026); it replaces the towel roll-out. Twisting is the job of the " +
             "side abs: the review of ab exercises calls the external oblique a trunk-rotation muscle (Oliva-Lozano 2020). " +
-            "My search found no study measuring the Russian twist itself. Sets and reps are an app default.",
+            "My search found no study measuring the Russian twist itself. Weight added (Nov 2026) because bodyweight sets were too easy. Sets and reps are an app default.",
     )
 
     // ---- Daily stretches (docs/decisions.md §3) --------------------------------------------------
@@ -355,16 +370,16 @@ object Exercises {
     val legCurlMachine = retired("leg_curl", "Seated leg curl (machine)", "Hamstrings")
 
     /** Grouped by equipment: dumbbells (block 1), then bodyweight (block 2), then the machine (block 3, always last). */
-    val routine = listOf(splitSquat, calfRaiseStraight, calfRaiseSlow, singleLegRdl, dumbbellRow, sideAbduction, curlUp, russianTwist, pullUp)
+    val routine = listOf(splitSquat, calfRaiseStraight, calfRaiseSlow, singleLegRdl, dumbbellRow, curlUp, russianTwist, pullUp)
     /** The pulling slot: do one of these — the pull-up with a machine, the row without. */
     val pullChoices = listOf(pullUp, dumbbellRow)
     /** Dropped from the routine but kept so logged sets still show. */
     val retiredOther = listOf(hipThrust)
     /** Not in the strength routine any more, but still used by the calf guidance and kept for history. */
-    val formerRoutine = listOf(calfRaiseBent, rollOut)
+    val formerRoutine = listOf(calfRaiseBent, rollOut, sideAbduction)
     val stretches = listOf(quadStretch, calfStretchStraight, calfStretchBent)
     val retiredMachines = listOf(legPress, legPressCalf, hipThrustMachine, abductionMachine, legCurlMachine)
-    val all = routine + calfRaiseBent + rollOut + pogoHops + stretches + calfIsometric + retiredOther + retiredMachines
+    val all = routine + calfRaiseBent + rollOut + sideAbduction + pogoHops + stretches + calfIsometric + retiredOther + retiredMachines
     fun byId(id: String): Exercise? = all.firstOrNull { it.id == id }
 }
 
@@ -378,7 +393,7 @@ data class SessionOptions(
 
 /**
  * The dumbbell/bodyweight routine for a strength day (docs/decisions.md §1–2).
- * Main lifts: split squat and single-leg RDL. Smaller lifts: the two calf raises, side-lying abduction, the abs
+ * Main lifts: split squat and single-leg RDL. Smaller lifts: the two calf raises, the weighted abs
  * and the optional assisted pull-up. Ordered by equipment (user request, Nov 2026): every dumbbell exercise,
  * then every bodyweight exercise, then the machine — the pull-up is always last.
  */
@@ -391,14 +406,14 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
     }
     fun build(items: List<Prescription>) = withRow(items).filter { !(options.skipCalfRaises && it.exercise.calf) }
     // Abs finish the session (after the hops): 2 sets on working days, 1 on light days.
-    fun abs(sets: Int) = listOf(p(e.curlUp, sets, 15, "12–15"), p(e.russianTwist, sets, 20, "20 (10 each side)"))
+    fun abs(sets: Int) = listOf(p(e.curlUp, sets, 12, "10–15"), p(e.russianTwist, sets, 20, "20 (10 each side)"))
     val plyo = options.plyometrics
     val session = when (kind) {
         StrengthKind.NONE -> null
         StrengthKind.LEARN -> StrengthSession(
             kind, build(listOf(
                 p(e.splitSquat, 1, 10), p(e.calfRaiseStraight, 1, 20), p(e.calfRaiseSlow, 1, 20),
-                p(e.singleLegRdl, 1, 10), p(e.sideAbduction, 1, 12), p(e.pullUp, 1, 8),
+                p(e.singleLegRdl, 1, 10), p(e.pullUp, 1, 8),
             )) + abs(1),
             effort = "Light — learn the movements and pick starting weights",
             rest = "As needed", minutes = "15–20 min", restSec = 60, targetRir = 4,
@@ -407,7 +422,7 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
         StrengthKind.PHASE1 -> StrengthSession(
             kind, build(listOf(
                 p(e.splitSquat, 3, 10, "8–10"), p(e.calfRaiseStraight, 2, 20), p(e.calfRaiseSlow, 2, 20),
-                p(e.singleLegRdl, 3, 10, "8–10"), p(e.sideAbduction, 2, 12), p(e.pullUp, 2, 8),
+                p(e.singleLegRdl, 3, 10, "8–10"), p(e.pullUp, 2, 8),
             )) + abs(2),
             effort = "Hard, about 3 reps left in the tank",
             rest = "60–90 s between sets", minutes = "25–30 min", restSec = 90, targetRir = 3,
@@ -416,7 +431,7 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
         StrengthKind.PHASE2 -> StrengthSession(
             kind, build(listOf(
                 p(e.splitSquat, 3, 6, "5–6"), p(e.calfRaiseStraight, 2, 20), p(e.calfRaiseSlow, 2, 20),
-                p(e.singleLegRdl, 3, 6, "5–6"), p(e.sideAbduction, 2, 12), p(e.pullUp, 2, 8),
+                p(e.singleLegRdl, 3, 6, "5–6"), p(e.pullUp, 2, 8),
             ) + if (plyo) listOf(p(e.pogoHops, 3, 10)) else emptyList()) + abs(2),
             effort = "Heavy, about 2 reps left in the tank",
             rest = "90 s – 2 min between sets", minutes = "25–30 min", restSec = 120, targetRir = 2,
@@ -426,7 +441,7 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
         StrengthKind.PHASE3 -> StrengthSession(
             kind, build(listOf(
                 p(e.splitSquat, 2, 5), p(e.calfRaiseStraight, 1, 20), p(e.calfRaiseSlow, 1, 20),
-                p(e.singleLegRdl, 2, 5), p(e.sideAbduction, 1, 12), p(e.pullUp, 1, 8),
+                p(e.singleLegRdl, 2, 5), p(e.pullUp, 1, 8),
             ) + if (plyo) listOf(p(e.pogoHops, 2, 10)) else emptyList()) + abs(2),
             effort = "Heavy, about 2 reps left in the tank — keep the loads heavy",
             rest = "90 s – 2 min between sets", minutes = "About 20 min", restSec = 120, targetRir = 2,
@@ -435,7 +450,7 @@ fun strengthSession(kind: StrengthKind, options: SessionOptions = SessionOptions
         StrengthKind.LIGHT -> StrengthSession(
             kind, build(listOf(
                 p(e.splitSquat, 1, 5), p(e.calfRaiseStraight, 1, 20), p(e.calfRaiseSlow, 1, 20),
-                p(e.singleLegRdl, 1, 5), p(e.sideAbduction, 1, 12), p(e.pullUp, 1, 8),
+                p(e.singleLegRdl, 1, 5), p(e.pullUp, 1, 8),
             )) + abs(1),
             effort = "Light — about 60% of your working weight",
             rest = "As needed", minutes = "About 10 min", restSec = 60, targetRir = 5,
@@ -450,7 +465,7 @@ private val standardNotes = listOf(
     "Lift first, then run — or run later in the day (Eddens 2018).",
     "Warm up with one light set of split squats and single-leg RDLs.",
     "Block 1, dumbbells: split squat, the two calf raises, single-leg RDL (and the dumbbell row on days without a " +
-        "pull-up machine). Block 2, bodyweight: side-lying abduction, hops, curl-ups, Russian twists. Block 3, machine: " +
-        "the assisted pull-up, always last. One set of each in a block, then repeat the block.",
+        "pull-up machine), weighted curl-ups, weighted Russian twists. Block 2, bodyweight: pogo hops (from mid-December). " +
+        "Block 3, machine: the assisted pull-up, always last. One set of each in a block, then repeat the block.",
     "Add weight when every set feels easier than the target effort.",
 )

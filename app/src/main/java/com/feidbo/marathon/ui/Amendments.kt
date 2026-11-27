@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /** Bump when there's a new "What's new" note to show once after updating. */
-const val WHATS_NEW_VERSION = 10
+const val WHATS_NEW_VERSION = 11
 
 /** One change from the original plan document, with what it rests on (docs/decisions.md, docs/evidence/). */
 private class Amendment(val title: String, val was: String, val now: String, val evidence: String, val strength: String)
@@ -208,6 +208,10 @@ fun WhatsNewDialog(onDismiss: () -> Unit, onOpenAmendments: () -> Unit) {
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(
+                    "🧘 Your yoga video replaces the stretch routine (change the link in Settings).",
+                    "🏋️ Abs are weighted now: hold a dumbbell for curl-ups and Russian twists, aiming for about 2 reps left.",
+                    "✂️ Side-lying hip abduction is out.",
+                    "🦵 Calf raises: log the total weight you hold. Grip giving out first? Try lifting straps or a weighted backpack.",
                     "🔁 Need a rest today? When tomorrow is a rest day, \"Rest today, do this workout tomorrow\" swaps the two days.",
                     "📅 Can't lift today? On a strength day, tap \"Do it tomorrow\" to move the session to the next day " +
                         "(when that day has no strength of its own). The run stays put, and the day counts as done.",

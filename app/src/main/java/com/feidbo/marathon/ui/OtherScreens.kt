@@ -242,6 +242,7 @@ fun SettingsScreen(
     var hS by remember { mutableStateOf(s.halfTimeSec?.let { (it % 60).toString().padStart(2, '0') } ?: "") }
     var longest by remember { mutableStateOf(formatMiles(s.preplanLongestMiles)) }
     var hrCap by remember { mutableStateOf(s.easyHrCap?.toString() ?: "") }
+    var yoga by remember { mutableStateOf(s.yogaUrl) }
     var confirmReset by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -300,6 +301,13 @@ fun SettingsScreen(
                     decimal = false, suffix = "bpm")
             }
             SectionCard {
+                Text("Yoga video", style = MaterialTheme.typography.titleMedium)
+                Text("The Today screen's daily yoga opens this link.", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                androidx.compose.material3.OutlinedTextField(yoga, { yoga = it.trim() }, label = { Text("Video link") },
+                    singleLine = true, modifier = Modifier.fillMaxWidth())
+            }
+            SectionCard {
                 Text("Longest run in the 30 days before Oct 16", style = MaterialTheme.typography.titleMedium)
                 Text("Used for the 10% long-run rule at the start of the plan.", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -314,6 +322,7 @@ fun SettingsScreen(
                             preplanLongestMiles = longest.toDoubleOrNull()?.takeIf { it in 0.5..30.0 } ?: s.preplanLongestMiles,
                             // Blank clears the cap; out-of-range numbers keep the old value.
                             easyHrCap = if (hrCap.isBlank()) null else hrCap.toIntOrNull()?.takeIf { it in 90..210 } ?: s.easyHrCap,
+                            yogaUrl = yoga.takeIf { it.startsWith("http") } ?: s.yogaUrl,
                         ),
                     )
                     onSaved()

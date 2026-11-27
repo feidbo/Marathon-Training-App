@@ -432,8 +432,7 @@ private fun QuestsCard(state: UiState, sd: ScheduledDay) {
         if (day.strength.isPlanned) add(Quest("🏋️", "Strength routine", 25, log?.strength?.any { e -> e.sets.any { it.reps > 0 } } == true))
         val calf = state.data.calf
         if (calf.flagged) add(Quest("🦵", "Calf exercises", Game.CALF_XP, day.index in state.data.calfDays))
-        val stretchMin = StretchRoutine.totalSeconds(StretchRoutine.segments(StretchRoutine.calfStretchesAllowed(calf), false)) / 60
-        add(Quest("🧘", "Stretch · $stretchMin min (optional mobility)", Game.stretchXp(day), stretched))
+        add(Quest("🧘", "Yoga video (optional mobility)", Game.stretchXp(day), stretched))
         if (day.isTrainingDay) add(Quest("✨", "Perfect day bonus", Game.PERFECT_DAY_XP, log?.status == DayStatus.DONE && stretched))
     }
     val done = quests.count { it.done }
@@ -621,78 +620,46 @@ private fun WorkoutStepsCard(state: UiState, sd: ScheduledDay) {
     }
 }
 
+/** The daily yoga video (replaces the stretch routine, Nov 2026). Opens in YouTube; tick it off when done. */
 @Composable
 private fun StretchCard(
     state: UiState, sd: ScheduledDay, onToggle: (Int) -> Unit, onOpenExercise: (String, Int) -> Unit, onStretchDone: (Int) -> Unit,
 ) {
+    val context = LocalContext.current
     val done = sd.index in state.data.stretchDays
     val canLog = sd.date <= state.today
-    val calfAllowed = StretchRoutine.calfStretchesAllowed(state.data.calf)
-    val active by Timers.stretch.collectAsStateWithLifecycle()
-    val running = active?.dayIndex == sd.index
-    var showTimer by rememberSaveable(sd.index) { mutableStateOf(false) }
-    var beforeRun by rememberSaveable(sd.index) { mutableStateOf(false) }
-    val minutes = StretchRoutine.totalSeconds(StretchRoutine.segments(calfAllowed, beforeRun)) / 60.0
+    val calfEarly = !StretchRoutine.calfStretchesAllowed(state.data.calf)
     SectionCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("🧘  Stretch · ${formatMiles(minutes)} min", style = MaterialTheme.typography.titleMedium)
-                Text("Optional mobility, for comfort and range of motion. Stretching hasn't been shown to prevent injuries.",
+                Text("🧘  Yoga", style = MaterialTheme.typography.titleMedium)
+                Text("Your yoga video, as optional mobility. Best after a run or in the evening.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             IconButton(onClick = { onToggle(sd.index) }, enabled = canLog) {
                 Icon(
                     if (done) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
-                    contentDescription = if (done) "Stretch done" else "Mark stretch done",
+                    contentDescription = if (done) "Yoga done" else "Mark yoga done",
                     tint = if (done) StatusColors.done else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(32.dp),
                 )
             }
         }
-        Spacer(Modifier.height(6.dp))
-        StretchRoutine.exercises(calfAllowed).forEach { ex ->
-            val sec = if (ex.id == "quad_stretch") {
-                if (beforeRun) StretchRoutine.QUAD_BEFORE_RUN_SEC else StretchRoutine.QUAD_SEC
-            } else if (beforeRun) StretchRoutine.CALF_BEFORE_RUN_SEC else StretchRoutine.CALF_SEC
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { onOpenExercise(ex.id, sd.index) }
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                ExerciseIllustration(ex.id, Modifier.size(48.dp), animate = false)
-                Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(ex.name, style = MaterialTheme.typography.titleSmall)
-                    Text("$sec s each side · ${ex.muscles}", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        }
-        if (!calfAllowed) {
-            Text("Calf stretches are paused while your calf is in stage 1–2.", style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary)
+        if (calfEarly) {
+            Text("Calf guidance stage 1–2: skip or ease off poses that stretch the calf (like downward dog) for now.",
+                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         }
         if (canLog && !done) {
             Spacer(Modifier.height(4.dp))
-            if (!running) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    FilterChip(selected = !beforeRun, onClick = { beforeRun = false }, label = { Text("After a run") })
-                    FilterChip(selected = beforeRun, onClick = { beforeRun = true }, label = { Text("Before a run") })
+            androidx.compose.material3.FilledTonalButton(onClick = {
+                try {
+                    context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,
+                        android.net.Uri.parse(state.settings.yogaUrl)))
+                } catch (_: Exception) {
                 }
-                Text(
-                    if (beforeRun) "Before a run: holds under 60 s — long holds right before effort slightly reduce performance."
-                    else "Long holds are best after your run or in the evening.",
-                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (showTimer || running) {
-                StretchTimer(sd.index, calfAllowed, beforeRun, onFinished = onStretchDone)
-            } else {
-                TextButton(onClick = { showTimer = true }) { Text("⏱  Open the stretch timer") }
-            }
+            }) { Text("▶  Open the yoga video") }
+            Text("Tick it off when you finish. Change the video in Settings.", style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

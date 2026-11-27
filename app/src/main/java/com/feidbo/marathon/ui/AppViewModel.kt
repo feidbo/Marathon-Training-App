@@ -264,7 +264,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     streak = after.progress.streak,
                 )
             } else {
-                _toast.value = Toast(if (perfect) "✨ Perfect day! +$gained XP" else "🧘 Stretch done · +$gained XP")
+                _toast.value = Toast(if (perfect) "✨ Perfect day! +$gained XP" else "🧘 Yoga done · +$gained XP")
             }
         }
     }

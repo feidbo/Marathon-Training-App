@@ -293,18 +293,22 @@ class ProgressionTest {
         // Hip thrust removed; abduction second to last, pull-up last (user request, Nov 2026).
         // Then the dumbbell row beside the pull-up (do one), and the abs block to finish.
         // Dumbbells, then bodyweight, then the machine; the pull-up is always last (user request, Nov 2026).
+        // Side-lying abduction removed; the abs are weighted now, so they sit with the dumbbell exercises (Nov 2026).
         assertEquals(listOf("split_squat", "calf_raise_straight", "calf_raise_slow", "single_leg_rdl", "dumbbell_row",
-            "side_abduction", "curl_up", "russian_twist", "assisted_pull_up"), p1.items.map { it.exercise.id })
+            "curl_up", "russian_twist", "assisted_pull_up"), p1.items.map { it.exercise.id })
+        for (k in StrengthKind.entries) strengthSession(k)?.let { s -> assertTrue(s.items.none { it.exercise.id == "side_abduction" }) }
+        assertTrue(Exercises.byId("side_abduction")!!.retired)   // logged sets still resolve
+        assertTrue(Exercises.curlUp.usesWeight && Exercises.russianTwist.usesWeight)
         for (k in StrengthKind.entries) strengthSession(k)?.let { s ->
             assertEquals("assisted_pull_up", s.items.last().exercise.id)
             val groups = s.items.map { if (it.exercise.inverted) 2 else if (it.exercise.usesWeight) 0 else 1 }
             assertEquals(groups.sorted(), groups)
         }
-        assertTrue(strengthSession(StrengthKind.PHASE2)!!.items.map { it.exercise.id }.let { it.indexOf("pogo_hops") in it.indexOf("side_abduction")..it.indexOf("russian_twist") })
+        assertEquals(listOf("russian_twist", "pogo_hops", "assisted_pull_up"), strengthSession(StrengthKind.PHASE2)!!.items.map { it.exercise.id }.takeLast(3))
         val row = p1.items.first { it.exercise.id == "dumbbell_row" }
         assertEquals(p1.items.first { it.exercise.id == "assisted_pull_up" }.sets, row.sets)
         assertEquals("8–10/arm", row.repsShown)
-        assertEquals("12–15", p1.items.first { it.exercise.id == "curl_up" }.repsShown)
+        assertEquals("10–15", p1.items.first { it.exercise.id == "curl_up" }.repsShown)
         assertTrue(strengthSession(StrengthKind.PHASE2)!!.items.map { it.exercise.id }.containsAll(listOf("curl_up", "russian_twist")))
         assertTrue(Exercises.byId("ab_rollout")!!.retired)   // logged roll-outs still resolve
         assertNull(loadAdviceFor(p1.items.first { it.exercise.id == "curl_up" }, mon, emptyMap()))
@@ -407,8 +411,8 @@ class ProgressionTest {
 
     @Test fun bodyweightGetsNoLoadAdvice() {
         assertNull(loadAdvice(squat, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "split_squat", 0.0, listOf(12, 12), rir = 3, bodyweight = true))))
-        val abd = p1.items.first { it.exercise.id == "side_abduction" }
-        assertNull(loadAdvice(abd, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "side_abduction", 0.0, listOf(12, 12), rir = 3))))
+        val hops = strengthSession(StrengthKind.PHASE2)!!.items.first { it.exercise.id == "pogo_hops" }
+        assertNull(loadAdvice(hops, StrengthKind.PHASE2, thu.date, listOf(entry(mon, "pogo_hops", 0.0, listOf(10, 10), rir = 3))))
         // A bodyweight set never triggers the "enter the weight" warning.
         val tips = strengthFeedback(squat, ExerciseLog("split_squat", listOf(SetLog(0.0, 10)), rir = 3, bodyweight = true), null, StrengthKind.PHASE1)
         assertTrue(tips.none { it.text.contains("Enter the weight") })

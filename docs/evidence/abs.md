@@ -45,6 +45,17 @@ runners. ABS = abstract read; FT = full text read.
 ### A7. Sato K, Mokha M. J Strength Cond Res 2009;23:133–140 — ABS (RCT, 20 completers, 6 weeks)
 - Core training group ran 5000 m faster; no change in ground reaction forces or leg stability.
 
+## Load and effort for muscle growth (added Nov 27 2026)
+
+### A8. Schoenfeld BJ, et al. Sports (Basel) 2021;9:32 (PMC7927075) — FT (review)
+- "similar whole muscle growth (i.e., muscle thickness, CSA) can be achieved across a wide spectrum of loading
+  ranges ≥ ~30% 1RM … there is no ideal 'hypertrophy zone.'" Moderate loads are the most time-efficient.
+
+### A9. Refalo MC, et al. Sports Med 2023;53:649–665 (PMC9935748) — FT (systematic review + meta-analysis, 15 studies)
+- Training to failure vs not: trivial advantage overall (ES 0.19), none in sub-groups. Authors suggest "a
+  majority of RT sets are terminated with a close proximity-to-failure".
+- Neither study is about the abdominals specifically.
+
 ## Not found
 - No trial on the sets/reps that grow the abdominal muscles in healthy adults.
 - No meta-analysis settling spot reduction (A1 and A2 disagree).

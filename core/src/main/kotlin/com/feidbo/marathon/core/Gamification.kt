@@ -61,7 +61,7 @@ object Game {
         Badge("week_complete", "📅", "Week Warrior", "Complete every workout in a week"),
         Badge("streak_7", "🔥", "On Fire", "7 workouts in a row"),
         Badge("streak_21", "⚡", "Unstoppable", "21 workouts in a row"),
-        Badge("stretch_30", "🧘", "Bendy", "Stretch on 30 days"),
+        Badge("stretch_30", "🧘", "Bendy", "Yoga or stretch on 30 days"),
         Badge("easy_10", "🐢", "Smart Pacer", "10 easy runs in the easy zone"),
         Badge("hills_3", "⛰️", "Hill Hunter", "Finish 3 hill sessions"),
         Badge("tempo_5", "🎯", "Tempo Tamer", "Finish 5 tempo runs"),
@@ -75,7 +75,7 @@ object Game {
         Badge("half", "🥈", "Half Hero", "Run the Mar 7 half marathon"),
         Badge("twenty", "🏔️", "Twenty Club", "Run 20 miles"),
         Badge("taper", "🧘‍♂️", "Trust the Taper", "Finish the taper"),
-        Badge("perfect_10", "✨", "Perfect 10", "10 perfect days: workout + stretch"),
+        Badge("perfect_10", "✨", "Perfect 10", "10 perfect days: workout + yoga"),
         Badge("comeback", "🦅", "Comeback Kid", "Train again after 3+ missed workouts"),
         Badge("pr", "📈", "PR Breaker", "Beat your best estimated max on a lift"),
         Badge("miles_26", "🦆", "Marathon in Pieces", "26.2 total miles"),
@@ -85,8 +85,8 @@ object Game {
         Badge("sunday_10", "☀️", "Sunday Funday", "10 Sunday long runs"),
         Badge("streak_50", "🌋", "Volcano", "50 workouts in a row"),
         Badge("weeks_4", "🗓️", "Month of Grit", "4 full weeks completed"),
-        Badge("stretch_100", "🪢", "Rubber Band", "Stretch on 100 days"),
-        Badge("rest_25", "😴", "Rest Is Training", "Stretch on 25 rest days"),
+        Badge("stretch_100", "🪢", "Rubber Band", "Yoga or stretch on 100 days"),
+        Badge("rest_25", "😴", "Rest Is Training", "Yoga or stretch on 25 rest days"),
         Badge("lift_35", "🦍", "Gorilla Legs", "35 strength sessions"),
         Badge("pr_5", "🚀", "PR Machine", "Set 5 lifting PRs"),
         Badge("level_5", "⭐", "Rising Star", "Reach level 5"),
@@ -332,7 +332,7 @@ object Cheers {
     )
     private val rest = listOf(
         "Rest day honoured. Muscles grow when you rest. 😴", "Recovery is training too. 🛋️",
-        "Stretch done — your legs thank you. 🧘",
+        "Yoga done — your legs thank you. 🧘",
     )
     private val missed = listOf(
         "Listening to your body is a skill. 💚", "One day doesn't define a training block. Back at it soon. 🌤️",

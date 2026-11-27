@@ -273,3 +273,17 @@ I re-read each decision against the evidence logs for overstatement:
 - Menus: week A ≈ 1,820 kcal and 178 g protein; week B ≈ 1,870 kcal and 170 g protein, before fuel servings.
 - With three meals, protein per meal (≈ 50–80 g) is above the 20–40 g per meal in the ISSN stand (T5); the app
   says so and notes timing has little effect on fat loss (T1).
+
+### Amendment, Nov 27 2026 — abs, abduction, calf grip, yoga (your requests)
+
+- **Abs are weighted** (dumbbell on the chest for curl-ups; dumbbell held for Russian twists), 10–15 and 20
+  reps, ending about 2 reps short of failure, with load suggestions like the other lifts. Reason: bodyweight sets
+  were logged with 5 reps in reserve. Muscle grows across a wide range of loads (≥ ~30% 1RM; Schoenfeld 2021)
+  and sets are best ended close to failure, not necessarily at it (Refalo 2023). No ab-specific growth trial
+  was found; visible abs still depend mostly on body fat (abs A1).
+- **Side-lying hip abduction removed** (skipped repeatedly). Its logged sets stay in history.
+- **Calf raises:** the weight field is now "total weight held". When grip fails before the calves, the
+  exercise cues suggest lifting straps or a weighted backpack. *Practical advice, not from a checked source.*
+- **Yoga replaces the stretch routine:** the daily card opens your chosen video (changeable in Settings) and
+  keeps the same XP and badges. The video itself could not be viewed from the build environment. In calf
+  stages 1–2 the card reminds you to ease off calf-stretching poses.

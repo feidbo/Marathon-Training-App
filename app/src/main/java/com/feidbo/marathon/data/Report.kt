@@ -45,7 +45,7 @@ fun progressReport(data: AppData, schedule: Schedule, progress: Progress, today:
     appendLine("- Miles run: ${formatMiles(Math.round(progress.totalMiles * 10) / 10.0)} · longest run ${formatMiles(progress.longestRun)} mi")
     appendLine("- Strength sessions: ${progress.strengthSessions}")
     appendLine("- Streak ${progress.streak} (best ${progress.bestStreak}) · level ${progress.level.level} ${progress.level.name} · ${progress.xp} XP · ${progress.badges.size} badges")
-    appendLine("- Stretch days: ${data.stretchDays.count { it <= Plan.indexOf(today) }}")
+    appendLine("- Yoga/stretch days: ${data.stretchDays.count { it <= Plan.indexOf(today) }}")
     appendLine()
 
     if (schedule.notices.isNotEmpty()) {
@@ -84,7 +84,7 @@ fun progressReport(data: AppData, schedule: Schedule, progress: Progress, today:
             }.joinToString(" · ")
         }
         val extras = buildList {
-            if (d.index in data.stretchDays) add("stretch")
+            if (d.index in data.stretchDays) add("yoga")
             if (d.index in data.calfDays) add("calf work")
             data.mealChecks[d.index]?.let { c ->
                 val meals = MealSlot.entries.count { it.name in c }

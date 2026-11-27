@@ -122,4 +122,8 @@ data class Settings(
     val halfTimeSec: Int? = null,
     /** Personal easy-run heart-rate cap, calibrated with the talk test (docs/decisions.md §5). */
     val easyHrCap: Int? = null,
+    /** The yoga video that replaces the stretch routine (user's choice, Nov 2026). */
+    val yogaUrl: String = DEFAULT_YOGA_URL,
 )
+
+const val DEFAULT_YOGA_URL = "https://m.youtube.com/watch?v=VT5PpAzb1DA"

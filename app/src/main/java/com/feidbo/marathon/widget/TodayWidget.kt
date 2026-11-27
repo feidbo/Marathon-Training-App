@@ -173,7 +173,7 @@ class TodayWidget : AppWidgetProvider() {
                 if (day.run.isRun && log?.run == null && !missed) add("🏃" to "Run")
                 if (day.strength.isPlanned && log?.strength.isNullOrEmpty() && !missed) add("🏋️" to "Lift")
                 if (calf.flagged && day.index !in data.calfDays) add("🦵" to "Calf")
-                if (!stretched) add("🧘" to "Stretch")
+                if (!stretched) add("🧘" to "Yoga")
             }
             val (todoShort, todoLong) = when {
                 missed && todo.isEmpty() -> "💚 Rest taken" to "💚 Rest taken. Back at it soon."
