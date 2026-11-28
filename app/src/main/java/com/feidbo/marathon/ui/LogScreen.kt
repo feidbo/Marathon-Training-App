@@ -489,7 +489,7 @@ private fun ExerciseEditor(
                 Text(
                     last?.let { "Last: ${setsText(it.log)}" }
                         ?: if (!e.weighted) "Reps only — no weight to log"
-                        else if (ex.progressByReps) "First time — a weight you can grip easily, or none"
+                        else if (ex.progressByReps) "First time — a weight you can hold comfortably (e.g. 40 lb)"
                         else "First time — pick a weight that's hard by the last rep",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -522,8 +522,8 @@ private fun ExerciseEditor(
             )
         }
         if (ex.progressByReps && !e.skipped && e.weighted) {
-            Text("Grip-friendly: keep a weight you can hold easily and go to about 2 reps short of failure. Add reps up to 30, " +
-                "then a 2-second hold at the top — not more weight.",
+            Text("Same weight every time: go to about 2 reps short of failure. Add reps, then a longer hold at the top " +
+                "— not more weight.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(vertical = 4.dp))
         }

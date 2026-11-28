@@ -56,8 +56,8 @@ private val amendments = listOf(
     Amendment(
         "Dumbbell / bodyweight routine",
         "Leg press, leg-press calf raise, hip thrust machine, hip abductor, seated leg curl, assisted pull-up.",
-        "Bulgarian split squat · fast single-leg calf raise, 20–30 reps with a weight that's easy to grip (progress by " +
-            "reps, then pauses) · seated single-leg calf raise with the dumbbells resting on the knee (no grip needed) · " +
+        "Bulgarian split squat · single-leg calf raise, 2 sets fast (20–30) then 2 sets slow (15–25), same comfortable " +
+            "weight (e.g. 40 lb), adding reps and pauses instead of weight · " +
             "single-leg RDL (or sliding leg curl) · dumbbell row · weighted curl-ups and Russian twists · assisted " +
             "pull-up last, only when there's a machine. The hip thrust and side-lying abduction were dropped at your request. Each has a bodyweight version. Your machine history is kept; " +
             "the new exercises start fresh benchmarks.",
@@ -208,9 +208,8 @@ fun WhatsNewDialog(onDismiss: () -> Unit, onOpenAmendments: () -> Unit) {
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(
-                    "🦵 Calf raises without straps: the fast raise uses a weight that's easy to grip and grows by reps " +
-                        "(20–30, about 2 left), then pauses. The slow set is now a seated raise with the dumbbells resting " +
-                        "on your knee, so your fingers aren't the limit, and it works the soleus.",
+                    "🦵 Calf raises: 2 fast sets (20–30) then 2 slow sets (15–25), both with a weight you can hold " +
+                        "comfortably (e.g. 40 lb). Go to about 2 reps short of failure and add reps, then pauses — not weight.",
                     "🔆 The screen stays on while you're logging a strength session.",
                     "🧘 Your yoga video replaces the stretch routine (change the link in Settings).",
                     "🏋️ Abs are weighted now: hold a dumbbell for curl-ups and Russian twists, aiming for about 2 reps left.",

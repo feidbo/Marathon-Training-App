@@ -277,7 +277,8 @@ class ProgressionTest {
     private val p1 = strengthSession(StrengthKind.PHASE1)!!
     private val squat = p1.items.first { it.exercise.id == "split_squat" }
     private val calf = p1.items.first { it.exercise.id == "calf_raise_straight" }
-    private val seated = p1.items.first { it.exercise.id == "calf_raise_seated" }
+    private val slow = p1.items.first { it.exercise.id == "calf_raise_slow" }
+    private val curl = p1.items.first { it.exercise.id == "curl_up" }
     private val pull = p1.items.first { it.exercise.inverted }
     private fun day(y: Int, m: Int, d: Int) = Plan.dayOn(LocalDate.of(y, m, d))!!
     private fun entry(day: PlannedDay, id: String, w: Double, reps: List<Int>, rir: Int? = null, feel: Feel? = null,
@@ -291,14 +292,15 @@ class ProgressionTest {
     @Test fun phase1PrescriptionMatchesDecisions() {
         assertEquals(3, squat.sets); assertEquals(10, squat.reps); assertEquals("8–10/leg", squat.repsShown)
         assertEquals(2, calf.sets); assertEquals(25, calf.reps); assertEquals("20–30/leg", calf.repsShown)
-        // Grip-free calves (Nov 27 2026): fast standing raise by reps, then the seated raise with the weight on the knee.
-        assertEquals(2, seated.sets); assertEquals(15, seated.reps)
-        assertTrue(Exercises.byId("calf_raise_slow")!!.retired)   // logged slow raises still resolve
+        // 2 fast + 2 slow with the same comfortable weight (e.g. 40 lb), progressing by reps (user request, Nov 28 2026).
+        assertEquals(2, slow.sets); assertEquals(20, slow.reps); assertEquals("15–25/leg", slow.repsShown)
+        assertTrue(Exercises.calfRaiseStraight.progressByReps && Exercises.calfRaiseSlow.progressByReps)
+        assertTrue(Exercises.byId("calf_raise_seated")!!.retired)   // logged seated raises still resolve
         // Hip thrust removed; abduction second to last, pull-up last (user request, Nov 2026).
         // Then the dumbbell row beside the pull-up (do one), and the abs block to finish.
         // Dumbbells, then bodyweight, then the machine; the pull-up is always last (user request, Nov 2026).
         // Side-lying abduction removed; the abs are weighted now, so they sit with the dumbbell exercises (Nov 2026).
-        assertEquals(listOf("split_squat", "calf_raise_straight", "calf_raise_seated", "single_leg_rdl", "dumbbell_row",
+        assertEquals(listOf("split_squat", "calf_raise_straight", "calf_raise_slow", "single_leg_rdl", "dumbbell_row",
             "curl_up", "russian_twist", "assisted_pull_up"), p1.items.map { it.exercise.id })
         for (k in StrengthKind.entries) strengthSession(k)?.let { s -> assertTrue(s.items.none { it.exercise.id == "side_abduction" }) }
         assertTrue(Exercises.byId("side_abduction")!!.retired)   // logged sets still resolve
@@ -336,21 +338,22 @@ class ProgressionTest {
         val a = loadAdvice(squat, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "split_squat", 40.0, listOf(10, 10, 10), rir = 6)))!!
         assertEquals(LoadChange.BIG_UP, a.change)
         assertEquals(50.0, a.weight, 0.0)
-        val small = loadAdvice(seated, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "calf_raise_seated", 20.0, listOf(15, 15), rir = 6, perSide = true)))!!
+        val small = loadAdvice(curl, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "curl_up", 20.0, listOf(12, 12), rir = 6)))!!
         assertEquals(25.0, small.weight, 0.0)
     }
 
     @Test fun fastCalfRaiseProgressesByRepsNotWeight() {
         // Heavy dumbbells gave out the user's grip first (Nov 2026): no load suggestion, even after 90 lb × 12.
         assertNull(loadAdvice(calf, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "calf_raise_straight", 90.0, listOf(12, 12), rir = 5))))
-        assertNull(loadAdvice(calf, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "calf_raise_straight", 20.0, listOf(30, 30), rir = 4))))
+        assertNull(loadAdvice(calf, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "calf_raise_straight", 40.0, listOf(30, 30), rir = 4))))
+        assertNull(loadAdvice(slow, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "calf_raise_slow", 40.0, listOf(25, 25), rir = 4))))
     }
 
     @Test fun repsFarFromTargetGetANewWeightNotAMissedSet() {
-        // A different rep target (old 2 × 8 logged, today 15): convert through the estimated max.
-        val a = loadAdvice(seated, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "calf_raise_seated", 90.0, listOf(8, 8), rir = 3, perSide = true)))!!
+        // A different rep target (old 2 × 6 logged, today 12): convert through the estimated max.
+        val a = loadAdvice(curl, StrengthKind.PHASE1, thu.date, listOf(entry(mon, "curl_up", 40.0, listOf(6, 6), rir = 2)))!!
         assertEquals(LoadChange.NEW_TARGET, a.change)
-        assertTrue(a.weight < 90.0)
+        assertTrue(a.weight < 40.0)
         assertTrue(a.reason.contains("New target"))
     }
 

@@ -303,3 +303,13 @@ I re-read each decision against the evidence logs for overstatement:
   (Green 2022, calf K1). The slow raise is retired; its logged sets stay in history.
 - **Screen stays on** while the strength logging screen is open (Android `FLAG_KEEP_SCREEN_ON`, cleared when
   you leave the screen).
+
+### Amendment, Nov 28 2026 — more reps with 40 lb, seated raise dropped (your request)
+
+- **Both standing raises stay, with the same comfortable weight (e.g. 40 lb):** 2 × fast (20–30 reps per leg),
+  then 2 × slow (3 s up, pause, 3 s down; 15–25 reps). Each set ends about 2 reps short of failure. At the top
+  of the range, add (or lengthen) a pause at the top instead of weight. No weight suggestions for either.
+  Basis: muscle growth is similar across loads ≥ ~30% of max when sets end near failure (Schoenfeld 2021;
+  Refalo 2023). The rep ranges and pause steps are app defaults.
+- **Seated raise retired** (logged sets stay in history). Trade-off: the routine again has no bent-knee
+  (soleus-biased) raise (Kovács 2024; Green 2022); the bent-knee raise remains in the calf guidance.
